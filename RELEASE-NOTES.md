@@ -1,5 +1,18 @@
 # VADR 1.x release notes 
 
+### VADR 1.7.2 release (September 2026): Hotfix
+  * a user reported that `vadr-install.sh` was pinning outdated model
+    packages for four libraries. Nothing was broken by this: every
+    pinned tarball still downloaded and worked, but a fresh install
+    got older models than were actually available. This release only
+    bumps those four pins:
+    - `calici`: `1.2-1` -> `1.7-2`
+    - `sarscov2`: `1.3-2` -> `1.6.3-1`
+    - `flu`: `1.6.3-2` -> `1.7-2`
+    - `rsv`: `1.5-2` -> `1.7-1`
+  * no other code changes
+
+---
 ### VADR 1.7.1 release (September 2026)
   * adds `--draw_r2dt` option to `v-annotate.pl` for drawing secondary
     structure diagrams of classified sequences using

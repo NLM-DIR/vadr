@@ -15,7 +15,7 @@
 # Usage: parse_blast.pl --program x --input <blastx output file>
 # OR     parse_blast.pl --program n --input <blastn output file>
 #        
-# vadr 1.7.1 Sep 2026
+# vadr 1.7.2 Sep 2026
 
 use strict;
 use warnings;
