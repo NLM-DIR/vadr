@@ -36,7 +36,7 @@ set -e
 VADRINSTALLDIR=$PWD
 
 # versions
-VERSION="1.7.1"
+VERSION="1.7.2"
 # bio-easel (need this version info here only so we can check out correct easel branch in Bio-Easel/src)
 BEVERSION="Bio-Easel-0.18"
 # blast+
@@ -53,13 +53,13 @@ MM2VERSIONGITNOV="2.30"
 # dependency git tag
 VVERSION="vadr-$VERSION"
 # vadr models
-CALICIVERSION="1.2-1"
+CALICIVERSION="1.7-2"
 FLAVIVERSION="1.7-2"
 ZIKAVERSION="1.7.1-2"
 CORONAVERSION="1.3-3"
-SARSCOV2VERSION="1.3-2"
-FLUVERSION="1.6.3-2"
-RSVVERSION="1.5-2"
+SARSCOV2VERSION="1.6.3-1"
+FLUVERSION="1.7-2"
+RSVVERSION="1.7-1"
 MPXVVERSION="1.4.2-1"
 # hmmer (not needed in this release, we can use infernal's hmmer executables)
 #HVERSION="3.4"

@@ -149,7 +149,7 @@ my $executable    = (defined $execname_opt) ? $execname_opt : "v-scan.pl";
 my $usage         = "Usage: $executable [-options] <fasta file to annotate> <output directory to create>";
 my $synopsis      = "$executable :: scan and annotate sequences against VADR model libraries ";
 my $date          = scalar localtime();
-my $version       = "1.7.1";
+my $version       = "1.7.2";
 my $releasedate   = "Sep 2026";
 my $pkgname       = "VADR";
 
