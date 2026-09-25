@@ -75,6 +75,7 @@ R2DTMINPYTHON="3.9"
 # set defaults
 INPUTSYSTEM="?"
 DOWNLOADORBUILD="both"
+DRYRUN=0
 
 # R2DT is the one dependency this script treats as optional: it is used only by
 # 'v-annotate.pl --draw_r2dt', it is the only dependency that needs python3 and
@@ -153,6 +154,10 @@ r2dt_find_python () {
 # problem only surfacing later as a failure to unpack it. --retry retries
 # only transient failures (timeouts and some 5xx responses), not a 404.
 fetch () {
+    if [ "$DRYRUN" = "1" ]; then
+        echo "FETCH $1 -> $2"
+        return 0
+    fi
     if ! curl -k -L --fail --retry 3 --retry-delay 5 -o "$2" "$1"; then
         echo "ERROR: failed to download $1" >&2
         exit 1
@@ -163,6 +168,9 @@ fetch () {
 # given, $2 is the directory the archive unpacks to and $3 is what it
 # is renamed to.
 extract () {
+    if [ "$DRYRUN" = "1" ]; then
+        return 0
+    fi
     case "$1" in
         *.zip)
             unzip "$1"
@@ -175,6 +183,15 @@ extract () {
         mv "$2" "$3"
     fi
     rm "$1"
+}
+
+# run(): run a command, unless this is a dry run. Used for the steps in the
+# download section that act on what fetch() and extract() would have
+# downloaded and unpacked, which a dry run does not.
+run () {
+    if [ "$DRYRUN" = "0" ]; then
+        "$@"
+    fi
 }
 
 # usage(): print the usage message. Called with its output sent to stderr
@@ -190,6 +207,10 @@ or to only download files:
 
 or to only build the software (after running in download mode):
   $0 <"linux" or "macosx-silicon" or "macosx-intel"> build
+
+Options:
+  -h, --help  print this message and exit
+  --dry-run   list the files that would be downloaded, download nothing, and exit
 
 EOF
 }
@@ -254,6 +275,12 @@ while [ $# -gt 0 ]; do
                     fi
                     usage
                     exit 0
+                    ;;
+                --dry-run)
+                    if [ "$OPTHASVALUE" = "1" ]; then
+                        usage_error "option $OPT does not take a value"
+                    fi
+                    DRYRUN=1
                     ;;
                 *)
                     usage_error "unrecognized option: $OPT"
@@ -337,10 +364,10 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
         fetch https://github.com/nawrockie/$m/archive/$VVERSION.zip $m-$VVERSION.zip
         extract $m-$VVERSION.zip $m-$VVERSION $m
     done
-    cd Bio-Easel
-    mkdir src
-    (cd src; fetch https://github.com/EddyRivasLab/easel/archive/$BEVERSION.zip easel-$BEVERSION.zip; extract easel-$BEVERSION.zip easel-$BEVERSION easel; cd easel; autoconf)
-    cd ..
+    run cd Bio-Easel
+    run mkdir src
+    (run cd src; fetch https://github.com/EddyRivasLab/easel/archive/$BEVERSION.zip easel-$BEVERSION.zip; extract easel-$BEVERSION.zip easel-$BEVERSION easel; run cd easel; run autoconf)
+    run cd ..
     echo "------------------------------------------------------------"
 
 
@@ -355,14 +382,14 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
     extract $FVERSIONGIT.zip fasta36-$FVERSIONGITNOV fasta
     # patch Makefile with vadr specific changes and copy to expected name so 'build' step is linux/osx agnostic
     if [ "$INPUTSYSTEM" = "linux" ]; then
-        patch fasta/make/Makefile.linux vadr/fasta-mods/vadr-fasta-Makefile.linux.patch
-        cp fasta/make/Makefile.linux fasta/make/Makefile.vadr_install
+        run patch fasta/make/Makefile.linux vadr/fasta-mods/vadr-fasta-Makefile.linux.patch
+        run cp fasta/make/Makefile.linux fasta/make/Makefile.vadr_install
     else 
-        patch fasta/make/Makefile.os_x86_64 vadr/fasta-mods/vadr-fasta-Makefile.os_x86_64.patch
-        cp fasta/make/Makefile.os_x86_64 fasta/make/Makefile.vadr_install
+        run patch fasta/make/Makefile.os_x86_64 vadr/fasta-mods/vadr-fasta-Makefile.os_x86_64.patch
+        run cp fasta/make/Makefile.os_x86_64 fasta/make/Makefile.vadr_install
     fi
     # patch defs.h with vadr specific changes
-    patch fasta/src/defs.h vadr/fasta-mods/vadr-fasta-defs.patch
+    run patch fasta/src/defs.h vadr/fasta-mods/vadr-fasta-defs.patch
     echo "------------------------------------------------------------"
 
     # download minimap2 source distribution from github
@@ -424,6 +451,11 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
         extract vadr-models-$v.tar.gz vadr-models-$v-$MPXVVERSION vadr-models-$v
     done
     echo "------------------------------------------------------------"
+
+    if [ "$DRYRUN" = "1" ]; then
+        echo "Dry run: stopping before the R2DT download and the build."
+        exit 0
+    fi
 
     ###########################################
     # R2DT download (optional dependency)
@@ -493,6 +525,11 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
         fi
     fi
     echo "------------------------------------------------------------"
+fi
+
+if [ "$DRYRUN" = "1" ]; then
+    echo "Dry run: nothing is downloaded in build mode."
+    exit 0
 fi
 
 if [ "$DOWNLOADORBUILD" = "download" ]; then
