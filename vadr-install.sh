@@ -147,22 +147,30 @@ r2dt_find_python () {
     done
 }
 
+# usage(): print the usage message. Called with its output sent to stderr
+# when the command line is wrong.
+usage () {
+    cat << EOF
+Usage:
+To download and build:
+  $0 <"linux" or "macosx-silicon" or "macosx-intel">
+
+or to only download files:
+  $0 <"linux" or "macosx-silicon" or "macosx-intel"> download
+
+or to only build the software (after running in download mode):
+  $0 <"linux" or "macosx-silicon" or "macosx-intel"> build
+
+EOF
+}
+
 ########################
 # Validate correct usage
 ########################
 # make sure correct number of cmdline arguments were used, exit if not
 if [ "$#" -ne 1 ]; then
     if [ "$#" -ne 2 ]; then
-        echo "Usage:"
-        echo "To download and build:"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\">"
-        echo ""
-        echo "or to only download files:"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> download"
-        echo ""
-        echo "or to only build the software (after running in download mode):"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> build"
-        echo ""
+        usage >&2
         exit 1
     fi
 fi
@@ -178,16 +186,7 @@ if [ "$1" = "macosx-intel" ]; then
     INPUTSYSTEM="macosx-intel";
 fi
 if [ "$INPUTSYSTEM" = "?" ]; then 
-    echo "Usage:"
-    echo "To download and build:"
-    echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\">"
-    echo ""
-    echo "or to only download files:"
-    echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> download"
-    echo ""
-    echo "or to only build the software (after running in download mode):"
-    echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> build"
-    echo ""
+    usage >&2
     exit 1
 fi
 
@@ -200,16 +199,7 @@ if [ "$#" -eq 2 ]; then
         DOWNLOADORBUILD="build";
     fi
     if [ "$DOWNLOADORBUILD" = "both" ]; then 
-        echo "Usage:"
-        echo "To download and build:"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\">"
-        echo ""
-        echo "or to only download files:"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> download"
-        echo ""
-        echo "or to only build the software (after running in download mode):"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> build"
-        echo ""
+        usage >&2
         exit 1
     fi
 fi
