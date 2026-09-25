@@ -147,6 +147,30 @@ r2dt_find_python () {
     done
 }
 
+# fetch(): download URL $1 to file $2. Every download this script does
+# with curl goes through here.
+fetch () {
+    curl -k -L -o "$2" "$1"
+}
+
+# extract(): unpack the .zip or .tar.gz archive $1 and remove it. If
+# given, $2 is the directory the archive unpacks to and $3 is what it
+# is renamed to.
+extract () {
+    case "$1" in
+        *.zip)
+            unzip "$1"
+            ;;
+        *)
+            tar xfz "$1"
+            ;;
+    esac
+    if [ "$#" -eq 3 ]; then
+        mv "$2" "$3"
+    fi
+    rm "$1"
+}
+
 # usage(): print the usage message. Called with its output sent to stderr
 # when the command line is wrong.
 usage () {
@@ -290,8 +314,9 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
     echo "------------------------------------------------------------"
     # vadr
     echo "Downloading vadr ... "
-    curl -k -L -o $VVERSION.zip https://github.com/ncbi/vadr/archive/$VVERSION.zip; unzip $VVERSION.zip; mv vadr-$VVERSION vadr; rm $VVERSION.zip
-    # for a test build of a release, comment out above curl and uncomment block below
+    fetch https://github.com/ncbi/vadr/archive/$VVERSION.zip $VVERSION.zip
+    extract $VVERSION.zip vadr-$VVERSION vadr
+    # for a test build of a release, comment out above fetch and extract and uncomment block below
     # ------------------------------------------------------------
     #git clone https://github.com/ncbi/vadr.git vadr
     #cd vadr
@@ -303,24 +328,25 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
     # sequip and Bio-Easel
     for m in sequip Bio-Easel; do 
         echo "Downloading $m ... "
-        curl -k -L -o $m-$VVERSION.zip https://github.com/nawrockie/$m/archive/$VVERSION.zip; unzip $m-$VVERSION.zip; mv $m-$VVERSION $m; rm $m-$VVERSION.zip
+        fetch https://github.com/nawrockie/$m/archive/$VVERSION.zip $m-$VVERSION.zip
+        extract $m-$VVERSION.zip $m-$VVERSION $m
     done
     cd Bio-Easel
     mkdir src
-    (cd src; curl -k -L -o easel-$BEVERSION.zip https://github.com/EddyRivasLab/easel/archive/$BEVERSION.zip; unzip easel-$BEVERSION.zip; mv easel-$BEVERSION easel; rm easel-$BEVERSION.zip; cd easel; autoconf)
+    (cd src; fetch https://github.com/EddyRivasLab/easel/archive/$BEVERSION.zip easel-$BEVERSION.zip; extract easel-$BEVERSION.zip easel-$BEVERSION easel; cd easel; autoconf)
     cd ..
     echo "------------------------------------------------------------"
 
 
     echo "Downloading Infernal version $IVERSION src distribution"
-    curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION.tar.gz
-    tar xfz infernal.tar.gz
-    rm infernal.tar.gz
+    fetch http://eddylab.org/infernal/infernal-$IVERSION.tar.gz infernal.tar.gz
+    extract infernal.tar.gz
     echo "------------------------------------------------------------"
 
     # download fasta source distribution from github
     echo "Downloading FASTA version $FVERSIONGIT src distribution"
-    curl -k -L -o $FVERSIONGIT.zip https://github.com/wrpearson/fasta36/archive/$FVERSIONGIT.zip; unzip $FVERSIONGIT.zip; mv fasta36-$FVERSIONGITNOV fasta; rm $FVERSIONGIT.zip
+    fetch https://github.com/wrpearson/fasta36/archive/$FVERSIONGIT.zip $FVERSIONGIT.zip
+    extract $FVERSIONGIT.zip fasta36-$FVERSIONGITNOV fasta
     # patch Makefile with vadr specific changes and copy to expected name so 'build' step is linux/osx agnostic
     if [ "$INPUTSYSTEM" = "linux" ]; then
         patch fasta/make/Makefile.linux vadr/fasta-mods/vadr-fasta-Makefile.linux.patch
@@ -335,78 +361,61 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
 
     # download minimap2 source distribution from github
     echo "Downloading minimap2 version $MM2VERSIONGIT src distribution"
-    curl -k -L -o $MM2VERSIONGIT.zip https://github.com/lh3/minimap2/archive/$MM2VERSIONGIT.zip; unzip $MM2VERSIONGIT.zip; mv minimap2-$MM2VERSIONGITNOV minimap2; rm $MM2VERSIONGIT.zip
+    fetch https://github.com/lh3/minimap2/archive/$MM2VERSIONGIT.zip $MM2VERSIONGIT.zip
+    extract $MM2VERSIONGIT.zip minimap2-$MM2VERSIONGITNOV minimap2
     echo "------------------------------------------------------------"
     
     # download blast binaries
     if [ "$INPUTSYSTEM" = "linux" ]; then
         echo "Downloading BLAST version $BVERSION for Linux"
-        curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-linux.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-linux.tar.gz blast.tar.gz
     else 
         echo "Downloading BLAST version $BVERSION for Mac/OSX"
-        curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz blast.tar.gz
     fi
-    tar xfz blast.tar.gz
-    rm blast.tar.gz
-    mv ncbi-blast-$BVERSION+ ncbi-blast
+    extract blast.tar.gz ncbi-blast-$BVERSION+ ncbi-blast
     echo "------------------------------------------------------------"
 
     # download vadr models
     for v in calici; do 
         echo "Downloading VADR $v models ($CALICIVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CALICIVERSION/vadr-models-$v-$CALICIVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$CALICIVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CALICIVERSION/vadr-models-$v-$CALICIVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$CALICIVERSION vadr-models-$v
     done
     for v in flavi; do 
         echo "Downloading VADR $v models ($FLAVIVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$FLAVIVERSION/vadr-models-$v-$FLAVIVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$FLAVIVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$FLAVIVERSION/vadr-models-$v-$FLAVIVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$FLAVIVERSION vadr-models-$v
     done
     for v in zika; do 
         echo "Downloading VADR $v models ($ZIKAVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$ZIKAVERSION/vadr-models-$v-$ZIKAVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$ZIKAVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$ZIKAVERSION/vadr-models-$v-$ZIKAVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$ZIKAVERSION vadr-models-$v
     done
     for v in corona; do 
         echo "Downloading VADR $v models ($CORONAVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CORONAVERSION/vadr-models-$v-$CORONAVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$CORONAVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CORONAVERSION/vadr-models-$v-$CORONAVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$CORONAVERSION vadr-models-$v
     done
     for v in sarscov2; do 
         echo "Downloading VADR $v models ($SARSCOV2VERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$SARSCOV2VERSION/vadr-models-$v-$SARSCOV2VERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$SARSCOV2VERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$SARSCOV2VERSION/vadr-models-$v-$SARSCOV2VERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$SARSCOV2VERSION vadr-models-$v
     done
     for v in flu; do 
         echo "Downloading VADR $v models ($FLUVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$FLUVERSION/vadr-models-$v-$FLUVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$FLUVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$FLUVERSION/vadr-models-$v-$FLUVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$FLUVERSION vadr-models-$v
     done
     for v in rsv; do 
         echo "Downloading VADR $v models ($RSVVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$RSVVERSION/vadr-models-$v-$RSVVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$RSVVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$RSVVERSION/vadr-models-$v-$RSVVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$RSVVERSION vadr-models-$v
     done
     for v in mpxv; do 
         echo "Downloading VADR $v models ($MPXVVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$MPXVVERSION/vadr-models-$v-$MPXVVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$MPXVVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$MPXVVERSION/vadr-models-$v-$MPXVVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$MPXVVERSION vadr-models-$v
     done
     echo "------------------------------------------------------------"
 
