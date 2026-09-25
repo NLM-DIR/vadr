@@ -167,6 +167,12 @@ EOF
 ########################
 # Validate correct usage
 ########################
+# -h or --help: print the usage message to stdout and exit successfully
+for a in "$@"; do
+    case "$a" in
+        -h|--help) usage; exit 0;;
+    esac
+done
 # make sure correct number of cmdline arguments were used, exit if not
 if [ "$#" -ne 1 ]; then
     if [ "$#" -ne 2 ]; then
