@@ -164,50 +164,94 @@ or to only build the software (after running in download mode):
 EOF
 }
 
-########################
-# Validate correct usage
-########################
-# -h or --help: print the usage message to stdout and exit successfully
-for a in "$@"; do
-    case "$a" in
-        -h|--help) usage; exit 0;;
-    esac
-done
-# make sure correct number of cmdline arguments were used, exit if not
-if [ "$#" -ne 1 ]; then
-    if [ "$#" -ne 2 ]; then
-        usage >&2
-        exit 1
-    fi
-fi
-
-# make sure 1st argument is either "linux" or "macosx-silicon" or "macosx-intel"
-if [ "$1" = "linux" ]; then
-    INPUTSYSTEM="linux";
-fi
-if [ "$1" = "macosx-silicon" ]; then
-    INPUTSYSTEM="macosx-silicon";
-fi
-if [ "$1" = "macosx-intel" ]; then
-    INPUTSYSTEM="macosx-intel";
-fi
-if [ "$INPUTSYSTEM" = "?" ]; then 
+# usage_error(): report an error in the command line, print the usage
+# message, and exit
+usage_error () {
+    echo "ERROR: $1" >&2
+    echo "" >&2
     usage >&2
     exit 1
-fi
+}
 
-# make sure 2nd argument (if we have one) is "download" or "build"
-if [ "$#" -eq 2 ]; then
-    if [ "$2" = "download" ]; then
-        DOWNLOADORBUILD="download";
+# need_value(): for an option that takes a value, given as '--opt value'
+# rather than '--opt=value': exit with an error if the option was the last
+# argument, so that there is no value to take. Call it as
+#   need_value "$OPT" $#
+# before taking the value from "$1" and shifting past it.
+need_value () {
+    if [ "$2" -eq 0 ]; then
+        usage_error "option $1 requires a value"
     fi
-    if [ "$2" = "build" ]; then
-        DOWNLOADORBUILD="build";
+}
+
+##########################
+# Parse the command line
+##########################
+# The platform ("linux", "macosx-silicon" or "macosx-intel") is required and
+# the mode ("download" or "build") is optional. Both are recognized by value,
+# so they can be given in either order, and options can come before, between
+# or after them. An option that takes a value can be given as '--opt value' or
+# '--opt=value'. A bare '--' ends the options: every argument after it is
+# treated as a platform or mode.
+ENDOFOPTIONS=0
+while [ $# -gt 0 ]; do
+    ARG="$1"
+    shift
+    if [ "$ENDOFOPTIONS" = "0" ]; then
+        case "$ARG" in
+            --)
+                ENDOFOPTIONS=1
+                continue
+                ;;
+            -*=*)
+                OPT="${ARG%%=*}"
+                OPTVALUE="${ARG#*=}"
+                OPTHASVALUE=1
+                ;;
+            -*)
+                OPT="$ARG"
+                OPTHASVALUE=0
+                ;;
+            *)
+                OPT=""
+                ;;
+        esac
+        if [ "$OPT" != "" ]; then
+            case "$OPT" in
+                -h|--help)
+                    if [ "$OPTHASVALUE" = "1" ]; then
+                        usage_error "option $OPT does not take a value"
+                    fi
+                    usage
+                    exit 0
+                    ;;
+                *)
+                    usage_error "unrecognized option: $OPT"
+                    ;;
+            esac
+            continue
+        fi
     fi
-    if [ "$DOWNLOADORBUILD" = "both" ]; then 
-        usage >&2
-        exit 1
-    fi
+    case "$ARG" in
+        linux|macosx-silicon|macosx-intel)
+            if [ "$INPUTSYSTEM" != "?" ]; then
+                usage_error "more than one platform given: $INPUTSYSTEM and $ARG"
+            fi
+            INPUTSYSTEM="$ARG"
+            ;;
+        download|build)
+            if [ "$DOWNLOADORBUILD" != "both" ]; then
+                usage_error "more than one of 'download' and 'build' given"
+            fi
+            DOWNLOADORBUILD="$ARG"
+            ;;
+        *)
+            usage_error "unrecognized argument: $ARG"
+            ;;
+    esac
+done
+if [ "$INPUTSYSTEM" = "?" ]; then
+    usage_error "no platform given"
 fi
 
 ########################################################
