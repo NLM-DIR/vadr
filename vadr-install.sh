@@ -148,9 +148,15 @@ r2dt_find_python () {
 }
 
 # fetch(): download URL $1 to file $2. Every download this script does
-# with curl goes through here.
+# with curl goes through here. --fail makes an HTTP error (a 404, say)
+# an error here, rather than the error page being saved as $2 and the
+# problem only surfacing later as a failure to unpack it. --retry retries
+# only transient failures (timeouts and some 5xx responses), not a 404.
 fetch () {
-    curl -k -L -o "$2" "$1"
+    if ! curl -k -L --fail --retry 3 --retry-delay 5 -o "$2" "$1"; then
+        echo "ERROR: failed to download $1" >&2
+        exit 1
+    fi
 }
 
 # extract(): unpack the .zip or .tar.gz archive $1 and remove it. If
