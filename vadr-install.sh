@@ -11,11 +11,8 @@
 # or to only download files:
 # vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> download
 #
-# or to only download files, and minimize number of models downloaded:
-# vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> download
-#
 # or to only build files (after running in 'download' mode):
-# vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> download
+# vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> build
 # 
 # for example:
 # vadr-install.sh linux
@@ -472,6 +469,7 @@ if [ "$DOWNLOADORBUILD" != "download" ]; then
             echo ""
             exit 1
         fi
+        exit 1
     fi
     echo "------------------------------------------------------------"
     echo "Building Bio-Easel ... "
@@ -557,7 +555,7 @@ if [ "$DOWNLOADORBUILD" != "download" ]; then
     if [ "$INPUTSYSTEM" != "macosx-silicon" ]; then
         make
     fi
-    cd ../../
+    cd ..
     echo "Finished building minimap2."
     echo "------------------------------------------------------------"
 
@@ -708,7 +706,7 @@ EOF
     echo "setenv VADRSEQUIPDIR \"\$VADRINSTALLDIR/sequip\""
     echo "setenv VADRBLASTDIR \"\$VADRINSTALLDIR/ncbi-blast/bin\""
     echo "setenv VADRFASTADIR \"\$VADRINSTALLDIR/fasta/bin\""
-    echo "setenv VADRMINIMAP2DIR=\"\$VADRINSTALLDIR/minimap2\""
+    echo "setenv VADRMINIMAP2DIR \"\$VADRINSTALLDIR/minimap2\""
     if [ "$R2DTFAILED" = "0" ]; then
         echo "setenv R2DT_DIR \"\$VADRINSTALLDIR/R2DT\""
     fi
