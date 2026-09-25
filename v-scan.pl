@@ -254,7 +254,7 @@ if(opt_IsUsed("--l_all", \%opt_HH) ||
    opt_IsUsed("--l_dir", \%opt_HH) ||
    opt_IsUsed("--l_opt", \%opt_HH) ||
    opt_IsUsed("--l_mdl", \%opt_HH)) {
-  list_options($config_file, \@okey_A, \%okey_mdir_H, \%okey_opts_H, \%okey_mkey_H, \%other_okey_HA, $pkgname, $version, $releasedate, \%opt_HH);
+  list_options($config_file, \@okey_A, \%okey_mdir_H, \%okey_opts_H, \%okey_mkey_H, \%okey_installed_H, \%other_okey_HA, $pkgname, $version, $releasedate, \%opt_HH);
   exit 0;
 }
 
@@ -1067,6 +1067,7 @@ sub only_skip_options {
 #  $okey_mdir_HR:   REF to hash of directories for each output key, modified here
 #  $okey_opts_HR:   REF to hash of options for each output key, modified here
 #  $okey_mkey_HR:   REF to hash of mkeys for each output key, modified here
+#  $okey_installed_HR: REF to hash, value is '1' if library for output key is installed
 #  $other_okey_HAR: REF to hash of arrays, key is $okey, value is
 #                   array of all $okey2 != $okey for which
 #                   $okey_mkey_HR{$okey2} = $okey. For example
@@ -1085,10 +1086,10 @@ sub only_skip_options {
 sub list_options { 
 
   my $sub_name = "list_options()"; 
-  my $nargs_exp = 10;
+  my $nargs_exp = 11;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
   
-  my ($config_file, $okey_AR, $okey_mdir_HR, $okey_opts_HR, $okey_mkey_HR, $other_okey_HAR, $pkgname, $version, $releasedate, $opt_HHR) = @_;
+  my ($config_file, $okey_AR, $okey_mdir_HR, $okey_opts_HR, $okey_mkey_HR, $okey_installed_HR, $other_okey_HAR, $pkgname, $version, $releasedate, $opt_HHR) = @_;
 
   my $div_line = utl_StringMonoChar(60, "#", undef) . "\n";
   my $fail_str = "";
@@ -1133,15 +1134,26 @@ sub list_options {
 
     @{$head_AA[0]} = ("options key", "model key", "model dir");
     @clj_A         = (1,             1,           1);
+    my $any_uninstalled = 0;
     foreach my $okey (@{$okey_AR}) {
       if((! $do_lib) || ($okey eq $out_lib)) { 
         my $mkey = mkey_from_opts($okey, $okey_opts_HR->{$okey});
         if($mkey eq $okey) { $mkey = "\""; }
-        push(@data_AA, [$okey, $mkey, $okey_mdir_HR->{$okey}]);
+        my $mdir2print = $okey_mdir_HR->{$okey};
+        if(! $okey_installed_HR->{$okey}) { 
+          $mdir2print .= " [NOT INSTALLED]";
+          $any_uninstalled = 1;
+        }
+        push(@data_AA, [$okey, $mkey, $mdir2print]);
       }
     }
     ofile_TableHumanOutput(\@data_AA, \@head_AA, \@clj_A, undef, undef, "  ", "-", "#", "#", "", 0, *STDOUT, undef, undef);
     print("#\n");
+    if($any_uninstalled) { 
+      print("# [NOT INSTALLED]: model info file <model dir>/<model key>.minfo does not exist or is empty,\n");
+      print("#                  v-scan.pl will skip this library\n");
+      print("#\n");
+    }
   }
 
   # model options table:
@@ -1199,6 +1211,11 @@ sub list_options {
         if((! $do_lib) && ($printed_header)) { push(@data_AA, []); } # blank line
         $printed_header = 1;
         $mkey_idx++;
+        if(! $okey_installed_HR->{$okey}) { 
+          # library not installed, we can't list its models
+          push(@data_AA, [sprintf("%d.-", ($do_lib ? 1 : $mkey_idx)), $mkey, (($okey eq $mkey) ? "\"" : $okey), "[NOT INSTALLED]", "-", "-", "-"]);
+          next;
+        }
         $minfo_file = $okey_mdir_HR->{$okey} . "/" . $mkey . ".minfo";
         @mdl_info_AH = ();
         %ftr_info_HAH = ();
