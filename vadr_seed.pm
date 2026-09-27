@@ -2573,7 +2573,7 @@ sub run_minimap2 {
   my $mm2_out_file = $out_root . ".mm2.$mdl_name.out";
   my $mm2_err_file = $out_root . ".mm2.$mdl_name.err";
 
-  my $mm2_opts = " -rmq=no --junc-bonus=0 --for-only --sam-hit-only --secondary=no --score-N=0 -t 1";
+  my $mm2_opts = " --rmq=no --junc-bonus=0 --for-only --sam-hit-only --secondary=no --score-N=0 -t 1";
   if(opt_IsUsed("--mm2_z", $opt_HHR)) { 
     $mm2_opts .= " -z " . opt_Get("--mm2_z", $opt_HHR); 
   }
