@@ -375,6 +375,7 @@ opt_Add("--mm2_asm5",     "boolean", 0,         $g,"--minimap2", undef,      "us
 opt_Add("--mm2_asm10",    "boolean", 0,         $g,"--minimap2", "--mm2_asm5",  "use -x asm10 with minimap2, instead of -x asm20",                 "use -x asm10 with minimap2, instead of -x asm20", \%opt_HH, \@opt_order_A);
 opt_Add("--mm2_k",        "integer", 0,         $g,"--minimap2", "--mm2_asm5,--mm2_asm10", "use -k <n> option with minimap2, instead of -x asm20", "use -k <n> option with minimap2, instead of -x asm20", \%opt_HH, \@opt_order_A);
 opt_Add("--mm2_w",        "integer", 0,         $g,"--minimap2", "--mm2_asm5,--mm2_asm10", "use -w <n> option with minimap2, instead of -x asm20", "use -w <n> option with minimap2, instead of -x asm20", \%opt_HH, \@opt_order_A);
+opt_Add("--mm2_z",        "integer", 0,         $g,"--minimap2", undef,      "use -z <n> (z-drop) with minimap2, instead of the -x asm20 default of 200", "use -z <n> (z-drop) with minimap2, instead of the -x asm20 default of 200", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options related to replacing Ns with expected nucleotides";
 #        option               type   default group requires incompat  preamble-output                                                                 help-output    
@@ -602,6 +603,7 @@ my $options_okay =
                 'mm2_asm10'     => \$GetOptions_H{"--mm2_asm10"},
                 'mm2_k=s'       => \$GetOptions_H{"--mm2_k"},
                 'mm2_w=s'       => \$GetOptions_H{"--mm2_w"},
+                'mm2_z=s'       => \$GetOptions_H{"--mm2_z"},
 # options related to replacing Ns with expected nucleotides
                 'r'                => \$GetOptions_H{"-r"},
                 'r_minlen=s'       => \$GetOptions_H{"--r_minlen"},
