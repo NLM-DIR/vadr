@@ -11,11 +11,8 @@
 # or to only download files:
 # vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> download
 #
-# or to only download files, and minimize number of models downloaded:
-# vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> download
-#
 # or to only build files (after running in 'download' mode):
-# vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> download
+# vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> build
 # 
 # for example:
 # vadr-install.sh linux
@@ -78,6 +75,7 @@ R2DTMINPYTHON="3.9"
 # set defaults
 INPUTSYSTEM="?"
 DOWNLOADORBUILD="both"
+DRYRUN=0
 
 # R2DT is the one dependency this script treats as optional: it is used only by
 # 'v-annotate.pl --draw_r2dt', it is the only dependency that needs python3 and
@@ -150,71 +148,167 @@ r2dt_find_python () {
     done
 }
 
-########################
-# Validate correct usage
-########################
-# make sure correct number of cmdline arguments were used, exit if not
-if [ "$#" -ne 1 ]; then
-    if [ "$#" -ne 2 ]; then
-        echo "Usage:"
-        echo "To download and build:"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\">"
-        echo ""
-        echo "or to only download files:"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> download"
-        echo ""
-        echo "or to only build the software (after running in download mode):"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> build"
-        echo ""
+# fetch(): download URL $1 to file $2. Every download this script does
+# with curl goes through here. --fail makes an HTTP error (a 404, say)
+# an error here, rather than the error page being saved as $2 and the
+# problem only surfacing later as a failure to unpack it. --retry retries
+# only transient failures (timeouts and some 5xx responses), not a 404.
+fetch () {
+    if [ "$DRYRUN" = "1" ]; then
+        echo "FETCH $1 -> $2"
+        return 0
+    fi
+    if ! curl -k -L --fail --retry 3 --retry-delay 5 -o "$2" "$1"; then
+        echo "ERROR: failed to download $1" >&2
         exit 1
     fi
-fi
+}
 
-# make sure 1st argument is either "linux" or "macosx-silicon" or "macosx-intel"
-if [ "$1" = "linux" ]; then
-    INPUTSYSTEM="linux";
-fi
-if [ "$1" = "macosx-silicon" ]; then
-    INPUTSYSTEM="macosx-silicon";
-fi
-if [ "$1" = "macosx-intel" ]; then
-    INPUTSYSTEM="macosx-intel";
-fi
-if [ "$INPUTSYSTEM" = "?" ]; then 
-    echo "Usage:"
-    echo "To download and build:"
-    echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\">"
-    echo ""
-    echo "or to only download files:"
-    echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> download"
-    echo ""
-    echo "or to only build the software (after running in download mode):"
-    echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> build"
-    echo ""
+# extract(): unpack the .zip or .tar.gz archive $1 and remove it. If
+# given, $2 is the directory the archive unpacks to and $3 is what it
+# is renamed to.
+extract () {
+    if [ "$DRYRUN" = "1" ]; then
+        return 0
+    fi
+    case "$1" in
+        *.zip)
+            unzip "$1"
+            ;;
+        *)
+            tar xfz "$1"
+            ;;
+    esac
+    if [ "$#" -eq 3 ]; then
+        mv "$2" "$3"
+    fi
+    rm "$1"
+}
+
+# run(): run a command, unless this is a dry run. Used for the steps in the
+# download section that act on what fetch() and extract() would have
+# downloaded and unpacked, which a dry run does not.
+run () {
+    if [ "$DRYRUN" = "0" ]; then
+        "$@"
+    fi
+}
+
+# usage(): print the usage message. Called with its output sent to stderr
+# when the command line is wrong.
+usage () {
+    cat << EOF
+Usage:
+To download and build:
+  $0 <"linux" or "macosx-silicon" or "macosx-intel">
+
+or to only download files:
+  $0 <"linux" or "macosx-silicon" or "macosx-intel"> download
+
+or to only build the software (after running in download mode):
+  $0 <"linux" or "macosx-silicon" or "macosx-intel"> build
+
+Options:
+  -h, --help  print this message and exit
+  --dry-run   list the files that would be downloaded, download nothing, and exit
+
+EOF
+}
+
+# usage_error(): report an error in the command line, print the usage
+# message, and exit
+usage_error () {
+    echo "ERROR: $1" >&2
+    echo "" >&2
+    usage >&2
     exit 1
-fi
+}
 
-# make sure 2nd argument (if we have one) is "download" or "build"
-if [ "$#" -eq 2 ]; then
-    if [ "$2" = "download" ]; then
-        DOWNLOADORBUILD="download";
+# need_value(): for an option that takes a value, given as '--opt value'
+# rather than '--opt=value': exit with an error if the option was the last
+# argument, so that there is no value to take. Call it as
+#   need_value "$OPT" $#
+# before taking the value from "$1" and shifting past it.
+need_value () {
+    if [ "$2" -eq 0 ]; then
+        usage_error "option $1 requires a value"
     fi
-    if [ "$2" = "build" ]; then
-        DOWNLOADORBUILD="build";
+}
+
+##########################
+# Parse the command line
+##########################
+# The platform ("linux", "macosx-silicon" or "macosx-intel") is required and
+# the mode ("download" or "build") is optional. Both are recognized by value,
+# so they can be given in either order, and options can come before, between
+# or after them. An option that takes a value can be given as '--opt value' or
+# '--opt=value'. A bare '--' ends the options: every argument after it is
+# treated as a platform or mode.
+ENDOFOPTIONS=0
+while [ $# -gt 0 ]; do
+    ARG="$1"
+    shift
+    if [ "$ENDOFOPTIONS" = "0" ]; then
+        case "$ARG" in
+            --)
+                ENDOFOPTIONS=1
+                continue
+                ;;
+            -*=*)
+                OPT="${ARG%%=*}"
+                OPTVALUE="${ARG#*=}"
+                OPTHASVALUE=1
+                ;;
+            -*)
+                OPT="$ARG"
+                OPTHASVALUE=0
+                ;;
+            *)
+                OPT=""
+                ;;
+        esac
+        if [ "$OPT" != "" ]; then
+            case "$OPT" in
+                -h|--help)
+                    if [ "$OPTHASVALUE" = "1" ]; then
+                        usage_error "option $OPT does not take a value"
+                    fi
+                    usage
+                    exit 0
+                    ;;
+                --dry-run)
+                    if [ "$OPTHASVALUE" = "1" ]; then
+                        usage_error "option $OPT does not take a value"
+                    fi
+                    DRYRUN=1
+                    ;;
+                *)
+                    usage_error "unrecognized option: $OPT"
+                    ;;
+            esac
+            continue
+        fi
     fi
-    if [ "$DOWNLOADORBUILD" = "both" ]; then 
-        echo "Usage:"
-        echo "To download and build:"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\">"
-        echo ""
-        echo "or to only download files:"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> download"
-        echo ""
-        echo "or to only build the software (after running in download mode):"
-        echo "  $0 <\"linux\" or \"macosx-silicon\" or \"macosx-intel\"> build"
-        echo ""
-        exit 1
-    fi
+    case "$ARG" in
+        linux|macosx-silicon|macosx-intel)
+            if [ "$INPUTSYSTEM" != "?" ]; then
+                usage_error "more than one platform given: $INPUTSYSTEM and $ARG"
+            fi
+            INPUTSYSTEM="$ARG"
+            ;;
+        download|build)
+            if [ "$DOWNLOADORBUILD" != "both" ]; then
+                usage_error "more than one of 'download' and 'build' given"
+            fi
+            DOWNLOADORBUILD="$ARG"
+            ;;
+        *)
+            usage_error "unrecognized argument: $ARG"
+            ;;
+    esac
+done
+if [ "$INPUTSYSTEM" = "?" ]; then
+    usage_error "no platform given"
 fi
 
 ########################################################
@@ -253,8 +347,9 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
     echo "------------------------------------------------------------"
     # vadr
     echo "Downloading vadr ... "
-    curl -k -L -o $VVERSION.zip https://github.com/ncbi/vadr/archive/$VVERSION.zip; unzip $VVERSION.zip; mv vadr-$VVERSION vadr; rm $VVERSION.zip
-    # for a test build of a release, comment out above curl and uncomment block below
+    fetch https://github.com/ncbi/vadr/archive/$VVERSION.zip $VVERSION.zip
+    extract $VVERSION.zip vadr-$VVERSION vadr
+    # for a test build of a release, comment out above fetch and extract and uncomment block below
     # ------------------------------------------------------------
     #git clone https://github.com/ncbi/vadr.git vadr
     #cd vadr
@@ -266,112 +361,101 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
     # sequip and Bio-Easel
     for m in sequip Bio-Easel; do 
         echo "Downloading $m ... "
-        curl -k -L -o $m-$VVERSION.zip https://github.com/nawrockie/$m/archive/$VVERSION.zip; unzip $m-$VVERSION.zip; mv $m-$VVERSION $m; rm $m-$VVERSION.zip
+        fetch https://github.com/nawrockie/$m/archive/$VVERSION.zip $m-$VVERSION.zip
+        extract $m-$VVERSION.zip $m-$VVERSION $m
     done
-    cd Bio-Easel
-    mkdir src
-    (cd src; curl -k -L -o easel-$BEVERSION.zip https://github.com/EddyRivasLab/easel/archive/$BEVERSION.zip; unzip easel-$BEVERSION.zip; mv easel-$BEVERSION easel; rm easel-$BEVERSION.zip; cd easel; autoconf)
-    cd ..
+    run cd Bio-Easel
+    run mkdir src
+    (run cd src; fetch https://github.com/EddyRivasLab/easel/archive/$BEVERSION.zip easel-$BEVERSION.zip; extract easel-$BEVERSION.zip easel-$BEVERSION easel; run cd easel; run autoconf)
+    run cd ..
     echo "------------------------------------------------------------"
 
 
     echo "Downloading Infernal version $IVERSION src distribution"
-    curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION.tar.gz
-    tar xfz infernal.tar.gz
-    rm infernal.tar.gz
+    fetch http://eddylab.org/infernal/infernal-$IVERSION.tar.gz infernal.tar.gz
+    extract infernal.tar.gz
     echo "------------------------------------------------------------"
 
     # download fasta source distribution from github
     echo "Downloading FASTA version $FVERSIONGIT src distribution"
-    curl -k -L -o $FVERSIONGIT.zip https://github.com/wrpearson/fasta36/archive/$FVERSIONGIT.zip; unzip $FVERSIONGIT.zip; mv fasta36-$FVERSIONGITNOV fasta; rm $FVERSIONGIT.zip
+    fetch https://github.com/wrpearson/fasta36/archive/$FVERSIONGIT.zip $FVERSIONGIT.zip
+    extract $FVERSIONGIT.zip fasta36-$FVERSIONGITNOV fasta
     # patch Makefile with vadr specific changes and copy to expected name so 'build' step is linux/osx agnostic
     if [ "$INPUTSYSTEM" = "linux" ]; then
-        patch fasta/make/Makefile.linux vadr/fasta-mods/vadr-fasta-Makefile.linux.patch
-        cp fasta/make/Makefile.linux fasta/make/Makefile.vadr_install
+        run patch fasta/make/Makefile.linux vadr/fasta-mods/vadr-fasta-Makefile.linux.patch
+        run cp fasta/make/Makefile.linux fasta/make/Makefile.vadr_install
     else 
-        patch fasta/make/Makefile.os_x86_64 vadr/fasta-mods/vadr-fasta-Makefile.os_x86_64.patch
-        cp fasta/make/Makefile.os_x86_64 fasta/make/Makefile.vadr_install
+        run patch fasta/make/Makefile.os_x86_64 vadr/fasta-mods/vadr-fasta-Makefile.os_x86_64.patch
+        run cp fasta/make/Makefile.os_x86_64 fasta/make/Makefile.vadr_install
     fi
     # patch defs.h with vadr specific changes
-    patch fasta/src/defs.h vadr/fasta-mods/vadr-fasta-defs.patch
+    run patch fasta/src/defs.h vadr/fasta-mods/vadr-fasta-defs.patch
     echo "------------------------------------------------------------"
 
     # download minimap2 source distribution from github
     echo "Downloading minimap2 version $MM2VERSIONGIT src distribution"
-    curl -k -L -o $MM2VERSIONGIT.zip https://github.com/lh3/minimap2/archive/$MM2VERSIONGIT.zip; unzip $MM2VERSIONGIT.zip; mv minimap2-$MM2VERSIONGITNOV minimap2; rm $MM2VERSIONGIT.zip
+    fetch https://github.com/lh3/minimap2/archive/$MM2VERSIONGIT.zip $MM2VERSIONGIT.zip
+    extract $MM2VERSIONGIT.zip minimap2-$MM2VERSIONGITNOV minimap2
     echo "------------------------------------------------------------"
     
     # download blast binaries
     if [ "$INPUTSYSTEM" = "linux" ]; then
         echo "Downloading BLAST version $BVERSION for Linux"
-        curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-linux.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-linux.tar.gz blast.tar.gz
     else 
         echo "Downloading BLAST version $BVERSION for Mac/OSX"
-        curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz blast.tar.gz
     fi
-    tar xfz blast.tar.gz
-    rm blast.tar.gz
-    mv ncbi-blast-$BVERSION+ ncbi-blast
+    extract blast.tar.gz ncbi-blast-$BVERSION+ ncbi-blast
     echo "------------------------------------------------------------"
 
     # download vadr models
     for v in calici; do 
         echo "Downloading VADR $v models ($CALICIVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CALICIVERSION/vadr-models-$v-$CALICIVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$CALICIVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CALICIVERSION/vadr-models-$v-$CALICIVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$CALICIVERSION vadr-models-$v
     done
     for v in flavi; do 
         echo "Downloading VADR $v models ($FLAVIVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$FLAVIVERSION/vadr-models-$v-$FLAVIVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$FLAVIVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$FLAVIVERSION/vadr-models-$v-$FLAVIVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$FLAVIVERSION vadr-models-$v
     done
     for v in zika; do 
         echo "Downloading VADR $v models ($ZIKAVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$ZIKAVERSION/vadr-models-$v-$ZIKAVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$ZIKAVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$ZIKAVERSION/vadr-models-$v-$ZIKAVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$ZIKAVERSION vadr-models-$v
     done
     for v in corona; do 
         echo "Downloading VADR $v models ($CORONAVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CORONAVERSION/vadr-models-$v-$CORONAVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$CORONAVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CORONAVERSION/vadr-models-$v-$CORONAVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$CORONAVERSION vadr-models-$v
     done
     for v in sarscov2; do 
         echo "Downloading VADR $v models ($SARSCOV2VERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$SARSCOV2VERSION/vadr-models-$v-$SARSCOV2VERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$SARSCOV2VERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$SARSCOV2VERSION/vadr-models-$v-$SARSCOV2VERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$SARSCOV2VERSION vadr-models-$v
     done
     for v in flu; do 
         echo "Downloading VADR $v models ($FLUVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$FLUVERSION/vadr-models-$v-$FLUVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$FLUVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$FLUVERSION/vadr-models-$v-$FLUVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$FLUVERSION vadr-models-$v
     done
     for v in rsv; do 
         echo "Downloading VADR $v models ($RSVVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$RSVVERSION/vadr-models-$v-$RSVVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$RSVVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$RSVVERSION/vadr-models-$v-$RSVVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$RSVVERSION vadr-models-$v
     done
     for v in mpxv; do 
         echo "Downloading VADR $v models ($MPXVVERSION) ... "
-        curl -k -L -o vadr-models-$v.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$MPXVVERSION/vadr-models-$v-$MPXVVERSION.tar.gz
-        tar xfz vadr-models-$v.tar.gz
-        mv vadr-models-$v-$MPXVVERSION vadr-models-$v
-        rm vadr-models-$v.tar.gz
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$MPXVVERSION/vadr-models-$v-$MPXVVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$MPXVVERSION vadr-models-$v
     done
     echo "------------------------------------------------------------"
+
+    if [ "$DRYRUN" = "1" ]; then
+        echo "Dry run: stopping before the R2DT download and the build."
+        exit 0
+    fi
 
     ###########################################
     # R2DT download (optional dependency)
@@ -443,6 +527,11 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
     echo "------------------------------------------------------------"
 fi
 
+if [ "$DRYRUN" = "1" ]; then
+    echo "Dry run: nothing is downloaded in build mode."
+    exit 0
+fi
+
 if [ "$DOWNLOADORBUILD" = "download" ]; then
     echo ""
     echo ""
@@ -472,6 +561,7 @@ if [ "$DOWNLOADORBUILD" != "download" ]; then
             echo ""
             exit 1
         fi
+        exit 1
     fi
     echo "------------------------------------------------------------"
     echo "Building Bio-Easel ... "
@@ -557,7 +647,7 @@ if [ "$DOWNLOADORBUILD" != "download" ]; then
     if [ "$INPUTSYSTEM" != "macosx-silicon" ]; then
         make
     fi
-    cd ../../
+    cd ..
     echo "Finished building minimap2."
     echo "------------------------------------------------------------"
 
@@ -708,7 +798,7 @@ EOF
     echo "setenv VADRSEQUIPDIR \"\$VADRINSTALLDIR/sequip\""
     echo "setenv VADRBLASTDIR \"\$VADRINSTALLDIR/ncbi-blast/bin\""
     echo "setenv VADRFASTADIR \"\$VADRINSTALLDIR/fasta/bin\""
-    echo "setenv VADRMINIMAP2DIR=\"\$VADRINSTALLDIR/minimap2\""
+    echo "setenv VADRMINIMAP2DIR \"\$VADRINSTALLDIR/minimap2\""
     if [ "$R2DTFAILED" = "0" ]; then
         echo "setenv R2DT_DIR \"\$VADRINSTALLDIR/R2DT\""
     fi
