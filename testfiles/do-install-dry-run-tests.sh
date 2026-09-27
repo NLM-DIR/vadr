@@ -11,10 +11,12 @@
 # and check that the diff is exactly the intended change.
 #
 # usage: do-install-dry-run-tests.sh [path to vadr-install.sh]
-# (default: $VADRSCRIPTSDIR/vadr-install.sh)
+# (default: the vadr-install.sh next to this script's directory, so that the
+#  script under test and the expected files always come from the same copy of
+#  the repository; $VADRSCRIPTSDIR may point somewhere else entirely)
 
-INSTALLSCRIPT=${1:-$VADRSCRIPTSDIR/vadr-install.sh}
 TESTDIR=`dirname $0`
+INSTALLSCRIPT=${1:-$TESTDIR/../vadr-install.sh}
 RETVAL=0;
 
 for platform in linux macosx-silicon macosx-intel; do
