@@ -582,6 +582,15 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
     echo "------------------------------------------------------------"
 
     # download vadr models
+    if [ "$SELECTEDMODELS" != "" ]; then
+        # a dry run downloads nothing, so say what it would download instead
+        MODELMB=$(mb $(selected_bytes))
+        if [ "$DRYRUN" = "1" ]; then
+            echo "Would download $MODELMB MB of VADR model files."
+        else
+            echo "Downloading $MODELMB MB of VADR model files ..."
+        fi
+    fi
     for v in $SELECTEDMODELS; do 
         MVERSION=`model_version $v`
         echo "Downloading VADR $v models ($MVERSION) ... "
