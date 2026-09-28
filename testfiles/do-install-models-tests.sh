@@ -65,10 +65,11 @@ check_error "trailing comma" linux --models flu,
 check_error "all with a name" linux --models all,flu
 check_error "none with a name" linux --models none,flu
 
-# --list-models: one line per library, each selectable with --models, no platform needed
-n=`sh $INSTALLSCRIPT --list-models | wc -l`
-if [ "$n" -ne 8 ]; then fail "--list-models printed $n lines, expected 8"; fi
-for m in `sh $INSTALLSCRIPT --list-models | awk '{ print $1 }'`; do
+# --list-models: one line per library plus a final 'total' line, each library
+# selectable with --models, no platform needed
+n=`sh $INSTALLSCRIPT --list-models | grep -v '^total ' | wc -l`
+if [ "$n" -ne 8 ]; then fail "--list-models printed $n library lines, expected 8"; fi
+for m in `sh $INSTALLSCRIPT --list-models | grep -v '^total ' | awk '{ print $1 }'`; do
     n=`models_fetched linux --models $m | wc -l`
     if [ "$n" -ne 1 ]; then fail "--list-models names $m but --models $m selects $n libraries"; fi
 done
