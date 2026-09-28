@@ -118,8 +118,12 @@ installs none. Names can be given in any order and in any case, and
 error and nothing is downloaded. `--models` has no effect on the
 `build` step, which builds whatever the `download` step downloaded.
 
-To print the names and versions of the model libraries, run
-`sh ./vadr-install.sh --list-models`.
+To print the names, versions and download sizes (in MB) of the model
+libraries, and the total size, run `sh ./vadr-install.sh --list-models`.
+This needs no network. The sizes vary from about 1 MB (`zika`) to about
+210 MB (`flavi`), and all eight total about 523 MB. If `--models` is also
+given, only the libraries it selects and their total are printed, for
+example `sh ./vadr-install.sh --list-models --models flu,rsv`.
 
 If you leave out `calici`, the `VADRMODELDIR` line in the environment
 variable instructions printed at the end of installation names the

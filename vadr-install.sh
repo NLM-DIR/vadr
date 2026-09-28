@@ -84,6 +84,7 @@ INPUTSYSTEM="?"
 DOWNLOADORBUILD="both"
 DRYRUN=0
 MODELSGIVEN=0
+LISTMODELS=0
 
 # the model libraries, in the order they are downloaded, and which of them to
 # download. SELECTEDMODELS is all of them unless --models says otherwise.
@@ -117,11 +118,49 @@ model_urldir () {
     esac
 }
 
-# list_models(): print each model library and its version, one per line
-list_models () {
-    for v in $ALLMODELS; do
-        printf "%-9s %s\n" "$v" "`model_version $v`"
+# model_size(): echo the size in bytes of the tar.gz file of model library $1,
+# exactly as the FTP site reports it in Content-Length. It is only displayed by
+# --list-models, never used to decide what is fetched. ** These sizes must be
+# updated whenever the versions above are. ** testfiles/do-check-model-sizes-network.sh
+# compares them to the FTP site and fails if any is out of date; run it as
+# part of every release.
+model_size () {
+    case "$1" in
+        calici)   echo 71394880 ;;
+        flavi)    echo 219804683 ;;
+        zika)     echo 1435731 ;;
+        corona)   echo 199367695 ;;
+        sarscov2) echo 4282450 ;;
+        flu)      echo 39870557 ;;
+        rsv)      echo 5484325 ;;
+        mpxv)     echo 6462871 ;;
+    esac
+}
+
+# mb(): echo $1 bytes as a whole number of MB (1 MB = 1048576 bytes), rounded
+mb () {
+    echo $(( ($1 + 524288) / 1048576 ))
+}
+
+# selected_bytes(): echo the total size in bytes of the SELECTEDMODELS
+selected_bytes () {
+    TOTALBYTES=0
+    for v in $SELECTEDMODELS; do
+        TOTALBYTES=$(( TOTALBYTES + `model_size $v` ))
     done
+    echo $TOTALBYTES
+}
+
+# list_models(): print each selected model library, its version and its download
+# size, one per line, then the total size. The total is rounded from the total
+# number of bytes, so it can differ by 1 MB from the sum of the rounded sizes.
+list_models () {
+    for v in $SELECTEDMODELS; do
+        SZ=`model_size $v`
+        printf "%-9s %-9s %4d MB\n" "$v" "`model_version $v`" "`mb $SZ`"
+    done
+    TOT=`selected_bytes`
+    printf "%-9s %-9s %4d MB\n" "total" "" "`mb $TOT`"
 }
 
 # parse_models(): set SELECTEDMODELS from the value $1 of --models: 'all', 'none',
@@ -318,7 +357,8 @@ Options:
   -h, --help       print this message and exit
   --models <list>  the model libraries to download: 'all' (default), 'none', or a
                    comma-separated list of library names (see --list-models)
-  --list-models    print the names and versions of the model libraries and exit
+  --list-models    print the names, versions and download sizes of the model
+                   libraries (only those in --models, if given) and exit
   --dry-run        list the files that would be downloaded, download nothing, and exit
 
 EOF
@@ -395,8 +435,7 @@ while [ $# -gt 0 ]; do
                     if [ "$OPTHASVALUE" = "1" ]; then
                         usage_error "option $OPT does not take a value"
                     fi
-                    list_models
-                    exit 0
+                    LISTMODELS=1
                     ;;
                 --models)
                     if [ "$MODELSGIVEN" = "1" ]; then
@@ -435,6 +474,11 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+# --list-models waits until here so that a --models after it is honored
+if [ "$LISTMODELS" = "1" ]; then
+    list_models
+    exit 0
+fi
 if [ "$INPUTSYSTEM" = "?" ]; then
     usage_error "no platform given"
 fi
