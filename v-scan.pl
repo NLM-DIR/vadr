@@ -404,8 +404,18 @@ foreach $okey (@okey_A) {
     $n_okey_clsonly++;
   }
 }
-# if we only have one model, we don't need to sample
-if($n_okey_clsonly == 1) { $do_sample = 0; }
+# determine whether we need the classification stage: this depends on the
+# number of option keys we could annotate with, NOT the number of model
+# libraries, because multiple option keys can share one library (e.g. dengue,
+# hcv and flavi all use the flavi library) and each sequence must be
+# assigned to just one of them (26_0903-017)
+my $n_okey_ant_possible = 0; # number of okeys that could be used for annotation
+foreach $okey (@okey_A) {
+  if(! $okey2skip_ant_H{$okey}) { $n_okey_ant_possible++; }
+}
+my $do_clsonly = (($n_okey_ant_possible > 1) && ($n_okey_clsonly > 0)) ? 1 : 0;
+# if we only have one option key to annotate with, we don't need to sample
+if(! $do_clsonly) { $do_sample = 0; }
 
 if($do_sample) {
   if($sample_nseq >= $in_nseq) {
@@ -459,7 +469,7 @@ my $mkey_opt2use = "";
 my $mlist_opt2use = "";
 my $split_cpu_opt2use = (opt_IsUsed("--cpu", \%opt_HH)) ? "--split --cpu " . opt_Get("--cpu", \%opt_HH) : ""; 
     
-if($n_okey_clsonly > 1) { # if we only have 1 model library, we skip the --cls_only stage
+if($do_clsonly) { # if we only have 1 option key to annotate with, we skip the --cls_only stage
   foreach $okey (@okey_clsonly_used_A) {
     $clsonly_outdir_H{$okey} = $dir_tail . "/" . $dir_tail . ".clsonly." . $okey;
     push(@clsonly_outdir_A, $clsonly_outdir_H{$okey});
@@ -487,7 +497,7 @@ my @seq_A         = ();   # array of sequence names
 my %seq_okey_H    = ();   # key is seq name, value is best okey for this sequence
 my %seq_mdl_H     = ();   # key is seq name, value is best model for this sequence
 my %seq_sc_H      = ();   # key is seq name, value is score for best model for this sequence
-if($n_okey_clsonly > 1) { 
+if($do_clsonly) { 
   foreach $okey (@okey_clsonly_used_A) {
     parse_sqc_clsonly_file($sqc_H{$okey}, $okey, \@{$other_okey_HA{$okey}}, \%okey2skip_ant_H, \%seq_H, \@seq_A, \%seq_okey_H, \%seq_mdl_H, \%seq_sc_H, \%opt_HH, $FH_HR);
   }
@@ -497,7 +507,7 @@ if($n_okey_clsonly > 1) {
 my %seqlist_HA = ();     # key is okey, value is array of sequences that match to (and will be annotated with) this okey
 my $n_okey_ant_used = 0; # number of okeys we have at least one sequence to rerun v-annotate.pl for
 my %okey_ct_H  = ();     # key is okey, value is number of seqs assigned to that okey, 'undef' if 0
-if($n_okey_clsonly > 1) {
+if($do_clsonly) {
   foreach my $seqname (@seq_A) {
     if(defined $seq_okey_H{$seqname}) {
       my $okey = $seq_okey_H{$seqname};
@@ -530,7 +540,7 @@ if($n_okey_clsonly > 1) {
   }
 }
 else {
-  $n_okey_ant_used = 1; # we didn't run in clsonly because we only have 1 library
+  $n_okey_ant_used = 1; # we didn't run in clsonly because we only have 1 option key to annotate with
 }
 
 ###########################################################################
@@ -552,7 +562,7 @@ foreach $okey (@okey_A) {
 }
 if($n_okey_ant_used > 0) { 
   foreach $okey (@okey_A) {
-    if((defined $seqlist_HA{$okey}) || (($n_okey_clsonly == 1) && (! $okey2skip_ant_H{$okey}))) { # if $n_okey_clsonly == 1, we didn't run --cls_only mode
+    if((defined $seqlist_HA{$okey}) || ((! $do_clsonly) && (! $okey2skip_ant_H{$okey}))) { # if ! $do_clsonly, we didn't run --cls_only mode
       if($n_okey_ant_used == 1) { 
         $okey_fa_file = $in_fa_file;
         $progress_str = "Annotating $in_nseq sequences with $okey model library ";
@@ -582,7 +592,7 @@ if($n_okey_ant_used > 0) {
 # Output tabular cls_only summary
 #################################
 
-if($n_okey_clsonly > 1) {
+if($do_clsonly) {
   $start_secs = ofile_OutputProgressPrior("Generating tabular output", $progress_w, $log_FH, *STDOUT);
 
   # create the @data_lib_AA
@@ -613,7 +623,7 @@ if($n_okey_clsonly > 1) {
 ###############################################
 # Output lib, mdl and alc files, and conclude #
 ###############################################
-output_lib_mdl_and_alc_files_and_remove_temp_files($in_nseq, $sample_nseq, $n_okey_clsonly, \@okey_ant_used_A, \@mdl_file_A, \@alc_file_A, \@to_remove_A, \%opt_HH, \%ofile_info_HH);
+output_lib_mdl_and_alc_files_and_remove_temp_files($in_nseq, $sample_nseq, $do_clsonly, \@okey_ant_used_A, \@mdl_file_A, \@alc_file_A, \@to_remove_A, \%opt_HH, \%ofile_info_HH);
 
 my $z = 0;
 if($do_keep) {
@@ -842,7 +852,7 @@ sub parse_sqc_clsonly_file {
 # Arguments:
 #  $in_nseq;           number of sequences in input file
 #  $sample_nseq:       number of sequences sampled
-#  $n_okey_clsonly:    number of okeys used for classification, if 1, we skipped classification
+#  $do_clsonly:        '1' if we ran the classification stage, '0' if we skipped it
 #  $okey_ant_used_AR:  ref to array of option keys we want to output .mdl and .alc files for
 #  $mdl_file_AR:       ref to array of .mdl files to output
 #  $alc_file_AR:       ref to array of .alc files to output
@@ -858,10 +868,10 @@ sub output_lib_mdl_and_alc_files_and_remove_temp_files {
   my $nargs_exp = 9;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($in_nseq, $sample_nseq, $n_okey_clsonly, $okey_ant_used_AR, $mdl_file_AR, $alc_file_AR, $to_remove_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_nseq, $sample_nseq, $do_clsonly, $okey_ant_used_AR, $mdl_file_AR, $alc_file_AR, $to_remove_AR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # close the file we may output to stdout and the log
-  if($n_okey_clsonly > 1) {
+  if($do_clsonly) {
     close($ofile_info_HHR->{"FH"}{"lib"});
   }
   
@@ -876,7 +886,7 @@ sub output_lib_mdl_and_alc_files_and_remove_temp_files {
   my @file_A = ();
   my ($okey, $mdl_file, $alc_file) = (undef, undef, undef);
   my $n_okey = scalar(@{$okey_ant_used_AR});
-  if(($do_multi) && ($n_okey_clsonly > 1)) { 
+  if(($do_multi) && ($do_clsonly)) { 
     if(($do_sample) && ($sample_nseq < $in_nseq)) {
       $sum_str = sprintf("# Summary of seqs matching each library (only %d of %d seqs scanned):", $sample_nseq, $in_nseq);
     }
@@ -897,7 +907,7 @@ sub output_lib_mdl_and_alc_files_and_remove_temp_files {
     utl_FileLinesToArray($ofile_info_HHR->{"fullpath"}{"lib"}, 1, \@file_A, $FH_HR);
     push(@conclude_A, @file_A);
     push(@conclude_A, "#");
-  } # end of 'if(($do_multi) && ($n_okey_clsonly > 1))'
+  } # end of 'if(($do_multi) && ($do_clsonly))'
 
   # for each model we ran v-annotate.pl for, output the mdl and alc files
   for(my $m = 0; $m < $n_okey; $m++) {
