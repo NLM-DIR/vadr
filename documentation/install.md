@@ -98,6 +98,42 @@ These commands should have `macosx-silicon` or `macosx-intel` instead
 of `linux` if you are installing on Mac/OSX.
 
 ---
+
+### <a name="models-install"></a> Installing only some of the model libraries
+
+By default `vadr-install.sh` downloads all eight VADR model libraries
+(`calici`, `flavi`, `zika`, `corona`, `sarscov2`, `flu`, `rsv` and `mpxv`),
+roughly half a gigabyte in total. To download only some of them, use
+the `--models` option with a comma-separated list of library names, for
+example:
+
+```
+sh ./vadr-install.sh linux --models flu,rsv
+sh ./vadr-install.sh linux download --models flu
+```
+
+`--models all` (the default) installs all eight and `--models none`
+installs none. Names can be given in any order and in any case, and
+`--models` can go before or after `download`. An unrecognized name is an
+error and nothing is downloaded. `--models` has no effect on the
+`build` step, which builds whatever the `download` step downloaded.
+
+To print the names, versions and download sizes (in MB) of the model
+libraries, and the total size, run `sh ./vadr-install.sh --list-models`.
+This needs no network. The sizes vary from about 1 MB (`zika`) to about
+210 MB (`flavi`), and all eight total about 523 MB. If `--models` is also
+given, only the libraries it selects and their total are printed, for
+example `sh ./vadr-install.sh --list-models --models flu,rsv`.
+
+If you leave out `calici`, the `VADRMODELDIR` line in the environment
+variable instructions printed at the end of installation names the
+first library you did install instead, because `v-annotate.pl` requires
+that the directory `VADRMODELDIR` names exists. With `--models none` it
+names the installation directory itself, which holds no models, so you
+must give `v-annotate.pl` your models with `--mdir` and `--mkey`.
+`v-scan.pl` skips any library that is not installed.
+
+---
 ### <a name="inline"></a> If installation or `do-install-tests-local.sh` fails because the `Inline`,  `LWP` or `Mozilla::CA` perl modules are not installed...
 
 The perl `Inline::C`, `LWP::Simple`, `LWP::Protocol::https` and `Mozilla::CA` modules

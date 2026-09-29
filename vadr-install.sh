@@ -14,12 +14,19 @@
 # or to only build files (after running in 'download' mode):
 # vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> build
 # 
+# to choose which of the model libraries are downloaded (default: all eight),
+# add --models followed by a comma-separated list of library names, or 'all' or
+# 'none'. Use --list-models to print the library names and their versions:
+# vadr-install.sh <"linux" or "macosx-silicon" or "macosx-intel"> --models flu,rsv
+# vadr-install.sh --list-models
+# 
 # for example:
 # vadr-install.sh linux
 # 
 # or
 # vadr-install.sh macosx-silicon download
 # vadr-install.sh macosx-silicon build
+# vadr-install.sh linux download --models flu
 # 
 # Requirements: a C and C++ compiler, make, perl, curl, unzip and git.
 # Installing R2DT, which is used only by 'v-annotate.pl --draw_r2dt',
@@ -76,6 +83,138 @@ R2DTMINPYTHON="3.9"
 INPUTSYSTEM="?"
 DOWNLOADORBUILD="both"
 DRYRUN=0
+MODELSGIVEN=0
+LISTMODELS=0
+
+# the model libraries, in the order they are downloaded, and which of them to
+# download. SELECTEDMODELS is all of them unless --models says otherwise.
+ALLMODELS="calici flavi zika corona sarscov2 flu rsv mpxv"
+SELECTEDMODELS="$ALLMODELS"
+
+# model_version(): echo the version of model library $1, from the pinned
+# versions above. This and model_urldir() are the only places that know which
+# library has which version and lives in which directory of the FTP site, and
+# both --list-models and --models use them, so anything --list-models prints
+# is something --models can select.
+model_version () {
+    case "$1" in
+        calici)   echo "$CALICIVERSION" ;;
+        flavi)    echo "$FLAVIVERSION" ;;
+        zika)     echo "$ZIKAVERSION" ;;
+        corona)   echo "$CORONAVERSION" ;;
+        sarscov2) echo "$SARSCOV2VERSION" ;;
+        flu)      echo "$FLUVERSION" ;;
+        rsv)      echo "$RSVVERSION" ;;
+        mpxv)     echo "$MPXVVERSION" ;;
+    esac
+}
+
+# model_urldir(): echo the directory of the FTP site that model library $1 is
+# in. Three libraries are in <name>viridae directories, the others in <name>.
+model_urldir () {
+    case "$1" in
+        calici|flavi|corona) echo "${1}viridae" ;;
+        *)                   echo "$1" ;;
+    esac
+}
+
+# model_size(): echo the size in bytes of the tar.gz file of model library $1,
+# exactly as the FTP site reports it in Content-Length. It is only displayed by
+# --list-models, never used to decide what is fetched. ** These sizes must be
+# updated whenever the versions above are. ** testfiles/do-check-model-sizes-network.sh
+# compares them to the FTP site and fails if any is out of date; run it as
+# part of every release.
+model_size () {
+    case "$1" in
+        calici)   echo 71394880 ;;
+        flavi)    echo 219804683 ;;
+        zika)     echo 1435731 ;;
+        corona)   echo 199367695 ;;
+        sarscov2) echo 4282450 ;;
+        flu)      echo 39870557 ;;
+        rsv)      echo 5484325 ;;
+        mpxv)     echo 6462871 ;;
+    esac
+}
+
+# mb(): echo $1 bytes as a whole number of MB (1 MB = 1048576 bytes), rounded
+mb () {
+    echo $(( ($1 + 524288) / 1048576 ))
+}
+
+# selected_bytes(): echo the total size in bytes of the SELECTEDMODELS
+selected_bytes () {
+    TOTALBYTES=0
+    for v in $SELECTEDMODELS; do
+        TOTALBYTES=$(( TOTALBYTES + `model_size $v` ))
+    done
+    echo $TOTALBYTES
+}
+
+# list_models(): print each selected model library, its version and its download
+# size, one per line, then the total size. The total is rounded from the total
+# number of bytes, so it can differ by 1 MB from the sum of the rounded sizes.
+list_models () {
+    for v in $SELECTEDMODELS; do
+        SZ=`model_size $v`
+        printf "%-9s %-9s %4d MB\n" "$v" "`model_version $v`" "`mb $SZ`"
+    done
+    TOT=`selected_bytes`
+    printf "%-9s %-9s %4d MB\n" "total" "" "`mb $TOT`"
+}
+
+# parse_models(): set SELECTEDMODELS from the value $1 of --models: 'all', 'none',
+# or a comma-separated list of library names. Case does not matter, white
+# space around a name is ignored, and a name listed more than once is
+# downloaded once. Anything else is an error, so that a mistyped name can
+# never quietly install fewer libraries than were asked for. The libraries are
+# always downloaded in the order of ALLMODELS, whatever order they were listed in.
+parse_models () {
+    MODELSARG=`echo "$1" | tr 'A-Z' 'a-z' | tr -d ' \t'`
+    case "$MODELSARG" in
+        "")
+            usage_error "option --models requires a value: 'all', 'none', or a comma-separated list of model libraries ($ALLMODELS)"
+            ;;
+        all)
+            SELECTEDMODELS="$ALLMODELS"
+            return
+            ;;
+        none)
+            SELECTEDMODELS=""
+            return
+            ;;
+    esac
+    # the trailing comma makes every name, including the last, end in a comma,
+    # and turns an empty name (as in 'flu,,rsv' or 'flu,') into an error
+    LISTREST="$MODELSARG,"
+    LISTGIVEN=","
+    while [ "$LISTREST" != "" ]; do
+        NAME="${LISTREST%%,*}"
+        LISTREST="${LISTREST#*,}"
+        case " $ALLMODELS " in
+            *" $NAME "*)
+                if [ "$NAME" != "" ]; then
+                    LISTGIVEN="$LISTGIVEN$NAME,"
+                    continue
+                fi
+                ;;
+        esac
+        if [ "$NAME" = "all" ] || [ "$NAME" = "none" ]; then
+            usage_error "'$NAME' cannot be combined with other names in --models"
+        fi
+        if [ "$NAME" = "" ]; then
+            usage_error "empty entry in --models '$1' (a stray or doubled comma?)"
+        fi
+        usage_error "unrecognized model library '$NAME' in --models '$1'; the model libraries are: $ALLMODELS"
+    done
+    SELECTEDMODELS=""
+    for v in $ALLMODELS; do
+        case "$LISTGIVEN" in
+            *",$v,"*) SELECTEDMODELS="$SELECTEDMODELS $v" ;;
+        esac
+    done
+    SELECTEDMODELS="${SELECTEDMODELS# }"
+}
 
 # R2DT is the one dependency this script treats as optional: it is used only by
 # 'v-annotate.pl --draw_r2dt', it is the only dependency that needs python3 and
@@ -208,9 +347,19 @@ or to only download files:
 or to only build the software (after running in download mode):
   $0 <"linux" or "macosx-silicon" or "macosx-intel"> build
 
+To download only some of the model libraries (all eight are downloaded by default):
+  $0 <"linux" or "macosx-silicon" or "macosx-intel"> --models <list>
+  where <list> is a comma-separated list of library names, for example flu,rsv
+  or 'all' or 'none'. --models can be combined with 'download' and can go before
+  or after it. It has no effect on 'build'.
+
 Options:
-  -h, --help  print this message and exit
-  --dry-run   list the files that would be downloaded, download nothing, and exit
+  -h, --help       print this message and exit
+  --models <list>  the model libraries to download: 'all' (default), 'none', or a
+                   comma-separated list of library names (see --list-models)
+  --list-models    print the names, versions and download sizes of the model
+                   libraries (only those in --models, if given) and exit
+  --dry-run        list the files that would be downloaded, download nothing, and exit
 
 EOF
 }
@@ -282,6 +431,24 @@ while [ $# -gt 0 ]; do
                     fi
                     DRYRUN=1
                     ;;
+                --list-models)
+                    if [ "$OPTHASVALUE" = "1" ]; then
+                        usage_error "option $OPT does not take a value"
+                    fi
+                    LISTMODELS=1
+                    ;;
+                --models)
+                    if [ "$MODELSGIVEN" = "1" ]; then
+                        usage_error "option --models given more than once"
+                    fi
+                    MODELSGIVEN=1
+                    if [ "$OPTHASVALUE" = "0" ]; then
+                        need_value "$OPT" $#
+                        OPTVALUE="$1"
+                        shift
+                    fi
+                    parse_models "$OPTVALUE"
+                    ;;
                 *)
                     usage_error "unrecognized option: $OPT"
                     ;;
@@ -307,6 +474,11 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+# --list-models waits until here so that a --models after it is honored
+if [ "$LISTMODELS" = "1" ]; then
+    list_models
+    exit 0
+fi
 if [ "$INPUTSYSTEM" = "?" ]; then
     usage_error "no platform given"
 fi
@@ -410,46 +582,24 @@ if [ "$DOWNLOADORBUILD" != "build" ]; then
     echo "------------------------------------------------------------"
 
     # download vadr models
-    for v in calici; do 
-        echo "Downloading VADR $v models ($CALICIVERSION) ... "
-        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CALICIVERSION/vadr-models-$v-$CALICIVERSION.tar.gz vadr-models-$v.tar.gz
-        extract vadr-models-$v.tar.gz vadr-models-$v-$CALICIVERSION vadr-models-$v
+    if [ "$SELECTEDMODELS" != "" ]; then
+        # a dry run downloads nothing, so say what it would download instead
+        MODELMB=$(mb $(selected_bytes))
+        if [ "$DRYRUN" = "1" ]; then
+            echo "Would download $MODELMB MB of VADR model files."
+        else
+            echo "Downloading $MODELMB MB of VADR model files ..."
+        fi
+    fi
+    for v in $SELECTEDMODELS; do 
+        MVERSION=`model_version $v`
+        echo "Downloading VADR $v models ($MVERSION) ... "
+        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/`model_urldir $v`/$MVERSION/vadr-models-$v-$MVERSION.tar.gz vadr-models-$v.tar.gz
+        extract vadr-models-$v.tar.gz vadr-models-$v-$MVERSION vadr-models-$v
     done
-    for v in flavi; do 
-        echo "Downloading VADR $v models ($FLAVIVERSION) ... "
-        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$FLAVIVERSION/vadr-models-$v-$FLAVIVERSION.tar.gz vadr-models-$v.tar.gz
-        extract vadr-models-$v.tar.gz vadr-models-$v-$FLAVIVERSION vadr-models-$v
-    done
-    for v in zika; do 
-        echo "Downloading VADR $v models ($ZIKAVERSION) ... "
-        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$ZIKAVERSION/vadr-models-$v-$ZIKAVERSION.tar.gz vadr-models-$v.tar.gz
-        extract vadr-models-$v.tar.gz vadr-models-$v-$ZIKAVERSION vadr-models-$v
-    done
-    for v in corona; do 
-        echo "Downloading VADR $v models ($CORONAVERSION) ... "
-        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/${v}viridae/$CORONAVERSION/vadr-models-$v-$CORONAVERSION.tar.gz vadr-models-$v.tar.gz
-        extract vadr-models-$v.tar.gz vadr-models-$v-$CORONAVERSION vadr-models-$v
-    done
-    for v in sarscov2; do 
-        echo "Downloading VADR $v models ($SARSCOV2VERSION) ... "
-        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$SARSCOV2VERSION/vadr-models-$v-$SARSCOV2VERSION.tar.gz vadr-models-$v.tar.gz
-        extract vadr-models-$v.tar.gz vadr-models-$v-$SARSCOV2VERSION vadr-models-$v
-    done
-    for v in flu; do 
-        echo "Downloading VADR $v models ($FLUVERSION) ... "
-        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$FLUVERSION/vadr-models-$v-$FLUVERSION.tar.gz vadr-models-$v.tar.gz
-        extract vadr-models-$v.tar.gz vadr-models-$v-$FLUVERSION vadr-models-$v
-    done
-    for v in rsv; do 
-        echo "Downloading VADR $v models ($RSVVERSION) ... "
-        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$RSVVERSION/vadr-models-$v-$RSVVERSION.tar.gz vadr-models-$v.tar.gz
-        extract vadr-models-$v.tar.gz vadr-models-$v-$RSVVERSION vadr-models-$v
-    done
-    for v in mpxv; do 
-        echo "Downloading VADR $v models ($MPXVVERSION) ... "
-        fetch https://ftp.ncbi.nlm.nih.gov/pub/nawrocki/vadr-models/$v/$MPXVVERSION/vadr-models-$v-$MPXVVERSION.tar.gz vadr-models-$v.tar.gz
-        extract vadr-models-$v.tar.gz vadr-models-$v-$MPXVVERSION vadr-models-$v
-    done
+    if [ "$SELECTEDMODELS" = "" ]; then
+        echo "Not downloading any VADR model libraries (--models none)."
+    fi
     echo "------------------------------------------------------------"
 
     if [ "$DRYRUN" = "1" ]; then
@@ -719,7 +869,7 @@ export PATH="\${R2DT_DIR}/../r2dt-venv/bin:\${R2DT_DIR}/../infernal/binaries:\${
 export PERL5LIB="\${R2DT_DIR}/../Bio-Easel/blib/lib:\${R2DT_DIR}/../Bio-Easel/blib/arch:\$PERL5LIB"
 EOF
             echo "Wrote $R2DTDIR/r2dt-vadr-env.sh"
-            echo "Installing R2DT templates shipped with the zika models ... "
+            echo "Installing R2DT templates shipped with the zika models (if installed) ... "
             # The zika model package (downloaded above) ships its own R2DT
             # templates under r2dt-templates/, referenced by the R2DT_TEMPLATE
             # lines in its .minfo. Symlink each into R2DT's own template
@@ -730,13 +880,18 @@ EOF
             # than a copy -- fails loudly (a dangling link) if the model
             # package is later upgraded with revised templates, instead of
             # silently drawing with stale template data.
-            mkdir -p "$R2DTDIR/data/local_data"
-            for t in zika-linear zika-circular; do
-                if [ ! -e "$R2DTDIR/data/local_data/$t" ]; then
-                    ln -s ../../../vadr-models-zika/r2dt-templates/$t "$R2DTDIR/data/local_data/$t" 2>/dev/null \
-                      || cp -r "$VADRINSTALLDIR/vadr-models-zika/r2dt-templates/$t" "$R2DTDIR/data/local_data/$t"
-                fi
-            done
+            # The zika models are one of the libraries --models can leave out. If they
+            # are not installed there are no templates to link, and the ln and
+            # cp below would fail, stopping the script under 'set -e'.
+            if [ -d "$VADRINSTALLDIR/vadr-models-zika" ]; then
+                mkdir -p "$R2DTDIR/data/local_data"
+                for t in zika-linear zika-circular; do
+                    if [ ! -e "$R2DTDIR/data/local_data/$t" ]; then
+                        ln -s ../../../vadr-models-zika/r2dt-templates/$t "$R2DTDIR/data/local_data/$t" 2>/dev/null \
+                          || cp -r "$VADRINSTALLDIR/vadr-models-zika/r2dt-templates/$t" "$R2DTDIR/data/local_data/$t"
+                    fi
+                done
+            fi
             echo "Finished installing R2DT."
             echo "------------------------------------------------------------"
         fi
@@ -745,6 +900,24 @@ EOF
     ###############################################
     # Message about setting environment variables
     ###############################################
+    # v-annotate.pl dies at startup unless the directory $VADRMODELDIR names
+    # exists, so it must name a model library that is installed. That is
+    # calici, unless it was left out with --models (or --models was used in an
+    # earlier 'download' run), in which case it is the first installed library
+    # in download order. With no libraries at all it is $VADRINSTALLDIR, which
+    # exists but holds no models: models are then given to v-annotate.pl with
+    # --mdir and --mkey.
+    MODELDIRLINE="\$VADRINSTALLDIR"
+    MODELDIRNOTE=""
+    for v in $ALLMODELS; do
+        if [ -d "$VADRINSTALLDIR/vadr-models-$v" ]; then
+            MODELDIRLINE="\$VADRINSTALLDIR/vadr-models-$v"
+            break
+        fi
+    done
+    if [ "$MODELDIRLINE" = "\$VADRINSTALLDIR" ]; then
+        MODELDIRNOTE="No model libraries are installed, so VADRMODELDIR is set to a directory with no models in it. Give v-annotate.pl your models with --mdir and --mkey."
+    fi
     echo ""
     echo ""
     echo "********************************************************"
@@ -758,7 +931,7 @@ EOF
     echo "export VADRINSTALLDIR=\"$VADRINSTALLDIR\""
     echo "export VADRSCRIPTSDIR=\"\$VADRINSTALLDIR/vadr\""
     echo "export VADRCONFIGFILE=\"\$VADRSCRIPTSDIR/vadr.config\""
-    echo "export VADRMODELDIR=\"\$VADRINSTALLDIR/vadr-models-calici\""
+    echo "export VADRMODELDIR=\"$MODELDIRLINE\""
     echo "export VADRINFERNALDIR=\"\$VADRINSTALLDIR/infernal/binaries\""
     echo "export VADREASELDIR=\"\$VADRINSTALLDIR/infernal/binaries\""
     echo "export VADRHMMERDIR=\"\$VADRINSTALLDIR/infernal/binaries\""
@@ -790,7 +963,7 @@ EOF
     echo "setenv VADRINSTALLDIR \"$VADRINSTALLDIR\""
     echo "setenv VADRSCRIPTSDIR \"\$VADRINSTALLDIR/vadr\""
     echo "setenv VADRCONFIGFILE \"\$VADRSCRIPTSDIR/vadr.config\""
-    echo "setenv VADRMODELDIR \"\$VADRINSTALLDIR/vadr-models-calici\""
+    echo "setenv VADRMODELDIR \"$MODELDIRLINE\""
     echo "setenv VADRINFERNALDIR \"\$VADRINSTALLDIR/infernal/binaries\""
     echo "setenv VADRHMMERDIR \"\$VADRINSTALLDIR/infernal/binaries\""
     echo "setenv VADREASELDIR \"\$VADRINSTALLDIR/infernal/binaries\""
@@ -815,6 +988,10 @@ EOF
     echo ""
     echo "********************************************************"
     echo ""
+    if [ "$MODELDIRNOTE" != "" ]; then
+        echo "NOTE: $MODELDIRNOTE"
+        echo ""
+    fi
     if [ "$R2DTFAILED" = "1" ]; then
         echo "************************************************************"
         echo "WARNING: VADR was installed, but R2DT was NOT."
