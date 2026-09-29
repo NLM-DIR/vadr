@@ -209,9 +209,9 @@ v-scan.pl -h
 You'll see something like the following output:
 ```
 # v-scan.pl :: scan and annotate sequences against VADR model libraries 
-# VADR 1.7.2 (Sep 2026)
+# VADR 1.7.3 (Sep 2026)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Sat Sep 19 21:06:17 2026
+# date:    Tue Sep 29 14:51:04 2026
 #
 Usage: v-scan.pl [-options] <fasta file to annotate> <output directory to create>
 ```
