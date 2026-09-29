@@ -1,5 +1,46 @@
 # VADR 1.x release notes 
 
+### VADR 1.7.3 release (September 2026)
+  * `v-annotate.pl` behaviour is unchanged in this release; annotation
+    results are identical to 1.7.2 (only the version string in output
+    files differs). Everything below affects `vadr-install.sh` and
+    `v-scan.pl` only.
+  * `vadr-install.sh`:
+    - adds `-h`/`--help` and a real, order-free command-line argument
+      parser (previously arguments had to appear in a fixed order)
+    - adds `--models <s>`, a comma-separated list of model libraries to
+      download, for users who only need one or a few (e.g. only
+      `calici`); `--list-models` reports every available model library
+      along with its download size
+    - a failed download now stops the install immediately and names the
+      URL that failed; previously a 404 was not caught until a later
+      step, where it surfaced as a confusing "corrupt archive" error
+    - adds `--dry-run`, which prints what would be downloaded without
+      downloading it
+  * `v-scan.pl` now skips any model library configured in `vadr.config`
+    but not actually installed, instead of dying, so a partial install
+    (for example, an install with only the `calici` library) works with
+    `v-scan.pl` out of the box
+  * `v-scan.pl` behaviour change, on an install where a single model
+    library backs more than one option key (for example, an install
+    containing only the `flavi` library, which backs the `dengue`,
+    `hcv` and `flavi` keys; or only `calici`, which backs `norovirus`
+    and `calici`): `v-scan.pl` previously skipped its classification
+    stage and ran `v-annotate.pl` once per key on the entire input. It
+    now classifies first and annotates each sequence only with the key
+    it matches, exactly as it already did on a full install.
+    Consequences: (1) runs are faster; (2) each key's results now cover
+    only its own sequences, where previously every key reported on
+    every sequence, including spurious `INCORRECT_SPECIFIED_GROUP`
+    failures; (3) **mixed input (for example, dengue and HCV sequences
+    together) now stops with the "-m not used but found matches to
+    multiple libraries" error on such installs unless `-m` is given**,
+    as it already did on a full install; previously it silently
+    produced multiple overlapping result sets. Installs where each
+    library backs exactly one key (e.g. `rsv` only), and full installs,
+    are unchanged.
+
+---
 ### VADR 1.7.2 release (September 2026): Hotfix
   * a user reported that `vadr-install.sh` was pinning outdated model
     packages for four libraries. Nothing was broken by this: every
