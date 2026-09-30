@@ -83,7 +83,7 @@ my $executable    = "annotate-tbl2gff.pl";
 my $usage         = "Usage: $executable [-options]\n\t<path to v-annotate.pl output .tbl file>\n";
 my $synopsis      = "$executable :: convert a v-annotate.pl .tbl or .ftr output file to GFF\n";
 my $date          = scalar localtime();
-my $version       = "1.7.2";
+my $version       = "1.7.3";
 my $releasedate   = "Sep 2026";
 my $pkgname       = "VADR";
 

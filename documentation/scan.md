@@ -209,9 +209,9 @@ v-scan.pl -h
 You'll see something like the following output:
 ```
 # v-scan.pl :: scan and annotate sequences against VADR model libraries 
-# VADR 1.7.2 (Sep 2026)
+# VADR 1.7.3 (Sep 2026)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Sat Sep 19 21:06:17 2026
+# date:    Tue Sep 29 14:51:04 2026
 #
 Usage: v-scan.pl [-options] <fasta file to annotate> <output directory to create>
 ```
@@ -490,7 +490,7 @@ integer.
 | `--only <s>`      | only use the model library(ies) with option keys (e.g. `flavi`) listed in the comma separated string `<s>`, all option keys must exist in config file | 
 | `--skip <s>`      | do not use the model library(ies) with option keys (e.g. `flavi`) listed in the comma separated string `<s>`,  all option keys must exist in config file | 
 
-### <a name="options-sampling"></a> `v-scan.pl` options related to the random sampling of sequences for determining model library to use (sampling is turned off if `-m` is used or only one model library is being used)
+### <a name="options-sampling"></a> `v-scan.pl` options related to the random sampling of sequences for determining model library to use (sampling is turned off if `-m` is used or only one option key would be used for annotation, as when only one model library is installed and it backs a single option key)
 
 | ............option............ | explanation | 
 |----------------------------|-------------| 

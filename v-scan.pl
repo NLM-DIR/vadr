@@ -149,7 +149,7 @@ my $executable    = (defined $execname_opt) ? $execname_opt : "v-scan.pl";
 my $usage         = "Usage: $executable [-options] <fasta file to annotate> <output directory to create>";
 my $synopsis      = "$executable :: scan and annotate sequences against VADR model libraries ";
 my $date          = scalar localtime();
-my $version       = "1.7.2";
+my $version       = "1.7.3";
 my $releasedate   = "Sep 2026";
 my $pkgname       = "VADR";
 
@@ -225,7 +225,13 @@ my %other_okey_HA = (); # hash of arrays, key is option key $okey, value is arra
 # that uses $okey as its model key (e.g. 'norovirus').
 # 
 parse_config_file($config_file, $env_vadr_install_dir, \@okey_A, \%okey_mdir_H, \%okey_opts_H, \%okey_mkey_H, \%opt_HH, undef);
-validate_okey_mkey_values_and_fill_other_okey_HA(\@okey_A, \%okey_mdir_H, \%okey_mkey_H, \%other_okey_HA);
+
+# determine which model libraries are installed, a library listed in the config
+# file may be absent (e.g. a partial install), we skip those (see skip_uninstalled_libraries())
+my %okey_minfo_H     = (); # key is okey, value is path to model info file its library must include
+my %okey_installed_H = (); # key is okey, value is '1' if its model library is installed, else '0'
+determine_installed_libraries(\@okey_A, \%okey_mdir_H, \%okey_mkey_H, \%okey_minfo_H, \%okey_installed_H);
+validate_okey_mkey_values_and_fill_other_okey_HA(\@okey_A, \%okey_mdir_H, \%okey_mkey_H, \%okey_installed_H, \%other_okey_HA);
 
 # enforce that --only and --skip options are valid, and update hashes to remove unwanted keys
 my $okey;
@@ -248,9 +254,14 @@ if(opt_IsUsed("--l_all", \%opt_HH) ||
    opt_IsUsed("--l_dir", \%opt_HH) ||
    opt_IsUsed("--l_opt", \%opt_HH) ||
    opt_IsUsed("--l_mdl", \%opt_HH)) {
-  list_options($config_file, \@okey_A, \%okey_mdir_H, \%okey_opts_H, \%okey_mkey_H, \%other_okey_HA, $pkgname, $version, $releasedate, \%opt_HH);
+  list_options($config_file, \@okey_A, \%okey_mdir_H, \%okey_opts_H, \%okey_mkey_H, \%okey_installed_H, \%other_okey_HA, $pkgname, $version, $releasedate, \%opt_HH);
   exit 0;
 }
+
+# skip any model libraries that are not installed, this dies if a library
+# specified with --only is not installed or if no libraries remain
+my @uninstalled_warning_A = (); # warnings about skipped libraries, output once log file is open
+skip_uninstalled_libraries(\@okey_A, \%okey_mkey_H, \%okey_minfo_H, \%okey_installed_H, \%okey2skip_clsonly_H, \%okey2skip_ant_H, \@uninstalled_warning_A, \%opt_HH);
 
 # check that number of command line args is correct
 if(scalar(@ARGV) != 2) {   
@@ -335,6 +346,11 @@ foreach $cmd (@early_cmd_A) {
   print $cmd_FH $cmd . "\n";
 }
 
+# output warnings about any model libraries we are skipping because they are not installed
+foreach my $warning (@uninstalled_warning_A) { 
+  ofile_OutputString($log_FH, 1, $warning);
+}
+
 ##############################################
 # Validate that we have all the files we need
 ##############################################
@@ -388,8 +404,18 @@ foreach $okey (@okey_A) {
     $n_okey_clsonly++;
   }
 }
-# if we only have one model, we don't need to sample
-if($n_okey_clsonly == 1) { $do_sample = 0; }
+# determine whether we need the classification stage: this depends on the
+# number of option keys we could annotate with, NOT the number of model
+# libraries, because multiple option keys can share one library (e.g. dengue,
+# hcv and flavi all use the flavi library) and each sequence must be
+# assigned to just one of them (26_0903-017)
+my $n_okey_ant_possible = 0; # number of okeys that could be used for annotation
+foreach $okey (@okey_A) {
+  if(! $okey2skip_ant_H{$okey}) { $n_okey_ant_possible++; }
+}
+my $do_clsonly = (($n_okey_ant_possible > 1) && ($n_okey_clsonly > 0)) ? 1 : 0;
+# if we only have one option key to annotate with, we don't need to sample
+if(! $do_clsonly) { $do_sample = 0; }
 
 if($do_sample) {
   if($sample_nseq >= $in_nseq) {
@@ -443,7 +469,7 @@ my $mkey_opt2use = "";
 my $mlist_opt2use = "";
 my $split_cpu_opt2use = (opt_IsUsed("--cpu", \%opt_HH)) ? "--split --cpu " . opt_Get("--cpu", \%opt_HH) : ""; 
     
-if($n_okey_clsonly > 1) { # if we only have 1 model library, we skip the --cls_only stage
+if($do_clsonly) { # if we only have 1 option key to annotate with, we skip the --cls_only stage
   foreach $okey (@okey_clsonly_used_A) {
     $clsonly_outdir_H{$okey} = $dir_tail . "/" . $dir_tail . ".clsonly." . $okey;
     push(@clsonly_outdir_A, $clsonly_outdir_H{$okey});
@@ -471,7 +497,7 @@ my @seq_A         = ();   # array of sequence names
 my %seq_okey_H    = ();   # key is seq name, value is best okey for this sequence
 my %seq_mdl_H     = ();   # key is seq name, value is best model for this sequence
 my %seq_sc_H      = ();   # key is seq name, value is score for best model for this sequence
-if($n_okey_clsonly > 1) { 
+if($do_clsonly) { 
   foreach $okey (@okey_clsonly_used_A) {
     parse_sqc_clsonly_file($sqc_H{$okey}, $okey, \@{$other_okey_HA{$okey}}, \%okey2skip_ant_H, \%seq_H, \@seq_A, \%seq_okey_H, \%seq_mdl_H, \%seq_sc_H, \%opt_HH, $FH_HR);
   }
@@ -481,7 +507,7 @@ if($n_okey_clsonly > 1) {
 my %seqlist_HA = ();     # key is okey, value is array of sequences that match to (and will be annotated with) this okey
 my $n_okey_ant_used = 0; # number of okeys we have at least one sequence to rerun v-annotate.pl for
 my %okey_ct_H  = ();     # key is okey, value is number of seqs assigned to that okey, 'undef' if 0
-if($n_okey_clsonly > 1) {
+if($do_clsonly) {
   foreach my $seqname (@seq_A) {
     if(defined $seq_okey_H{$seqname}) {
       my $okey = $seq_okey_H{$seqname};
@@ -514,7 +540,7 @@ if($n_okey_clsonly > 1) {
   }
 }
 else {
-  $n_okey_ant_used = 1; # we didn't run in clsonly because we only have 1 library
+  $n_okey_ant_used = 1; # we didn't run in clsonly because we only have 1 option key to annotate with
 }
 
 ###########################################################################
@@ -536,7 +562,7 @@ foreach $okey (@okey_A) {
 }
 if($n_okey_ant_used > 0) { 
   foreach $okey (@okey_A) {
-    if((defined $seqlist_HA{$okey}) || (($n_okey_clsonly == 1) && (! $okey2skip_ant_H{$okey}))) { # if $n_okey_clsonly == 1, we didn't run --cls_only mode
+    if((defined $seqlist_HA{$okey}) || ((! $do_clsonly) && (! $okey2skip_ant_H{$okey}))) { # if ! $do_clsonly, we didn't run --cls_only mode
       if($n_okey_ant_used == 1) { 
         $okey_fa_file = $in_fa_file;
         $progress_str = "Annotating $in_nseq sequences with $okey model library ";
@@ -566,7 +592,7 @@ if($n_okey_ant_used > 0) {
 # Output tabular cls_only summary
 #################################
 
-if($n_okey_clsonly > 1) {
+if($do_clsonly) {
   $start_secs = ofile_OutputProgressPrior("Generating tabular output", $progress_w, $log_FH, *STDOUT);
 
   # create the @data_lib_AA
@@ -597,7 +623,7 @@ if($n_okey_clsonly > 1) {
 ###############################################
 # Output lib, mdl and alc files, and conclude #
 ###############################################
-output_lib_mdl_and_alc_files_and_remove_temp_files($in_nseq, $sample_nseq, $n_okey_clsonly, \@okey_ant_used_A, \@mdl_file_A, \@alc_file_A, \@to_remove_A, \%opt_HH, \%ofile_info_HH);
+output_lib_mdl_and_alc_files_and_remove_temp_files($in_nseq, $sample_nseq, $do_clsonly, \@okey_ant_used_A, \@mdl_file_A, \@alc_file_A, \@to_remove_A, \%opt_HH, \%ofile_info_HH);
 
 my $z = 0;
 if($do_keep) {
@@ -826,7 +852,7 @@ sub parse_sqc_clsonly_file {
 # Arguments:
 #  $in_nseq;           number of sequences in input file
 #  $sample_nseq:       number of sequences sampled
-#  $n_okey_clsonly:    number of okeys used for classification, if 1, we skipped classification
+#  $do_clsonly:        '1' if we ran the classification stage, '0' if we skipped it
 #  $okey_ant_used_AR:  ref to array of option keys we want to output .mdl and .alc files for
 #  $mdl_file_AR:       ref to array of .mdl files to output
 #  $alc_file_AR:       ref to array of .alc files to output
@@ -842,10 +868,10 @@ sub output_lib_mdl_and_alc_files_and_remove_temp_files {
   my $nargs_exp = 9;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($in_nseq, $sample_nseq, $n_okey_clsonly, $okey_ant_used_AR, $mdl_file_AR, $alc_file_AR, $to_remove_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_nseq, $sample_nseq, $do_clsonly, $okey_ant_used_AR, $mdl_file_AR, $alc_file_AR, $to_remove_AR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # close the file we may output to stdout and the log
-  if($n_okey_clsonly > 1) {
+  if($do_clsonly) {
     close($ofile_info_HHR->{"FH"}{"lib"});
   }
   
@@ -860,7 +886,7 @@ sub output_lib_mdl_and_alc_files_and_remove_temp_files {
   my @file_A = ();
   my ($okey, $mdl_file, $alc_file) = (undef, undef, undef);
   my $n_okey = scalar(@{$okey_ant_used_AR});
-  if(($do_multi) && ($n_okey_clsonly > 1)) { 
+  if(($do_multi) && ($do_clsonly)) { 
     if(($do_sample) && ($sample_nseq < $in_nseq)) {
       $sum_str = sprintf("# Summary of seqs matching each library (only %d of %d seqs scanned):", $sample_nseq, $in_nseq);
     }
@@ -881,7 +907,7 @@ sub output_lib_mdl_and_alc_files_and_remove_temp_files {
     utl_FileLinesToArray($ofile_info_HHR->{"fullpath"}{"lib"}, 1, \@file_A, $FH_HR);
     push(@conclude_A, @file_A);
     push(@conclude_A, "#");
-  } # end of 'if(($do_multi) && ($n_okey_clsonly > 1))'
+  } # end of 'if(($do_multi) && ($do_clsonly))'
 
   # for each model we ran v-annotate.pl for, output the mdl and alc files
   for(my $m = 0; $m < $n_okey; $m++) {
@@ -1051,6 +1077,7 @@ sub only_skip_options {
 #  $okey_mdir_HR:   REF to hash of directories for each output key, modified here
 #  $okey_opts_HR:   REF to hash of options for each output key, modified here
 #  $okey_mkey_HR:   REF to hash of mkeys for each output key, modified here
+#  $okey_installed_HR: REF to hash, value is '1' if library for output key is installed
 #  $other_okey_HAR: REF to hash of arrays, key is $okey, value is
 #                   array of all $okey2 != $okey for which
 #                   $okey_mkey_HR{$okey2} = $okey. For example
@@ -1069,10 +1096,10 @@ sub only_skip_options {
 sub list_options { 
 
   my $sub_name = "list_options()"; 
-  my $nargs_exp = 10;
+  my $nargs_exp = 11;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
   
-  my ($config_file, $okey_AR, $okey_mdir_HR, $okey_opts_HR, $okey_mkey_HR, $other_okey_HAR, $pkgname, $version, $releasedate, $opt_HHR) = @_;
+  my ($config_file, $okey_AR, $okey_mdir_HR, $okey_opts_HR, $okey_mkey_HR, $okey_installed_HR, $other_okey_HAR, $pkgname, $version, $releasedate, $opt_HHR) = @_;
 
   my $div_line = utl_StringMonoChar(60, "#", undef) . "\n";
   my $fail_str = "";
@@ -1117,15 +1144,26 @@ sub list_options {
 
     @{$head_AA[0]} = ("options key", "model key", "model dir");
     @clj_A         = (1,             1,           1);
+    my $any_uninstalled = 0;
     foreach my $okey (@{$okey_AR}) {
       if((! $do_lib) || ($okey eq $out_lib)) { 
         my $mkey = mkey_from_opts($okey, $okey_opts_HR->{$okey});
         if($mkey eq $okey) { $mkey = "\""; }
-        push(@data_AA, [$okey, $mkey, $okey_mdir_HR->{$okey}]);
+        my $mdir2print = $okey_mdir_HR->{$okey};
+        if(! $okey_installed_HR->{$okey}) { 
+          $mdir2print .= " [NOT INSTALLED]";
+          $any_uninstalled = 1;
+        }
+        push(@data_AA, [$okey, $mkey, $mdir2print]);
       }
     }
     ofile_TableHumanOutput(\@data_AA, \@head_AA, \@clj_A, undef, undef, "  ", "-", "#", "#", "", 0, *STDOUT, undef, undef);
     print("#\n");
+    if($any_uninstalled) { 
+      print("# [NOT INSTALLED]: model info file <model dir>/<model key>.minfo does not exist or is empty,\n");
+      print("#                  v-scan.pl will skip this library\n");
+      print("#\n");
+    }
   }
 
   # model options table:
@@ -1183,6 +1221,11 @@ sub list_options {
         if((! $do_lib) && ($printed_header)) { push(@data_AA, []); } # blank line
         $printed_header = 1;
         $mkey_idx++;
+        if(! $okey_installed_HR->{$okey}) { 
+          # library not installed, we can't list its models
+          push(@data_AA, [sprintf("%d.-", ($do_lib ? 1 : $mkey_idx)), $mkey, (($okey eq $mkey) ? "\"" : $okey), "[NOT INSTALLED]", "-", "-", "-"]);
+          next;
+        }
         $minfo_file = $okey_mdir_HR->{$okey} . "/" . $mkey . ".minfo";
         @mdl_info_AH = ();
         %ftr_info_HAH = ();
@@ -1297,6 +1340,145 @@ sub parse_log_file_for_out_files {
 }
 
 #################################################################
+# Subroutine:  determine_installed_libraries()
+# Incept:      EPN, Thu Sep 25 2026 (w/Claude)
+#
+# Purpose:    Determine which model libraries in the config file
+#             are installed. A library is installed if the model
+#             info file that v-annotate.pl will read,
+#             <model dir>/<model key>.minfo, exists and is non-empty.
+#             We check for that file instead of just the directory
+#             because a directory can exist without the model files
+#             (e.g. an incomplete or nested install).
+#
+# Arguments: 
+#  $okey_AR:           REF to array of all okeys read from config file
+#  $okey_mdir_HR:      REF to hash of model directories for each okey
+#  $okey_mkey_HR:      REF to hash of mkeys for each okey
+#  $okey_minfo_HR:     REF to hash of model info file paths for each okey, filled here
+#  $okey_installed_HR: REF to hash, value is '1' if library for okey is installed,
+#                      else '0', filled here
+#
+# Returns:    void
+#
+# Dies:       never
+#
+#################################################################
+sub determine_installed_libraries {
+  my $sub_name = "determine_installed_libraries";
+  my $nargs_exp = 5;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($okey_AR, $okey_mdir_HR, $okey_mkey_HR, $okey_minfo_HR, $okey_installed_HR) = (@_);
+
+  foreach my $okey (@{$okey_AR}) {
+    $okey_minfo_HR->{$okey}     = $okey_mdir_HR->{$okey} . "/" . $okey_mkey_HR->{$okey} . ".minfo";
+    $okey_installed_HR->{$okey} = (-s $okey_minfo_HR->{$okey}) ? 1 : 0;
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine:  skip_uninstalled_libraries()
+# Incept:      EPN, Thu Sep 25 2026 (w/Claude)
+#
+# Purpose:    Update the skip hashes so that any okey whose model
+#             library is not installed is skipped in both the
+#             --cls_only and annotation stages, and fill 
+#             @{$warning_AR} with one warning per skipped library.
+#             No warning is created for a library if all okeys
+#             that use it were already skipped due to --only or
+#             --skip.
+#
+# Arguments: 
+#  $okey_AR:              REF to array of all okeys read from config file
+#  $okey_mkey_HR:         REF to hash of mkeys for each okey
+#  $okey_minfo_HR:        REF to hash of model info file paths for each okey
+#  $okey_installed_HR:    REF to hash, value is '1' if library for okey is installed
+#  $okey2skip_clsonly_HR: REF to hash with value = 1 if we should skip this okey
+#                         for --clsonly stage, updated here
+#  $okey2skip_ant_HR:     REF to hash with value = 1 if we should skip this okey
+#                         for annotation stage, updated here
+#  $warning_AR:           REF to array of warning strings, filled here
+#  $opt_HHR:              REF to 2D hash of option values
+#
+# Returns:    void
+#
+# Dies:       if a library for an okey specified with --only is not installed
+#             if the library for every okey that would be used is not installed
+#
+#################################################################
+sub skip_uninstalled_libraries {
+  my $sub_name = "skip_uninstalled_libraries";
+  my $nargs_exp = 8;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($okey_AR, $okey_mkey_HR, $okey_minfo_HR, $okey_installed_HR, $okey2skip_clsonly_HR, $okey2skip_ant_HR, $warning_AR, $opt_HHR) = (@_);
+
+  my $die_str = "";
+  my @mkey_A = ();         # array of mkeys of libraries that are not installed, in config file order
+  my %mkey_okey_HA = ();   # key is mkey, value is array of okeys that use it and were not already skipped
+  my $nskipped = 0;        # number of okeys we skip here
+  my $nremaining = 0;      # number of okeys we will annotate with after skipping
+
+  my %only_H = ();
+  if(opt_IsUsed("--only", $opt_HHR)) { 
+    foreach my $only_okey (split(",", opt_Get("--only", $opt_HHR))) { 
+      $only_H{$only_okey} = 1;
+    }
+  }
+
+  foreach my $okey (@{$okey_AR}) {
+    if(! $okey_installed_HR->{$okey}) { 
+      my $mkey = $okey_mkey_HR->{$okey};
+      if(! defined $mkey_okey_HA{$mkey}) { 
+        @{$mkey_okey_HA{$mkey}} = ();
+        push(@mkey_A, $mkey);
+      }
+      if(defined $only_H{$okey}) { 
+        $die_str .= "\t$okey: model library $mkey is not installed, model info file $okey_minfo_HR->{$okey} does not exist or is empty\n";
+      }
+      if(! $okey2skip_ant_HR->{$okey}) { 
+        push(@{$mkey_okey_HA{$mkey}}, $okey);
+        $nskipped++;
+      }
+      $okey2skip_clsonly_HR->{$okey} = 1;
+      $okey2skip_ant_HR->{$okey}     = 1;
+    }
+    elsif(! $okey2skip_ant_HR->{$okey}) { 
+      $nremaining++;
+    }
+  }
+
+  if($die_str ne "") { 
+    ofile_FAIL("ERROR, model library(ies) for option key(s) specified with --only are not installed:\n$die_str", 1, undef);
+  }
+  if(($nskipped > 0) && ($nremaining == 0)) { 
+    $die_str = "";
+    foreach my $mkey (@mkey_A) { 
+      if(scalar(@{$mkey_okey_HA{$mkey}}) > 0) { 
+        $die_str .= "\t$mkey: model info file " . $okey_minfo_HR->{$mkey_okey_HA{$mkey}[0]} . " does not exist or is empty\n";
+      }
+    }
+    ofile_FAIL("ERROR, no model libraries remain to use, these libraries are not installed:\n$die_str", 1, undef);
+  }
+
+  foreach my $mkey (@mkey_A) { 
+    if(scalar(@{$mkey_okey_HA{$mkey}}) > 0) { 
+      push(@{$warning_AR}, sprintf("#\n# WARNING: skipping model library %s because it is not installed:\n#          model info file %s does not exist or is empty\n#          option key%s skipped: %s\n", 
+                                   $mkey, $okey_minfo_HR->{$mkey_okey_HA{$mkey}[0]}, 
+                                   (scalar(@{$mkey_okey_HA{$mkey}}) > 1) ? "s" : "", join(", ", @{$mkey_okey_HA{$mkey}})));
+    }
+  }
+  if(scalar(@{$warning_AR}) > 0) { 
+    push(@{$warning_AR}, "#\n");
+  }
+
+  return;
+}
+
+#################################################################
 # Subroutine:  mkey_from_opts()
 # Incept:      EPN, Fri Feb 21 14:10:57 2025
 #
@@ -1368,6 +1550,9 @@ sub mlist_from_opts {
 #  $okey_mdir_HR:   hash with mdir values for each okey
 #  $okey_mkey_HR:   hash with mkey used for classifying/annotating
 #                   for this okey
+#  $okey_installed_HR: hash, value is '1' if model library for this okey
+#                   is installed, '0' if not; the minfo file check is
+#                   skipped for libraries that are not installed
 #  $other_okey_HAR: ref to hash of arrays, key is $okey, value is
 #                   array of all $okey2 != $okey for which
 #                   $okey_mkey_HR{$okey2} = $okey. For example
@@ -1381,10 +1566,10 @@ sub mlist_from_opts {
 #################################################################
 sub validate_okey_mkey_values_and_fill_other_okey_HA {
   my $sub_name = "validate_okey_mkey_values_and_fill_other_okey_HA";
-  my $nargs_exp = 4;
+  my $nargs_exp = 5;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($okey_AR, $okey_mdir_HR, $okey_mkey_HR, $other_okey_HAR) = (@_);
+  my ($okey_AR, $okey_mdir_HR, $okey_mkey_HR, $okey_installed_HR, $other_okey_HAR) = (@_);
 
   my $k; 
   my $die_str = "";
@@ -1412,8 +1597,9 @@ sub validate_okey_mkey_values_and_fill_other_okey_HA {
   my @matching_other_okey_A = (); # array of matching okeys for this mdl
   for($k = 0; $k < scalar(@{$okey_AR}); $k++) {
     $okey = $okey_AR->[$k];
-    if(defined $other_okey_HAR->{$okey}) {
+    if((defined $other_okey_HAR->{$okey}) && ($okey_installed_HR->{$okey})) {
       # we need to find at least one model with name/group/subgroup that matches $other_okey
+      # (we can't check this if the library is not installed, but then it will be skipped)
       foreach $other_okey (@{$other_okey_HAR->{$okey}}) {
         $found_match_H{$other_okey} = 0;
       }
