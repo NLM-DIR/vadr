@@ -4380,8 +4380,10 @@ sub add_classification_alerts {
           $cls_output_HHR->{$seq_name}{"nhits"}   = $nhits;
           $cls_output_HHR->{$seq_name}{"bias"}    = $bias_sum;
           $cls_output_HHR->{$seq_name}{"bstrand"} = $stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"bstrand"};
-          my $s_len = vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"s_coords"}, $FH_HR);
-          my $m_len = vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"m_coords"}, $FH_HR);
+          # hits can overlap (especially blastn hits with -s), so count each 
+          # sequence/model position only once when computing coverage
+          my $s_len = vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"s_coords"}, $FH_HR);
+          my $m_len = vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"m_coords"}, $FH_HR);
           my $scov = $s_len / $seq_len;
           my $scov2print = sprintf("%.3f", $scov);
           my $mcov2print = sprintf("%.3f", $m_len / $mdl_len);
