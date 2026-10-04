@@ -150,6 +150,7 @@ require "sqp_utils.pm";
 # vdr_CoordsSinglePositionSegmentCreate()
 # vdr_CoordsAppendSegment()
 # vdr_CoordsLength()
+# vdr_CoordsLengthNoOverlap()
 # vdr_CoordsFromLocation()
 # vdr_CoordsReverseComplement()
 # vdr_CoordsSegmentReverseComplement()
@@ -4499,6 +4500,59 @@ sub vdr_CoordsLength {
     ($start, $stop, undef) = vdr_CoordsSegmentParse($coords_tok, $FH_HR);
     $ret_len += abs($start - $stop) + 1;
   }
+
+  return $ret_len;
+}
+
+#################################################################
+# Subroutine: vdr_CoordsLengthNoOverlap()
+# Incept:     EPN, Sun Oct  4 2026 (w/Claude)
+#
+# Synopsis: Given a comma separated coords string, parse it, 
+#           validate it, and return the number of positions
+#           covered by at least one segment, ignoring strand.
+#           Unlike vdr_CoordsLength(), positions covered
+#           by more than one segment are only counted once.
+# 
+# Arguments:
+#  $coords:  coordinate string
+#  $FH_HR:   REF to hash of file handles, including "log" and "cmd"
+#
+# Returns:   number of positions covered by >= 1 segment in $coords
+#
+# Dies: if unable to parse $coords
+#
+#################################################################
+sub vdr_CoordsLengthNoOverlap {
+  my $sub_name = "vdr_CoordsLengthNoOverlap";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($coords, $FH_HR) = @_;
+  if(! defined $coords) { 
+    ofile_FAIL("ERROR in $sub_name, coords is undefined", 1, $FH_HR); 
+  }
+
+  my @sgm_AA = ();
+  foreach my $coords_tok (split(",", $coords)) { 
+    my ($start, $stop, undef) = vdr_CoordsSegmentParse($coords_tok, $FH_HR);
+    push(@sgm_AA, (($start <= $stop) ? [$start, $stop] : [$stop, $start]));
+  }
+  @sgm_AA = sort { $a->[0] <=> $b->[0] } @sgm_AA;
+
+  my $ret_len = 0;
+  my ($cur_start, $cur_stop) = @{$sgm_AA[0]};
+  for(my $i = 1; $i < scalar(@sgm_AA); $i++) { 
+    my ($start, $stop) = @{$sgm_AA[$i]};
+    if($start > $cur_stop) { # no overlap with current merged segment
+      $ret_len += $cur_stop - $cur_start + 1;
+      ($cur_start, $cur_stop) = ($start, $stop);
+    }
+    elsif($stop > $cur_stop) { 
+      $cur_stop = $stop;
+    }
+  }
+  $ret_len += $cur_stop - $cur_start + 1;
 
   return $ret_len;
 }
