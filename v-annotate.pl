@@ -4165,6 +4165,10 @@ sub add_classification_alerts {
   # if we used blastn for the cdt stage, we may have overlapping hits in sequence coords, 
   # this is relevant if/when we call helper_sort_hit_array for the dupregin alert below
   my $do_blastn_cdt = opt_Get("-s", \%opt_HH) ? 1 : 0;
+  # with -s, std.cls hits are from blastn and can overlap each other in the sequence, 
+  # summed scores count overlapping positions only once (see blastn_dedup_summed_score())
+  # so we use the length of the sequence covered by >= 1 hit when computing score per nt
+  my $do_blastn_cls = opt_Get("-s", \%opt_HH) ? 1 : 0;
 
   %{$cls_output_HHR} = ();
   foreach my $seq_name (sort keys(%{$seq_len_HR})) { 
@@ -4192,7 +4196,9 @@ sub add_classification_alerts {
           $cls_output_HHR->{$seq_name}{"subgroup1"} = $stg_results_HHHR->{$seq_name}{"std.cls.1"}{"subgroup"}; # can be undef
           my @score_A = split(",", $stg_results_HHHR->{$seq_name}{"std.cls.1"}{"score"});
           $score1 = utl_ASum(\@score_A);
-          my $s_len = vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cls.1"}{"s_coords"}, $FH_HR);
+          my $s_len = ($do_blastn_cls) ? 
+              vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cls.1"}{"s_coords"}, $FH_HR) : 
+              vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cls.1"}{"s_coords"}, $FH_HR);
           my $scov = $s_len / $seq_len;
           $scpnt1 = ($score1 / $s_len);
           $cls_output_HHR->{$seq_name}{"score"} = sprintf("%.1f", $score1);
@@ -4207,7 +4213,9 @@ sub add_classification_alerts {
           $cls_output_HHR->{$seq_name}{"subgroup2"} = $stg_results_HHHR->{$seq_name}{"std.cls.2"}{"subgroup"}; # can be undef
           my @score_A = split(",", $stg_results_HHHR->{$seq_name}{"std.cls.2"}{"score"});
           $score2 = utl_ASum(\@score_A);
-          $scpnt2 = ($score2 / vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cls.2"}{"s_coords"}, $FH_HR));
+          $scpnt2 = ($do_blastn_cls) ? 
+              ($score2 / vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cls.2"}{"s_coords"}, $FH_HR)) : 
+              ($score2 / vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cls.2"}{"s_coords"}, $FH_HR));
           if(defined $score1) { 
             $cls_output_HHR->{$seq_name}{"scdiff"}  = sprintf("%.1f", ($score1 - $score2));
             $cls_output_HHR->{$seq_name}{"diffpnt"} = sprintf("%.3f", ($scpnt1 - $scpnt2));
@@ -4240,7 +4248,9 @@ sub add_classification_alerts {
         foreach my $rkey (keys (%{$stg_results_HHHR->{$seq_name}})) { 
           my @score_A = split(",", $stg_results_HHHR->{$seq_name}{$rkey}{"score"});
           $score_H{$rkey} = utl_ASum(\@score_A);
-          $scpnt_H{$rkey} = $score_H{$rkey} / vdr_CoordsLength($stg_results_HHHR->{$seq_name}{$rkey}{"s_coords"}, $FH_HR);
+          $scpnt_H{$rkey} = (($do_blastn_cls) && ($rkey =~ m/^std\.cls\./)) ? 
+              $score_H{$rkey} / vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{$rkey}{"s_coords"}, $FH_HR) : 
+              $score_H{$rkey} / vdr_CoordsLength($stg_results_HHHR->{$seq_name}{$rkey}{"s_coords"}, $FH_HR);
         }
         my $have_cdt_bs = (defined $stg_results_HHHR->{$seq_name}{"std.cdt.bs"}) ? 1 : 0;
 
@@ -4370,8 +4380,10 @@ sub add_classification_alerts {
           $cls_output_HHR->{$seq_name}{"nhits"}   = $nhits;
           $cls_output_HHR->{$seq_name}{"bias"}    = $bias_sum;
           $cls_output_HHR->{$seq_name}{"bstrand"} = $stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"bstrand"};
-          my $s_len = vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"s_coords"}, $FH_HR);
-          my $m_len = vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"m_coords"}, $FH_HR);
+          # hits can overlap (especially blastn hits with -s), so count each 
+          # sequence/model position only once when computing coverage
+          my $s_len = vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"s_coords"}, $FH_HR);
+          my $m_len = vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"m_coords"}, $FH_HR);
           my $scov = $s_len / $seq_len;
           my $scov2print = sprintf("%.3f", $scov);
           my $mcov2print = sprintf("%.3f", $m_len / $mdl_len);
