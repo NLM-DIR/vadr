@@ -1,6 +1,7 @@
 >Feature gi|1447973732|gb|MH680297.1|
-<36	1485	misc_feature
-			note	similar to envelope protein E
+<36	1485	mat_peptide
+			product	envelope protein E
+			protein_id	1447973732_1
 <36	>1485	gene
 			gene	POLY
 <36	>1485	misc_feature
@@ -14,8 +15,9 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:envelope protein E) mat_peptide
 			gene	POLY
 <1	>86	misc_feature
 			note	similar to polyprotein
-<1	>86	misc_feature
-			note	similar to RNA-dependent RNA polymerase NS5
+<1	>86	mat_peptide
+			product	RNA-dependent RNA polymerase NS5
+			protein_id	281314094_1
 
 Additional note(s) to submitter:
 ERROR: AMBIGUITY_AT_CDS_END: (CDS:polyprotein) final nucleotide of CDS is an ambiguous nucleotide [-]; seq-coords:87..87:+; mdl-coords:10065..10065:+; mdl:NC_001474;

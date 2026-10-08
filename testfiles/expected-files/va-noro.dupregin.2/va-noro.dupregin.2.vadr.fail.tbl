@@ -3,18 +3,24 @@
 			gene	ORF1
 5	5514	misc_feature
 			note	similar to nonstructural polyprotein
-5	1338	misc_feature
-			note	similar to p48
-1339	2427	misc_feature
-			note	similar to NTPase
-2428	3030	misc_feature
-			note	similar to p22
-3031	3444	misc_feature
-			note	similar to VPg
-3445	3987	misc_feature
-			note	similar to Pro
-3988	5511	misc_feature
-			note	similar to RdRp
+5	1338	mat_peptide
+			product	p48
+			protein_id	NC_001959.2-dupregion-700_3
+1339	2427	mat_peptide
+			product	NTPase
+			protein_id	NC_001959.2-dupregion-700_3
+2428	3030	mat_peptide
+			product	p22
+			protein_id	NC_001959.2-dupregion-700_3
+3031	3444	mat_peptide
+			product	VPg
+			protein_id	NC_001959.2-dupregion-700_3
+3445	3987	mat_peptide
+			product	Pro
+			protein_id	NC_001959.2-dupregion-700_3
+3988	5511	mat_peptide
+			product	RdRp
+			protein_id	NC_001959.2-dupregion-700_3
 5498	7090	gene
 			gene	ORF2
 5498	7090	CDS

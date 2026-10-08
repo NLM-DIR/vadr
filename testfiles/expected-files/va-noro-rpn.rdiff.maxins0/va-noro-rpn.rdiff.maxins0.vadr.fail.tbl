@@ -3,8 +3,9 @@
 			gene	ORF1
 <1	738	misc_feature
 			note	similar to nonstructural polyprotein
-<1	735	misc_feature
-			note	similar to RdRp
+<1	735	mat_peptide
+			product	RdRp
+			protein_id	JX439803.1-5p-del2-1of1match_2
 719	>978	gene
 			gene	ORF2
 719	>978	CDS
@@ -21,8 +22,9 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 <1	741	misc_feature
 			note	similar to nonstructural polyprotein
-<1	738	misc_feature
-			note	similar to RdRp
+<1	738	mat_peptide
+			product	RdRp
+			protein_id	JX439803.1-5p-ins1-1of1-match_2
 722	>981	gene
 			gene	ORF2
 722	>981	CDS
@@ -39,8 +41,9 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 <1	738	misc_feature
 			note	similar to nonstructural polyprotein
-<1	735	misc_feature
-			note	similar to RdRp
+<1	735	mat_peptide
+			product	RdRp
+			protein_id	JX439803.1-3p-del2-1of1match_2
 719	>978	gene
 			gene	ORF2
 719	>978	CDS
@@ -57,8 +60,9 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 <1	741	misc_feature
 			note	similar to nonstructural polyprotein
-<1	738	misc_feature
-			note	similar to RdRp
+<1	738	mat_peptide
+			product	RdRp
+			protein_id	JX439803.1-3p-ins1-1of1-match_2
 722	>981	gene
 			gene	ORF2
 722	>981	CDS

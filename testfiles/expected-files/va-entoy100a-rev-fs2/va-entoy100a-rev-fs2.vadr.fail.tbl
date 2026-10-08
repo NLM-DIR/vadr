@@ -83,15 +83,17 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or ma
 >Feature ENTOY100A-REV-2-fs3
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-2-fs3_2
+			protein_id	ENTOY100A-REV-2-fs3_3
 35	22	misc_feature
 16	6
 			note	similar to protein three
-25	22	misc_feature
+25	22	mat_peptide
 16	9
-			note	similar to protein three mp2
-35	26	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs3_2
+35	26	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs3_2
 70	55	misc_feature
 55	38
 36	28
@@ -209,15 +211,17 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or ma
 >Feature ENTOY100A-REV-2-fs6
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-2-fs6_2
+			protein_id	ENTOY100A-REV-2-fs6_3
 33	22	misc_feature
 16	6
 			note	similar to protein three
-25	22	misc_feature
+25	22	mat_peptide
 16	9
-			note	similar to protein three mp2
-33	26	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs6_2
+33	26	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs6_2
 68	53	misc_feature
 53	36
 34	28
@@ -373,15 +377,17 @@ ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible
 >Feature ENTOY100A-REV-2-fs12
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-2-fs12_2
+			protein_id	ENTOY100A-REV-2-fs12_3
 36	22	misc_feature
 16	6
 			note	similar to protein three
-25	22	misc_feature
+25	22	mat_peptide
 16	9
-			note	similar to protein three mp2
-36	26	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs12_2
+36	26	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs12_2
 72	57	misc_feature
 57	39
 37	28
@@ -583,11 +589,13 @@ ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible
 34	21	misc_feature
 15	6
 			note	similar to protein three
-24	21	misc_feature
+24	21	mat_peptide
 15	9
-			note	similar to protein three mp2
-34	26	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs17_3
+34	26	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs17_3
 69	54	CDS
 54	37
 35	28
@@ -627,11 +635,13 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 40	27	misc_feature
 21	6
 			note	similar to protein three
-30	27	misc_feature
+30	27	mat_peptide
 21	9
-			note	similar to protein three mp2
-40	32	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs18_3
+40	32	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs18_3
 75	60	CDS
 60	43
 41	34
@@ -668,15 +678,17 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 >Feature ENTOY100A-REV-2-fs19
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-2-fs19_3
+			protein_id	ENTOY100A-REV-2-fs19_4
 31	21	misc_feature
 16	6
 			note	similar to protein three
-22	21	misc_feature
+22	21	mat_peptide
 16	9
-			note	similar to protein three mp2
-31	23	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs19_3
+31	23	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs19_3
 66	51	CDS
 51	34
 32	25
@@ -715,11 +727,13 @@ ERROR: UNEXPECTED_LENGTH: (mat_peptide:protein three mp2) length of complete cod
 31	20	misc_feature
 14	6
 			note	similar to protein three
-22	20	misc_feature
+22	20	mat_peptide
 14	9
-			note	similar to protein three mp2
-31	23	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs21_3
+31	23	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs21_3
 66	51	CDS
 51	34
 32	25
@@ -759,11 +773,13 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 37	25	misc_feature
 17	6
 			note	similar to protein three
-28	25	misc_feature
+28	25	mat_peptide
 17	9
-			note	similar to protein three mp2
-37	29	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs22_3
+37	29	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs22_3
 72	57	CDS
 57	40
 38	31
@@ -803,11 +819,13 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 35	23	misc_feature
 17	6
 			note	similar to protein three
-26	23	misc_feature
+26	23	mat_peptide
 17	9
-			note	similar to protein three mp2
-35	27	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs23_2
+35	27	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs23_2
 70	55	misc_feature
 55	38
 36	29
@@ -844,15 +862,17 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 >Feature ENTOY100A-REV-2-fs24
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-2-fs24_2
+			protein_id	ENTOY100A-REV-2-fs24_3
 34	22	misc_feature
 16	6
 			note	similar to protein three
-25	22	misc_feature
+25	22	mat_peptide
 16	9
-			note	similar to protein three mp2
-34	26	misc_feature
-			note	similar to protein three mp1
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-2-fs24_2
+34	26	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-2-fs24_2
 69	54	misc_feature
 54	37
 35	28

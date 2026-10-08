@@ -54,8 +54,9 @@ ERROR: INDEFINITE_ANNOTATION_END: (CDS:VP1) protein-based alignment does not ext
 			gene	ORF1
 <1	810	misc_feature
 			note	similar to nonstructural polyprotein
-<1	807	misc_feature
-			note	similar to RdRp
+<1	807	mat_peptide
+			product	RdRp
+			protein_id	JX439803.1-with-Ns-cdsstopp3_1
 791	>1336	gene
 			gene	ORF2
 791	>1336	misc_feature
@@ -70,8 +71,9 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 <1	737	misc_feature
 			note	similar to nonstructural polyprotein
-<1	734	misc_feature
-			note	similar to RdRp
+<1	734	mat_peptide
+			product	RdRp
+			protein_id	JX439803.1-3shorter-Ns-cdsstopp2_2
 718	>977	gene
 			gene	ORF2
 718	>977	CDS
@@ -86,8 +88,9 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 <1	743	misc_feature
 			note	similar to nonstructural polyprotein
-<1	740	misc_feature
-			note	similar to RdRp
+<1	740	mat_peptide
+			product	RdRp
+			protein_id	JX439803.1-3longer-Ns-cdsstopp4_2
 724	>983	gene
 			gene	ORF2
 724	>983	CDS
@@ -102,8 +105,9 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 <1	743	misc_feature
 			note	similar to nonstructural polyprotein
-<1	740	misc_feature
-			note	similar to RdRp
+<1	740	mat_peptide
+			product	RdRp
+			protein_id	JX439803.1-not-replaced-cdsstopp4_2
 724	>983	gene
 			gene	ORF2
 724	>983	CDS

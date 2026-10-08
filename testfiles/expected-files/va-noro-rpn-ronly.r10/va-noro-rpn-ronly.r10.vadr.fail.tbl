@@ -3,8 +3,9 @@
 			gene	ORF1
 <1	810	misc_feature
 			note	similar to nonstructural polyprotein
-<1	807	misc_feature
-			note	similar to RdRp
+<1	807	mat_peptide
+			product	RdRp
+			protein_id	507309522_1
 791	>1336	gene
 			gene	ORF2
 791	>1336	misc_feature
