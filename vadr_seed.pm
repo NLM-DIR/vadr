@@ -2672,7 +2672,10 @@ sub run_minimap2 {
   my $mm2_out_file = $out_root . ".mm2.$mdl_name.out";
   my $mm2_err_file = $out_root . ".mm2.$mdl_name.err";
 
-  my $mm2_opts = " -rmq=no --junc-bonus=0 --for-only --sam-hit-only --secondary=no --score-N=0 -t 1";
+  my $mm2_opts = " --rmq=no --junc-bonus=0 --for-only --sam-hit-only --secondary=no --score-N=0 -t 1";
+  # --mm2_z defaults to 10000 (vs minimap2's own -x asm20 default of 200), so always apply it,
+  # whether or not the user explicitly passed --mm2_z (brief 26_0923-014)
+  $mm2_opts .= " -z " . opt_Get("--mm2_z", $opt_HHR);
   if((opt_IsUsed("--mm2_k", $opt_HHR)) || (opt_IsUsed("--mm2_w", $opt_HHR))) { 
     if(opt_IsUsed("--mm2_k", $opt_HHR)) { 
       $mm2_opts .= " -k " . opt_Get("--mm2_k", $opt_HHR); 
