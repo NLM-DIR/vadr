@@ -6292,16 +6292,20 @@ sub add_frameshift_alerts_for_one_sequence {
                 }
               }
               # add insertnn alert, if nec
-              if($rf2ilen_AR->[$rfpos] > 0) { 
+              # $rf2ilen_AR->[$rfpos] is the length of the insert after $rfpos in model (positive strand)
+              # orientation; for a negative strand feature the insert after $rfpos in the direction
+              # of the feature is the insert after ($rfpos-1) in model orientation
+              my $ins_len = ($strand eq "+") ? $rf2ilen_AR->[$rfpos] : $rf2ilen_AR->[($rfpos-1)];
+              if($ins_len > 0) { 
                 my $local_nmaxins = (defined $insertn_posn_exc_AH[$ftr_idx]{$rfpos}) ? $insertn_posn_exc_AH[$ftr_idx]{$rfpos} : $nmaxins;
-                if($rf2ilen_AR->[$rfpos] > $local_nmaxins) { 
+                if($ins_len > $local_nmaxins) { 
                   $alert_scoords = sprintf("seq:%s;", ($strand eq "+") ? 
-                                           vdr_CoordsSegmentCreate($uapos+1, $uapos+1 + $rf2ilen_AR->[$rfpos]-1, $strand, $FH_HR) : 
-                                           vdr_CoordsSegmentCreate($uapos+1 + $rf2ilen_AR->[$rfpos]-1, $uapos+1, $strand, $FH_HR));
+                                           vdr_CoordsSegmentCreate($uapos+1, $uapos + $ins_len, $strand, $FH_HR) : 
+                                           vdr_CoordsSegmentCreate($uapos-1, $uapos - $ins_len, $strand, $FH_HR));
                   $alert_mcoords = sprintf("mdl:%s;", vdr_CoordsSegmentCreate($rfpos, $rfpos, $strand, $FH_HR));
                   alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "insertnn", $seq_name, $ftr_idx, 
                                              sprintf("%s%s%d>%d", 
-                                                     $alert_scoords, $alert_mcoords, $rf2ilen_AR->[$rfpos], $local_nmaxins), $FH_HR);
+                                                     $alert_scoords, $alert_mcoords, $ins_len, $local_nmaxins), $FH_HR);
                 }
               }
 
@@ -8651,7 +8655,9 @@ sub add_protein_validation_alerts {
                     $alt_scoords = "seq:";
                     if($p_blastx_feature_flag) { 
                       if(defined $n_scoords) { 
-                        $alt_scoords .= vdr_CoordsRelativeToAbsolute($n_scoords, vdr_CoordsSegmentCreate($p_qstart, $p_qstop, $p_strand, $FH_HR), $FH_HR) . ";";
+                        # query is the feature fetched in its own orientation, so use strand relative to query
+                        # (prior to this $p_strand was used, which gave incorrect coords for negative strand features)
+                        $alt_scoords .= vdr_CoordsRelativeToAbsolute($n_scoords, vdr_CoordsSegmentCreate($p_qstart, $p_qstop, helper_blastx_query_strand($p_strand, 1, $n_scoords, $FH_HR), $FH_HR), $FH_HR) . ";";
                       }
                       else { 
                         $alt_scoords .= "VADRNULL;";
@@ -8672,8 +8678,10 @@ sub add_protein_validation_alerts {
                     if($p_blastx_feature_flag) { 
                       # query blast sequence was a fetched feature sequence determine absolute (sequence) nt coords using
                       # vdr_CoordsRelativeToAbsolute(), this will correctly handle case where we have multiple segments
+                      # query is the feature fetched in its own orientation, so use strand relative to query
+                      # (prior to this $n_strand was used, which gave incorrect coords for negative strand features)
                       my $abs_p_qcoords = vdr_CoordsRelativeToAbsolute($n_scoords, 
-                                                                       vdr_CoordsSegmentCreate($p_qstart, $p_qstop, $n_strand, $FH_HR), 
+                                                                       vdr_CoordsSegmentCreate($p_qstart, $p_qstop, helper_blastx_query_strand($p_strand, 1, $n_scoords, $FH_HR), $FH_HR), 
                                                                        $FH_HR);
                       $p_sstart = vdr_Feature5pMostPosition($abs_p_qcoords, $FH_HR); 
                       $p_sstop  = vdr_Feature3pMostPosition($abs_p_qcoords, $FH_HR); 
@@ -8750,11 +8758,19 @@ sub add_protein_validation_alerts {
                       my @p_ins_len_A  = ();
                       my $nins = helper_blastx_breakdown_max_indel_str($p_ins, \@p_ins_qpos_A, \@p_ins_spos_A, \@p_ins_len_A, $FH_HR);
                       for(my $ins_idx = 0; $ins_idx < $nins; $ins_idx++) {
+                        # determine $ins_aa_mpos: the subject (protein) position after which the insert occurs;
+                        # parse_blast.pl reports the subject position before the insert if the blastx alignment
+                        # is to the positive strand of the query, and the subject position after the insert
+                        # if it is to the negative strand of the query
+                        my $ins_aa_mpos = $p_ins_spos_A[$ins_idx];
+                        if(helper_blastx_query_strand($p_strand, $p_blastx_feature_flag, $p_ftr_scoords, $FH_HR) eq "-") { 
+                          $ins_aa_mpos--;
+                        }
                         # see github issue #84: subject insert position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_ins_spos undef and use default xmaxins
                         my $nt_ins_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_ins_spos_A[$ins_idx], "+", $FH_HR), $FH_HR)) {
+                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR), $FH_HR)) {
                           $nt_ins_spos = vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
-                                                                                                          vdr_CoordsSinglePositionSegmentCreate($p_ins_spos_A[$ins_idx], "+", $FH_HR),
+                                                                                                          vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR),
                                                                                                           $FH_HR), $FH_HR);
                         }
                         my $local_xmaxins = ((defined $nt_ins_spos) && (defined $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos})) ? $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos} : $xmaxins;
@@ -8762,7 +8778,7 @@ sub add_protein_validation_alerts {
                           if(defined $alt_str_HH{$ftr_results_prefix}{"insertnp"}) { $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= ":VADRSEP:"; } # we are adding another instance
                           else                               { $alt_str_HH{$ftr_results_prefix}{"insertnp"}  = ""; } # initialize
                           ($alt_scoords, $alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
-                                                                                                     $p_ins_qpos_A[$ins_idx], $p_ins_spos_A[$ins_idx], $p_ins_len_A[$ins_idx], 
+                                                                                                     $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
                                                                                                      $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
                                                                                                      $seq_len_HR->{$seq_name}, $FH_HR);
                           $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= sprintf("%s%s%d>%d", 
@@ -8780,13 +8796,15 @@ sub add_protein_validation_alerts {
                       for(my $del_idx = 0; $del_idx < $ndel; $del_idx++) {
                         # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos undef and use default xmaxdel
                         my $nt_del_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx], "+", $FH_HR), $FH_HR)) {
-                          $nt_del_spos = 1 + vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
-                                                                                                              vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx], "+", $FH_HR),
-                                                                                                              $FH_HR), $FH_HR);
+                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
+                          $nt_del_spos = vdr_Feature5pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
+                                                                                                         vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR),
+                                                                                                         $FH_HR), $FH_HR);
                         }
-                        # we add 1 to make nt_del_spos bc the value returned from vdr_Feature3pMostPosition is the nucleotide subject position of the 3' most nt in the AA
-                        # just before the deletion so deletion actually starts at that position + 1
+                        # $p_del_spos_A[$del_idx] is the AA just before the deletion, so the deletion starts at the
+                        # 5'-most model position of the next AA (the first deleted position, which is also the first
+                        # position of the deletinp model coords); this is not simply 1 more than the 3'-most position
+                        # of the AA before the deletion for negative strand CDSs or if that AA ends a CDS segment
 
                         my $local_xmaxdel = ((defined $nt_del_spos) && (defined $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos})) ? $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos} : $xmaxdel;
                         if($p_del_len_A[$del_idx] > $local_xmaxdel) { 
@@ -9987,6 +10005,44 @@ sub helper_blastx_breakdown_max_indel_str {
 }
 
 #################################################################
+# Subroutine: helper_blastx_query_strand
+# Incept:     EPN, Tue Oct  6 2026 (w/Claude)
+#
+# Purpose: Determine the strand of a blastx alignment relative to
+#          the blastx query sequence, for converting blastx query
+#          positions to sequence coordinates.
+#
+#          If the query is the full sequence, this is $blastx_strand.
+#          If the query is a single fetched feature, the feature was
+#          fetched in its own orientation (e.g. reverse complemented
+#          if it is on the negative strand), so the alignment is to
+#          the positive strand of the query if $blastx_strand matches
+#          the strand of the feature in the sequence ($ftr_scoords)
+#          and to the negative strand of the query otherwise.
+#
+# Arguments:
+#   $blastx_strand: strand of blastx hit (a 'p_strand' value in ftr_results)
+#   $is_feature:    '1' if blastx query is a fetched feature, '0' if full sequence
+#   $ftr_scoords:   sequence coords of the feature, only used if $is_feature
+#   $FH_HR:         ref to hash of file handles, including 'log'
+#
+# Returns:  "+" or "-"
+#
+#################################################################
+sub helper_blastx_query_strand {
+  my $sub_name  = "helper_blastx_query_strand";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($blastx_strand, $is_feature, $ftr_scoords, $FH_HR) = (@_);
+
+  if(! $is_feature) { 
+    return $blastx_strand;
+  }
+  return ($blastx_strand eq vdr_FeatureSummaryStrand($ftr_scoords, $FH_HR)) ? "+" : "-";
+}
+
+#################################################################
 # Subroutine: helper_blastx_max_indel_token_to_alt_coords
 # Incept:     EPN, Tue May 25 18:42:57 2021
 #
@@ -9996,8 +10052,12 @@ sub helper_blastx_breakdown_max_indel_str {
 #
 # Arguments:
 #   $is_insert:     '1' if this is an insert, '0' if delete
-#   $spos:          sequence position of indel
-#   $aa_mpos:       amino acid position of indel
+#   $spos:          query sequence position of indel, from parse_blast.pl: for an insert, the
+#                   position just before the insert if the blastx alignment is to the positive
+#                   strand of the query and the position just after the insert if it is to the
+#                   negative strand of the query; for a delete, the position just prior to (5'
+#                   of) the deletion
+#   $aa_mpos:       amino acid (subject) position after which the indel occurs
 #   $len:           length of indel in nucleotides
 #   $is_feature:    '1' if sequence is a feature so $ins_spos is relative to the feature coords $ftr_coords
 #                   '0' if sequence is a the full sequence (not a feature) so $ins_spos is absolute coords
@@ -10030,16 +10090,25 @@ sub helper_blastx_max_indel_token_to_alt_coords {
   my $alt_scoords      = undef; # to return: alert sequence coords string
   my $alt_mcoords      = undef; # to return: alert model    coords string
 
+  # determine strand of the blastx alignment relative to the blastx query, see
+  # helper_blastx_query_strand(). Prior to this, $ftr_strand and $blastx_strand were
+  # used directly for feature queries, which gave incorrect sequence coords for
+  # negative strand features and could cause a fatal error on an insert near
+  # the 5' end of the feature (negative relative stop position).
+  my $query_blastx_strand = helper_blastx_query_strand($blastx_strand, $is_feature, $ftr_scoords, $FH_HR);
+
   if($is_insert) { 
     # determine sequence coordinates
     # determine coordinates in full sequence, this is complicated by fact that blastx query can be full seq or a single feature
-    if(($is_feature && ($ftr_strand eq "+")) || ((! $is_feature) && ($blastx_strand eq "+"))) { 
-      # blast alignment is to positive strand
-      $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos + $len - 1, $blastx_strand, $FH_HR);
+    # $spos is the query position just before (positive strand) or just after
+    # (negative strand) the inserted nucleotides
+    if($query_blastx_strand eq "+") {
+      # blast alignment is to positive strand of query
+      $relative_scoords = vdr_CoordsSegmentCreate($spos + 1, $spos + $len, "+", $FH_HR);
     }
     else { 
-      # blast alignment is to negative strand
-      $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos - $len + 1, $blastx_strand, $FH_HR);
+      # blast alignment is to negative strand of query
+      $relative_scoords = vdr_CoordsSegmentCreate($spos + $len, $spos + 1, "-", $FH_HR);
     }
     $absolute_scoords = ($is_feature) ? 
         $ftr_scoords : vdr_CoordsSegmentCreate(1, $seq_len, "+", $FH_HR); # the full sequence
@@ -10065,7 +10134,9 @@ sub helper_blastx_max_indel_token_to_alt_coords {
   }
   else { # delete
     # determine sequence coordinates
-    $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos, $blastx_strand, $FH_HR);
+    # use $query_blastx_strand (not $blastx_strand), else for a negative strand feature query
+    # the returned single position is reported on the wrong (+) strand
+    $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos, $query_blastx_strand, $FH_HR);
     $absolute_scoords = ($is_feature) ? 
         $ftr_scoords : vdr_CoordsSegmentCreate(1, $seq_len, "+", $FH_HR); # the full sequence
     $alt_scoords = sprintf("seq:%s;", vdr_CoordsRelativeToAbsolute($absolute_scoords, $relative_scoords, $FH_HR));
@@ -15000,8 +15071,10 @@ sub helper_sort_hit_array {
       ofile_FAIL("ERROR in $sub_name, not all regions are on same strand, region 1: $tosort_AR->[0] $bstrand, region " . $i+1 . ": $tosort_AR->[$i] $strand", 1, $FH_HR);
     }
   }
-  # the <=> comparison function means sort numerically ascending
-  @{$order_AR} = (sort {$hash{$a} <=> $hash{$b}} (keys %hash));
+  # the <=> comparison function means sort numerically ascending,
+  # break ties by original index so order is deterministic (otherwise
+  # tied values are output in perl's per-process hash key order)
+  @{$order_AR} = (sort {($hash{$a} <=> $hash{$b}) || ($a <=> $b)} (keys %hash));
 
   # now that we have the sorted order, we can easily check for dups
   if(! $allow_dups) { 
