@@ -12194,6 +12194,7 @@ sub output_feature_table {
           my $is_cds_or_parent_is_cds = ($is_cds || $parent_is_cds) ? 1 : 0;
           my $min_coord               = undef; # minimum coord in this feature
           my $cds_codon_start         = undef; # codon start value, only set for CDS
+          my $protein_id_ftr_idx      = -1;    # feature index of CDS whose protein_id this feature gets, -1 for none
 
           my $defined_n_start   = (defined $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_start"}) ? 1: 0;
           my $defined_p_qstart   = (defined $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"p_qstart"}) ? 1: 0;
@@ -12327,50 +12328,11 @@ sub output_feature_table {
               }
 
               if((! $do_noprotid) && ($is_cds_or_parent_is_cds)) { 
-                # add protein_id if we are a cds or parent is a cds
-                # determine index for th protein_id qualifier
-                my $protein_id_ftr_idx = ($is_cds) ? $ftr_idx : $parent_ftr_idx; # if !$is_cds, parent must be cds
-                my $protein_id_idx = undef;
-                # determine index for this protein
-                if(defined $ftr_idx2protein_id_idx_H{$protein_id_ftr_idx}) { 
-                  # the CDS itself or at least one mat_peptide with this
-                  # CDS as its parent was already output, so use the same
-                  # index that feature used
-                  $protein_id_idx = $ftr_idx2protein_id_idx_H{$protein_id_ftr_idx};
-                }
-                else { 
-                  # no index for this CDS yet exists, create it
-                  $nprotein_id++;
-                  $protein_id_idx = $nprotein_id;
-                  $ftr_idx2protein_id_idx_H{$protein_id_ftr_idx} = $protein_id_idx;
-                }
-                
-                # determine the protein_id value
-                # - this cannot exceed $max_protein_id_length (50) characters as per GenBank rules (see github issue #12)
-                #   so we shorten it to 50 characters if necessary UNLESS --forceprotid OR --noseqnamemax are used in which 
-                #   case we assume user doesn't care about GenBank maximum
-                # - first we try <seqname>_<index_of_protein_id_for_this_seq>, if this is <= $max_protein_id_length then we use that,
-                #   if not, then we add a new suffix "_seq<seqidx>_<index_of_protein_id_for_this_seq>" at prepend the 
-                #   first $max_protein_id_length - length(suffix) characters of the sequence name to it
-                my $protein_id_value = sprintf("%s" . "_" . "%d", (($do_forceprotid) ? $seq_name : get_accession_from_ncbi_seq_name($seq_name)), $protein_id_idx);
-                if((! $do_forceprotid) && (! $do_noseqnamemax)) { # neither --forceprotid and --noseqnamemax used
-                  # make sure length of protein_id_value doesn't exceed the maximum, if so, shorten it.
-                  if((length($protein_id_value)) > $max_protein_id_length) { 
-                    my $new_sfx = sprintf("...seq%d_%d", $seq_idx2print, $protein_id_idx);
-                    my $len_new_sfx = length($new_sfx);
-                    if($len_new_sfx > $max_protein_id_length) { 
-                      ofile_FAIL("ERROR in $sub_name, suffix being used to prevent protein id from exceeding $max_protein_id_length characters is itself more than $max_protein_id_length characters:\n$new_sfx\n", 1, $FH_HR);
-                    }
-                    my $alt_seq_name = get_accession_from_ncbi_seq_name($seq_name);
-                    if((length($alt_seq_name) + $len_new_sfx) <= $max_protein_id_length) { 
-                      $protein_id_value = $alt_seq_name . $new_sfx;
-                    }
-                    else { 
-                      $protein_id_value = substr($alt_seq_name, 0, ($max_protein_id_length - $len_new_sfx)) . $new_sfx;
-                    }
-                  }
-                }
-                $ftr_out_str .= helper_ftable_add_qualifier_specified($ftr_idx, "protein_id", $protein_id_value, $FH_HR);
+                # we will add protein_id if we are a cds or parent is a cds,
+                # but not until after the pruning step below, so that the 
+                # children of a CDS that becomes a misc_feature (which are
+                # removed) do not use up a protein_id index
+                $protein_id_ftr_idx = ($is_cds) ? $ftr_idx : $parent_ftr_idx; # if !$is_cds, parent must be cds
               }
             }
             else { # we are a misc_feature, add the 'similar to X' note
@@ -12387,6 +12349,8 @@ sub output_feature_table {
             $ftout_AH[$ftidx]{"output"}           = $ftr_out_str;
             $ftout_AH[$ftidx]{"codon_start"}      = (defined $cds_codon_start) ? $cds_codon_start : -1;
             $ftout_AH[$ftidx]{"ftbl_len"}         = $ftr_ftbl_coords_len;
+            $ftout_AH[$ftidx]{"is_misc_feature"}  = $is_misc_feature;
+            $ftout_AH[$ftidx]{"protein_id_ftr_idx"} = $protein_id_ftr_idx;
             $ftr_idx2ftout_idx_H{$ftr_idx} = $ftidx;
             $ftidx++;
           } # end of 'if($ftr_ftbl_coords_str ne "")'
@@ -12401,6 +12365,9 @@ sub output_feature_table {
       # 2. mat_peptides that are too short to encode a single AA
       # 3. any feature that has a parent that does not have its own
       #    feature output
+      # 4. any feature that has a parent that is output as a 
+      #    misc_feature (e.g. mat_peptides of a CDS that became 
+      #    a misc_feature)
       # 
       # This is mainly necessary because feature table feature lengths
       # can differ from actual feature lengths due to ambiguities at
@@ -12461,18 +12428,49 @@ sub output_feature_table {
       }
 
       # go back through and remove output for any feature which has a parent that does not have output itself
+      # or has a parent that is output as a misc_feature
       for($ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
         if(defined $ftr_idx2ftout_idx_H{$ftr_idx}) { 
           $ftidx = $ftr_idx2ftout_idx_H{$ftr_idx};
           if(! $remove_me_A[$ftidx]) { # we're not removing this output yet
             my $parent_ftr_idx = vdr_FeatureParentIndex($ftr_info_AHR, $ftr_idx); # will be -1 if no parent
             if($parent_ftr_idx != -1) { # we have a parent
-              if((! defined $ftr_idx2ftout_idx_H{$parent_ftr_idx}) ||     # parent has no output
-                 ($remove_me_A[$ftr_idx2ftout_idx_H{$parent_ftr_idx}])) { # parent has output but we are removing it
+              if((! defined $ftr_idx2ftout_idx_H{$parent_ftr_idx}) ||                         # parent has no output
+                 ($remove_me_A[$ftr_idx2ftout_idx_H{$parent_ftr_idx}]) ||                     # parent has output but we are removing it
+                 ($ftout_AH[$ftr_idx2ftout_idx_H{$parent_ftr_idx}]{"is_misc_feature"})) {     # parent is output as a misc_feature
                 $remove_me_A[$ftidx] = 1;
               }
             }
           }
+        }
+      }
+
+      # add protein_id qualifiers, we do this after determining which features
+      # to remove so we can skip children of misc_feature CDS, they get removed
+      # and should not use up a protein_id index; otherwise the index for a CDS
+      # is set by the first feature (the CDS or one of its children) with output
+      # (even if that output is removed above because it is too short)
+      for($ftidx = 0; $ftidx < $pre_remove_noutftr; $ftidx++) { 
+        my $protein_id_ftr_idx = $ftout_AH[$ftidx]{"protein_id_ftr_idx"};
+        if(($protein_id_ftr_idx != -1) && 
+           (! ((defined $ftr_idx2ftout_idx_H{$protein_id_ftr_idx}) && 
+               ($ftout_AH[$ftr_idx2ftout_idx_H{$protein_id_ftr_idx}]{"is_misc_feature"})))) { 
+          # determine index for this protein
+          my $protein_id_idx = undef;
+          if(defined $ftr_idx2protein_id_idx_H{$protein_id_ftr_idx}) { 
+            # the CDS itself or at least one mat_peptide with this
+            # CDS as its parent was already output, so use the same
+            # index that feature used
+            $protein_id_idx = $ftr_idx2protein_id_idx_H{$protein_id_ftr_idx};
+          }
+          else { 
+            # no index for this CDS yet exists, create it
+            $nprotein_id++;
+            $protein_id_idx = $nprotein_id;
+            $ftr_idx2protein_id_idx_H{$protein_id_ftr_idx} = $protein_id_idx;
+          }
+          my $protein_id_value = helper_ftable_protein_id_value($seq_name, $seq_idx2print, $protein_id_idx, $do_forceprotid, $do_noseqnamemax, $max_protein_id_length, $FH_HR);
+          $ftout_AH[$ftidx]{"output"} .= helper_ftable_add_qualifier_specified($protein_id_ftr_idx, "protein_id", $protein_id_value, $FH_HR);
         }
       }
       
@@ -13028,6 +13026,68 @@ sub helper_ftable_add_qualifier_specified {
   }
 
   return $ret_str;
+}
+
+#################################################################
+# Subroutine:  helper_ftable_protein_id_value()
+# Incept:      EPN, Fri Oct  9 2026 (w/Claude)
+#
+# Purpose:    Determine the value of a protein_id qualifier for 
+#             a feature table, given the sequence name and the
+#             protein_id index for that sequence.
+#
+#             The value cannot exceed $max_protein_id_length (50)
+#             characters as per GenBank rules (see github issue #12)
+#             so we shorten it if necessary UNLESS --forceprotid OR
+#             --noseqnamemax are used in which case we assume user
+#             doesn't care about GenBank maximum. First we try
+#             <seqname>_<protein_id_idx>, if this is <=
+#             $max_protein_id_length then we use that, if not, then
+#             we add a new suffix "...seq<seqidx>_<protein_id_idx>"
+#             and prepend the first $max_protein_id_length -
+#             length(suffix) characters of the sequence name to it.
+#
+# Arguments: 
+#  $seq_name:              name of sequence
+#  $seq_idx2print:         sequence index to use in shortened suffix
+#  $protein_id_idx:        index of protein_id for this sequence
+#  $do_forceprotid:        '1' if --forceprotid used
+#  $do_noseqnamemax:       '1' if --noseqnamemax used
+#  $max_protein_id_length: maximum allowed length
+#  $FH_HR:                 REF to hash of file handles
+#
+# Returns:    protein_id value
+#
+# Dies: if suffix itself exceeds $max_protein_id_length
+#
+################################################################# 
+sub helper_ftable_protein_id_value {
+  my $sub_name = "helper_ftable_protein_id_value";
+  my $nargs_exp = 7;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($seq_name, $seq_idx2print, $protein_id_idx, $do_forceprotid, $do_noseqnamemax, $max_protein_id_length, $FH_HR) = @_;
+
+  my $protein_id_value = sprintf("%s" . "_" . "%d", (($do_forceprotid) ? $seq_name : get_accession_from_ncbi_seq_name($seq_name)), $protein_id_idx);
+  if((! $do_forceprotid) && (! $do_noseqnamemax)) { # neither --forceprotid and --noseqnamemax used
+    # make sure length of protein_id_value doesn't exceed the maximum, if so, shorten it.
+    if((length($protein_id_value)) > $max_protein_id_length) { 
+      my $new_sfx = sprintf("...seq%d_%d", $seq_idx2print, $protein_id_idx);
+      my $len_new_sfx = length($new_sfx);
+      if($len_new_sfx > $max_protein_id_length) { 
+        ofile_FAIL("ERROR in $sub_name, suffix being used to prevent protein id from exceeding $max_protein_id_length characters is itself more than $max_protein_id_length characters:\n$new_sfx\n", 1, $FH_HR);
+      }
+      my $alt_seq_name = get_accession_from_ncbi_seq_name($seq_name);
+      if((length($alt_seq_name) + $len_new_sfx) <= $max_protein_id_length) { 
+        $protein_id_value = $alt_seq_name . $new_sfx;
+      }
+      else { 
+        $protein_id_value = substr($alt_seq_name, 0, ($max_protein_id_length - $len_new_sfx)) . $new_sfx;
+      }
+    }
+  }
+
+  return $protein_id_value;
 }
 
 #################################################################
