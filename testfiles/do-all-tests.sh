@@ -53,6 +53,7 @@ for t in \
     do-lowsimexc-tests.sh \
     do-ss-tests.sh \
     do-extrant-tests.sh \
+    do-xnumali-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do
     sh $VADRSCRIPTSDIR/testfiles/$t

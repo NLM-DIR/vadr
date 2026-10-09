@@ -1,0 +1,4 @@
+#seq  seq         seq             best                  sub                             seq   
+#idx  name        len  p/f   ant  model      grp        grp  nfa  nfn  nf5  nf3  nfalt  alerts
+#---  ---------  ----  ----  ---  ---------  ---------  ---  ---  ---  ---  ---  -----  ------
+1     NC_001959  7654  PASS  yes  NC_001959  Norovirus  GI    13    0    0    0      0  -     
