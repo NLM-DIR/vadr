@@ -55,6 +55,7 @@ for t in \
     do-ss-tests.sh \
     do-extrant-tests.sh \
     do-pvcoords-tests.sh \
+    do-xnumali-tests.sh \
     do-noannotn-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do

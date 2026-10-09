@@ -1,0 +1,39 @@
+>Feature NC_001959
+5	5374	gene
+			gene	ORF1
+5	5374	CDS
+			product	nonstructural polyprotein
+			protein_id	NC_001959_1
+5	1198	mat_peptide
+			product	p48
+			protein_id	NC_001959_1
+1199	2287	mat_peptide
+			product	NTPase
+			protein_id	NC_001959_1
+2288	2890	mat_peptide
+			product	p22
+			protein_id	NC_001959_1
+2891	3304	mat_peptide
+			product	VPg
+			protein_id	NC_001959_1
+3305	3847	mat_peptide
+			product	Pro
+			protein_id	NC_001959_1
+3848	5371	mat_peptide
+			product	RdRp
+			protein_id	NC_001959_1
+5358	6950	gene
+			gene	ORF2
+5358	6950	misc_feature
+			note	similar to VP1
+5454	6950	CDS
+			product	VP1 short form
+			protein_id	NC_001959_2
+6950	7588	gene
+			gene	ORF3
+6950	7588	CDS
+			product	VP2
+			protein_id	NC_001959_3
+
+Additional note(s) to submitter:
+ERROR: INDEFINITE_ANNOTATION: (CDS:VP1) nucleotide-based search identifies CDS not identified in protein-based search [-]; seq-coords:5358..6950:+; mdl-coords:5358..6950:+; mdl:NC_001959;
