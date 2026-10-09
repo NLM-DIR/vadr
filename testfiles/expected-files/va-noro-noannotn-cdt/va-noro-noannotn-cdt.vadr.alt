@@ -1,0 +1,4 @@
+#      seq                        ftr   ftr   ftr  alert           alert             seq  seq     mdl  mdl  alert 
+#idx   name                model  type  name  idx  code      fail  description    coords  len  coords  len  detail
+#----  ------------------  -----  ----  ----  ---  --------  ----  -------------  ------  ---  ------  ---  ------
+1.1.1  NOROFRAG-NOANNOTN3  -      -     -       -  noannotn  yes   NO_ANNOTATION       -    -       -    -  no significant similarity detected [match in classification stage but not in coverage determination stage]

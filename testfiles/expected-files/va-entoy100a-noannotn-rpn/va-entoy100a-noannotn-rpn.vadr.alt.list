@@ -1,0 +1,2 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+ENTOY100A-NOANNOTN2	-	-	*sequence*	NO_ANNOTATION	-	-	no significant similarity detected [match in N-replacement pre-screen but not in classification stage]
