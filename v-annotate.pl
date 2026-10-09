@@ -15071,8 +15071,10 @@ sub helper_sort_hit_array {
       ofile_FAIL("ERROR in $sub_name, not all regions are on same strand, region 1: $tosort_AR->[0] $bstrand, region " . $i+1 . ": $tosort_AR->[$i] $strand", 1, $FH_HR);
     }
   }
-  # the <=> comparison function means sort numerically ascending
-  @{$order_AR} = (sort {$hash{$a} <=> $hash{$b}} (keys %hash));
+  # the <=> comparison function means sort numerically ascending,
+  # break ties by original index so order is deterministic (otherwise
+  # tied values are output in perl's per-process hash key order)
+  @{$order_AR} = (sort {($hash{$a} <=> $hash{$b}) || ($a <=> $b)} (keys %hash));
 
   # now that we have the sorted order, we can easily check for dups
   if(! $allow_dups) { 
