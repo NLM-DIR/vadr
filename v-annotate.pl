@@ -178,7 +178,6 @@ $execs_H{"esl-ssplit"}    = $env_vadr_bioeasel_dir . "/scripts/esl-ssplit.pl";
 $execs_H{"blastx"}        = $env_vadr_blast_dir    . "/blastx";
 $execs_H{"blastn"}        = $env_vadr_blast_dir    . "/blastn";
 $execs_H{"makeblastdb"}   = $env_vadr_blast_dir    . "/makeblastdb";
-$execs_H{"blastdbcmd"}    = $env_vadr_blast_dir    . "/blastdbcmd";
 $execs_H{"parse_blast"}   = $env_vadr_scripts_dir  . "/parse_blast.pl";
 $execs_H{"glsearch"}      = $env_vadr_fasta_dir    . "/glsearch36";
 $execs_H{"minimap2"}      = $env_vadr_minimap2_dir . "/minimap2";
@@ -9060,7 +9059,7 @@ sub run_blastx_and_summarize_output {
     $xnumali = opt_Get("--xnumali", $opt_HHR);
   }
   else {
-    $xnumali = blastx_db_num_seqs($execs_HR, $blastx_db_file, $out_root, $mdl_name, $opt_HHR, $ofile_info_HHR);
+    $xnumali = blastx_db_num_seqs($blastx_db_file, $ofile_info_HHR);
   }
 
   my $blastx_out_file = $out_root . "." . $mdl_name . ".blastx.out";
@@ -9082,51 +9081,42 @@ sub run_blastx_and_summarize_output {
 # Incept:      EPN, Tue Jun 16 2026 (w/Claude)
 #
 # Purpose:    Return the number of sequences in a blastx (protein) db,
-#             by running 'blastdbcmd -info' and parsing its output. Used
-#             to set blastx -num_alignments high enough that no alignment
-#             is ever discarded due to top-N truncation.
+#             by counting the header lines in the protein fasta file the
+#             db was built from with makeblastdb. That fasta file must
+#             exist next to the db files (it is checked for at startup).
+#             Used to set blastx -num_alignments high enough that no
+#             alignment is ever discarded due to top-N truncation.
+#             We count from the fasta rather than running
+#             'blastdbcmd -info' so that blastdbcmd is not a required
+#             executable (some BLAST+ installations do not include it).
 #
 # Arguments:
-#  $execs_HR:        REF to hash of executables, must include "blastdbcmd"
-#  $blastx_db_file:  path to the blastx db
-#  $out_root:        output root, used to name the temporary info file
-#  $mdl_name:        model name, used to name the temporary info file
-#  $opt_HHR:         REF to 2D hash of option values
+#  $blastx_db_file:  path to the blastx db, which is also the path
+#                    to the protein fasta file it was built from
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
 # Returns:    number of sequences in the db (>= 1)
 #
-# Dies:       if blastdbcmd output cannot be parsed
+# Dies:       if the fasta file cannot be opened or has 0 sequences
 #
 #################################################################
 sub blastx_db_num_seqs {
   my $sub_name = "blastx_db_num_seqs";
-  my $nargs_exp = 6;
+  my $nargs_exp = 2;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($execs_HR, $blastx_db_file, $out_root, $mdl_name, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($blastx_db_file, $ofile_info_HHR) = @_;
   my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
 
-  my $info_file = $out_root . "." . $mdl_name . ".blastx.dbinfo";
-  utl_RunCommand($execs_HR->{"blastdbcmd"} . " -db $blastx_db_file -info > $info_file", opt_Get("-v", $opt_HHR), 0, $FH_HR);
-
-  # 'blastdbcmd -info' output includes a line of the form:
-  #   \t<N> sequences; <M> total residues
-  # where <N> and <M> may contain commas (e.g. '3,576 sequences;')
-  my $nseq = undef;
-  open(INFO, $info_file) || ofile_FileOpenFailure($info_file, $sub_name, $!, "reading", $FH_HR);
-  while(my $line = <INFO>) {
-    if($line =~ /([\d\,]+)\s+sequences;/) {
-      $nseq = $1;
-      $nseq =~ s/\,//g;
-      last;
-    }
+  my $nseq = 0;
+  open(IN, $blastx_db_file) || ofile_FileOpenFailure($blastx_db_file, $sub_name, $!, "reading", $FH_HR);
+  while(my $line = <IN>) {
+    if($line =~ /^>/) { $nseq++; }
   }
-  close(INFO);
-  unlink $info_file;
+  close(IN);
 
-  if((! defined $nseq) || ($nseq !~ /^\d+$/) || ($nseq < 1)) {
-    ofile_FAIL("ERROR in $sub_name, unable to parse number of sequences from blastdbcmd -info output for db $blastx_db_file", 1, $FH_HR);
+  if($nseq < 1) {
+    ofile_FAIL("ERROR in $sub_name, no sequences found in blastx db fasta file $blastx_db_file", 1, $FH_HR);
   }
 
   return $nseq;
