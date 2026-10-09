@@ -8796,13 +8796,15 @@ sub add_protein_validation_alerts {
                       for(my $del_idx = 0; $del_idx < $ndel; $del_idx++) {
                         # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos undef and use default xmaxdel
                         my $nt_del_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx], "+", $FH_HR), $FH_HR)) {
-                          $nt_del_spos = 1 + vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
-                                                                                                              vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx], "+", $FH_HR),
-                                                                                                              $FH_HR), $FH_HR);
+                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
+                          $nt_del_spos = vdr_Feature5pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
+                                                                                                         vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR),
+                                                                                                         $FH_HR), $FH_HR);
                         }
-                        # we add 1 to make nt_del_spos bc the value returned from vdr_Feature3pMostPosition is the nucleotide subject position of the 3' most nt in the AA
-                        # just before the deletion so deletion actually starts at that position + 1
+                        # $p_del_spos_A[$del_idx] is the AA just before the deletion, so the deletion starts at the
+                        # 5'-most model position of the next AA (the first deleted position, which is also the first
+                        # position of the deletinp model coords); this is not simply 1 more than the 3'-most position
+                        # of the AA before the deletion for negative strand CDSs or if that AA ends a CDS segment
 
                         my $local_xmaxdel = ((defined $nt_del_spos) && (defined $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos})) ? $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos} : $xmaxdel;
                         if($p_del_len_A[$del_idx] > $local_xmaxdel) { 
