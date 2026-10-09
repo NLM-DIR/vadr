@@ -7,3 +7,6 @@ done
 cd blastx-NC_001959-multisgm/
 $VADRBLASTDIR/makeblastdb -dbtype prot -in NC_001959.vadr.protein.fa
 cd ..
+cd blastx-NC_001959-xnumali/
+$VADRBLASTDIR/makeblastdb -dbtype prot -in NC_001959.vadr.protein.fa
+cd ..
