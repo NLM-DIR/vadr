@@ -1,0 +1,5 @@
+#      seq                             ftr   ftr   ftr  alert           alert                   seq  seq         mdl  mdl  alert 
+#idx   name          model             type  name  idx  code      fail  description          coords  len      coords  len  detail
+#----  ------------  ----------------  ----  ----  ---  --------  ----  ---------------  ----------  ---  ----------  ---  ------
+1.1.1  vp2rev-ins5p  NC_001959-vp2rev  CDS   VP2     1  insertnn  no    INSERTION_OF_NT  723..691:-   33  691..691:-    1  too large of an insertion in nucleotide-based alignment of CDS feature [33>27]
+1.1.2  vp2rev-ins5p  NC_001959-vp2rev  CDS   VP2     1  insertnp  yes   INSERTION_OF_NT  723..691:-   33  691..691:-    1  too large of an insertion in protein-based alignment [33>27]

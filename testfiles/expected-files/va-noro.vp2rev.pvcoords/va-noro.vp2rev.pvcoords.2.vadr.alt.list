@@ -1,0 +1,2 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+vp2rev-ins5p	NC_001959-vp2rev	CDS	VP2	INSERTION_OF_NT	723..691:-	691..691:-	too large of an insertion in protein-based alignment [33>27]
