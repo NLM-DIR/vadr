@@ -1,0 +1,4 @@
+>Feature NOROFRAG-NOANNOTN3
+
+Additional note(s) to submitter:
+ERROR: NO_ANNOTATION: (*sequence*) no significant similarity detected [match in classification stage but not in coverage determination stage]; seq-coords:-; mdl-coords:-; mdl:NC_039477;

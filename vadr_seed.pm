@@ -51,6 +51,7 @@ require "sqp_utils.pm";
 # Subroutines related to running and parsing blastn:
 # run_blastn_and_summarize_output()
 # parse_blastn_results()
+# blastn_dedup_summed_score()
 # blastn_pretblout_to_tblout()
 # parse_blastn_indel_strings()
 # parse_blastn_indel_token()
@@ -306,7 +307,10 @@ sub parse_blastn_results {
                       # key 1: model/subject
                       # key 2: sequence/query
                       # key 3: strand ("+" or "-")
-                      # value: summed bit score for all hits for this model/sequence/strand trio
+                      # value: summed bit score for all hits for this model/sequence/strand trio,
+                      # with overlapping sequence positions only counted once (see blastn_dedup_summed_score())
+  my %hit_HHHA = ();  # 3D hash of arrays of hits for model/seq/strand trios, same keys as %scsum_HHH
+                      # each array element is [<seq start>, <seq stop>, <bit score>], with <seq start> <= <seq stop>
   
   # 
   # Order of lines in <IN>:
@@ -503,17 +507,14 @@ sub parse_blastn_results {
                                   "?",
                                   $cur_seq_len);
             
-            # update summed score in %scsum_HHH for this model/seq/strand trio
-            if(! defined $scsum_HHH{$cur_mdl_name}) { 
-              %{$scsum_HHH{$cur_mdl_name}} = ();
-            }
-            if(! defined $scsum_HHH{$cur_mdl_name}{$cur_seq_name}) { 
-              %{$scsum_HHH{$cur_mdl_name}{$cur_seq_name}} = ();
-            }
-            if(! defined $scsum_HHH{$cur_mdl_name}{$cur_seq_name}{$cur_seq_strand}) { 
-              $scsum_HHH{$cur_mdl_name}{$cur_seq_name}{$cur_seq_strand} = 0.;
-            }
-            $scsum_HHH{$cur_mdl_name}{$cur_seq_name}{$cur_seq_strand} += $cur_H{"BITSCORE"};
+            # store this hit for this model/seq/strand trio, the summed
+            # score is computed after all hits are read, by
+            # blastn_dedup_summed_score(), so that sequence positions
+            # covered by more than one overlapping hit are only counted once
+            push(@{$hit_HHHA{$cur_mdl_name}{$cur_seq_name}{$cur_seq_strand}}, 
+                 [ (($cur_seq_start <= $cur_seq_stop) ? $cur_seq_start : $cur_seq_stop), 
+                   (($cur_seq_start <= $cur_seq_stop) ? $cur_seq_stop  : $cur_seq_start), 
+                   $cur_H{"BITSCORE"} ]);
           }      
           else { 
             # in output mode 2, but we only output if this hit is 
@@ -581,6 +582,14 @@ sub parse_blastn_results {
     # then call convert it pretblout to tblout (cmscan --trmF3 format)
     # which will have scores summed for each seq/mdl/strand trio
     close $ofile_info_HHR->{"FH"}{"$stg_key.blastn.pretblout"};
+    # compute the summed score for each model/seq/strand trio
+    foreach my $tmp_mdl_name (keys %hit_HHHA) { 
+      foreach my $tmp_seq_name (keys %{$hit_HHHA{$tmp_mdl_name}}) { 
+        foreach my $tmp_strand (keys %{$hit_HHHA{$tmp_mdl_name}{$tmp_seq_name}}) { 
+          $scsum_HHH{$tmp_mdl_name}{$tmp_seq_name}{$tmp_strand} = blastn_dedup_summed_score(\@{$hit_HHHA{$tmp_mdl_name}{$tmp_seq_name}{$tmp_strand}});
+        }
+      }
+    }
     blastn_pretblout_to_tblout($ofile_info_HHR->{"fullpath"}{"$stg_key.blastn.pretblout"}, 
                                \%scsum_HHH, $out_root, $stg_key, $opt_HHR, $ofile_info_HHR);
   }
@@ -595,6 +604,96 @@ sub parse_blastn_results {
     }
   }
   return;
+}
+
+#################################################################
+# Subroutine:  blastn_dedup_summed_score()
+# Incept:      EPN, Sun Oct  4 2026 (w/Claude)
+#
+# Purpose:     Given an array of blastn hits for a single
+#              sequence/model/strand trio, return the summed bit score
+#              of all hits, counting each sequence position at most
+#              once.
+#
+#              blastn can report two (or more) largely redundant hits
+#              that overlap in both the query (sequence) and subject
+#              (model), typically two gapped alignments of the same
+#              region seeded on either side of an indel. Simply summing
+#              all hit scores counts that region twice, which can cause
+#              a more divergent model to win classification over a more
+#              similar one.
+#
+#              Each hit's score is treated as spread evenly over its
+#              sequence positions (bit score / length). At each
+#              position only the hit with the highest score per position
+#              is counted (ties broken by higher total score, then by
+#              earlier array index). A hit that is counted at all of its
+#              positions contributes exactly its bit score, and a hit
+#              counted at a subset of its positions contributes the
+#              corresponding fraction of its bit score. If no hits
+#              overlap, the return value is identical to the simple sum
+#              of all hit scores (summed in array order).
+#
+# Arguments: 
+#  $hit_AAR:   REF to array of hits, each element is an array:
+#              [<seq start>, <seq stop>, <bit score>], <seq start> <= <seq stop>
+#
+# Returns:    summed bit score
+#
+# Dies:       never
+#
+################################################################# 
+sub blastn_dedup_summed_score { 
+  my $sub_name = "blastn_dedup_summed_score";
+  my $nargs_exp = 1;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($hit_AAR) = @_;
+
+  my $nhit = scalar(@{$hit_AAR});
+  my @len_A   = ();
+  my @scpnt_A = ();
+  my @nwin_A  = (); # number of positions at which each hit is counted
+  my %bound_H = (); # all elementary interval boundaries
+  for(my $h = 0; $h < $nhit; $h++) { 
+    my ($start, $stop, $bitsc) = @{$hit_AAR->[$h]};
+    $len_A[$h]   = $stop - $start + 1;
+    $scpnt_A[$h] = $bitsc / $len_A[$h];
+    $nwin_A[$h]  = 0;
+    $bound_H{$start} = 1;
+    $bound_H{($stop+1)} = 1;
+  }
+  # for each elementary interval [$bound_A[$b], $bound_A[$b+1]-1],
+  # determine which covering hit (if any) is counted there
+  my @bound_A = sort { $a <=> $b } keys %bound_H;
+  for(my $b = 0; $b < (scalar(@bound_A) - 1); $b++) { 
+    my $ipos = $bound_A[$b];
+    my $win  = -1;
+    for(my $h = 0; $h < $nhit; $h++) { 
+      if(($hit_AAR->[$h][0] <= $ipos) && ($hit_AAR->[$h][1] >= $ipos)) { # hit $h covers this interval
+        if(($win == -1) || 
+           ($scpnt_A[$h] > $scpnt_A[$win]) || 
+           (($scpnt_A[$h] == $scpnt_A[$win]) && ($hit_AAR->[$h][2] > $hit_AAR->[$win][2]))) { 
+          $win = $h;
+        }
+      }
+    }
+    if($win != -1) { 
+      $nwin_A[$win] += $bound_A[($b+1)] - $ipos;
+    }
+  }
+
+  my $ret_sum = 0.;
+  for(my $h = 0; $h < $nhit; $h++) { 
+    if($nwin_A[$h] == $len_A[$h]) { 
+      $ret_sum += $hit_AAR->[$h][2];
+    }
+    elsif($nwin_A[$h] > 0) { 
+      $ret_sum += $scpnt_A[$h] * $nwin_A[$h];
+    }
+  }
+
+  return $ret_sum;
 }
 
 #################################################################
@@ -2573,7 +2672,10 @@ sub run_minimap2 {
   my $mm2_out_file = $out_root . ".mm2.$mdl_name.out";
   my $mm2_err_file = $out_root . ".mm2.$mdl_name.err";
 
-  my $mm2_opts = " -rmq=no --junc-bonus=0 --for-only --sam-hit-only --secondary=no --score-N=0 -t 1";
+  my $mm2_opts = " --rmq=no --junc-bonus=0 --for-only --sam-hit-only --secondary=no --score-N=0 -t 1";
+  # --mm2_z defaults to 10000 (vs minimap2's own -x asm20 default of 200), so always apply it,
+  # whether or not the user explicitly passed --mm2_z (brief 26_0923-014)
+  $mm2_opts .= " -z " . opt_Get("--mm2_z", $opt_HHR);
   if((opt_IsUsed("--mm2_k", $opt_HHR)) || (opt_IsUsed("--mm2_w", $opt_HHR))) { 
     if(opt_IsUsed("--mm2_k", $opt_HHR)) { 
       $mm2_opts .= " -k " . opt_Get("--mm2_k", $opt_HHR); 

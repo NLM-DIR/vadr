@@ -1,0 +1,17 @@
+#      seq                               ftr   ftr   ftr  alert           alert                               seq  seq         mdl  mdl  alert 
+#idx   name            model             type  name  idx  code      fail  description                      coords  len      coords  len  detail
+#----  --------------  ----------------  ----  ----  ---  --------  ----  ---------------------------  ----------  ---  ----------  ---  ------
+1.1.1  vp2rev-del      NC_001959-vp2rev  CDS   VP2     1  deletinn  no    DELETION_OF_NT               369..369:-    1  404..369:-   36  too large of a deletion in nucleotide-based alignment of CDS feature [36>27]
+1.1.2  vp2rev-del      NC_001959-vp2rev  CDS   VP2     1  deletinp  yes   DELETION_OF_NT               370..370:-    1  405..370:-   36  too large of a deletion in protein-based alignment [36>27]
+#
+2.1.1  vp2rev-del5p    NC_001959-vp2rev  CDS   VP2     1  deletinn  no    DELETION_OF_NT               655..655:-    1  690..655:-   36  too large of a deletion in nucleotide-based alignment of CDS feature [36>27]
+2.1.2  vp2rev-del5p    NC_001959-vp2rev  CDS   VP2     1  deletinp  yes   DELETION_OF_NT               655..655:-    1  690..655:-   36  too large of a deletion in protein-based alignment [36>27]
+#
+3.1.1  vp2rev-ins3p    NC_001959-vp2rev  CDS   VP2     1  insertnn  no    INSERTION_OF_NT              288..256:-   33  256..256:-    1  too large of an insertion in nucleotide-based alignment of CDS feature [33>27]
+3.1.2  vp2rev-ins3p    NC_001959-vp2rev  CDS   VP2     1  insertnp  yes   INSERTION_OF_NT              288..256:-   33  256..256:-    1  too large of an insertion in protein-based alignment [33>27]
+#
+4.1.1  vp2rev-trunc3p  NC_001959-vp2rev  CDS   VP2     1  fstukcfi  yes   POSSIBLE_FRAMESHIFT           127..71:-   57   127..71:-   57  possible frameshift in CDS (frame restored before end) [cause:delete,S:128,M:127..124(4); restore:insert,S:71(1),M:71; frame:1(3)1; length:578:(57):4;]
+4.1.2  vp2rev-trunc3p  NC_001959-vp2rev  CDS   VP2     1  indf3pst  yes   INDEFINITE_ANNOTATION_END     126..67:-   60    67..67:-    1  protein-based alignment does not extend close enough to nucleotide-based alignment 3' endpoint [60>8, valid stop codon in nucleotide-based prediction]
+#
+5.1.1  vp2rev-trunc5p  NC_001959-vp2rev  CDS   VP2     1  fstukcfi  yes   POSSIBLE_FRAMESHIFT          703..649:-   55  703..649:-   55  possible frameshift in CDS (frame restored before end) [cause:insert,S:703..700(4),M:704; restore:delete,S:649,M:652..649(4); frame:1(2)1; length:2:(55):582;]
+5.1.2  vp2rev-trunc5p  NC_001959-vp2rev  CDS   VP2     1  indf5pst  yes   INDEFINITE_ANNOTATION_START  705..643:-   63  705..705:-    1  protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint [63>5]

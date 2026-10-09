@@ -46,6 +46,7 @@ for t in \
     do-dcr-tests.sh \
     do-glsearch-tests.sh \
     do-split-tests.sh \
+    do-split-fail-tests.sh \
     do-af-tests.sh \
     do-indfstrn-tests.sh \
     do-dupregin-tests.sh \
@@ -53,6 +54,9 @@ for t in \
     do-lowsimexc-tests.sh \
     do-ss-tests.sh \
     do-extrant-tests.sh \
+    do-pvcoords-tests.sh \
+    do-xnumali-tests.sh \
+    do-noannotn-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do
     sh $VADRSCRIPTSDIR/testfiles/$t

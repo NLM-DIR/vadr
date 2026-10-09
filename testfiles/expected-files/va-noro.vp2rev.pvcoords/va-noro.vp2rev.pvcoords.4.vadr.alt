@@ -1,0 +1,17 @@
+#      seq                               ftr   ftr   ftr  alert           alert                     seq  seq           mdl  mdl  alert 
+#idx   name           model              type  name  idx  code      fail  description            coords  len        coords  len  detail
+#----  -------------  -----------------  ----  ----  ---  --------  ----  ---------------  ------------  ---  ------------  ---  ------
+1.1.1  vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinn  no    DELETION_OF_NT   7249..7249:+    1  7250..7285:+   36  too large of a deletion in nucleotide-based alignment of CDS feature [36>27]
+1.1.2  vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  yes   DELETION_OF_NT   7249..7249:+    1  7250..7285:+   36  too large of a deletion in protein-based alignment [36>27]
+#
+2.1.1  vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinn  no    DELETION_OF_NT   6964..6964:+    1  6965..7000:+   36  too large of a deletion in nucleotide-based alignment of CDS feature [36>27]
+2.1.2  vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  yes   DELETION_OF_NT   6964..6964:+    1  6965..7000:+   36  too large of a deletion in protein-based alignment [36>27]
+#
+3.1.1  vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnn  no    INSERTION_OF_NT  7400..7432:+   33  7399..7399:+    1  too large of an insertion in nucleotide-based alignment of CDS feature [33>27]
+3.1.2  vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  yes   INSERTION_OF_NT  7400..7432:+   33  7399..7399:+    1  too large of an insertion in protein-based alignment [33>27]
+#
+4.1.1  vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnn  no    INSERTION_OF_NT  6965..6997:+   33  6964..6964:+    1  too large of an insertion in nucleotide-based alignment of CDS feature [33>27]
+4.1.2  vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  yes   INSERTION_OF_NT  6965..6997:+   33  6964..6964:+    1  too large of an insertion in protein-based alignment [33>27]
+#
+5.1.1  vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnn  no    INSERTION_OF_NT  7115..7147:+   33  7114..7114:+    1  too large of an insertion in nucleotide-based alignment of CDS feature [33>27]
+5.1.2  vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  yes   INSERTION_OF_NT  7115..7147:+   33  7114..7114:+    1  too large of an insertion in protein-based alignment [33>27]

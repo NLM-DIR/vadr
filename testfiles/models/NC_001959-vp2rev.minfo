@@ -1,0 +1,2 @@
+MODEL NC_001959-vp2rev blastdb:"NC_001959-vp2rev.vadr.protein.fa" group:"Norovirus" length:"1154" subgroup:"GI"
+FEATURE NC_001959-vp2rev type:"CDS" coords:"705..67:-" parent_idx_str:"GBNULL" gene:"ORF3" product:"VP2"

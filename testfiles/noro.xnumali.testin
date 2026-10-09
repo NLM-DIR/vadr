@@ -1,0 +1,62 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# '
+#
+# Tests that blastx reports alignments to all proteins in the blastx db
+# by default (-num_alignments is set to the number of sequences in the db),
+# and that --xnumali <n> overrides that default.
+#
+# The model is NC_001959 with an extra CDS (5454..6950:+, 'VP1 short
+# form') nested in-frame in VP1 (5358..6950:+). The blastx db has 28
+# proteins: 25 for the short form (near identical), and a single, more
+# divergent, protein for VP1. For both the full sequence query and the
+# VP1 CDS query, the 25 short form proteins score higher than the VP1
+# protein, so with -num_alignments 20 the VP1 protein is not reported,
+# VP1 gets a spurious indfantn alert and the sequence (NC_001959 itself)
+# fails. With the default, the VP1 protein is reported and the sequence
+# passes.
+#
+# default: all 28 db proteins reported, sequence passes
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -m $VADRSCRIPTSDIR/testfiles/models/NC_001959.cm -i $VADRSCRIPTSDIR/testfiles/models/NC_001959.xnumali.minfo -x $VADRSCRIPTSDIR/testfiles/models/blastx-NC_001959-xnumali $VADRSCRIPTSDIR/testfiles/noro.xnumali.fa va-noro-xnumali > va-noro-xnumali.out
+desc: annotate-noro-xnumali-default
+out: va-noro-xnumali/va-noro-xnumali.vadr.pass.tbl
+out: va-noro-xnumali/va-noro-xnumali.vadr.fail.tbl
+out: va-noro-xnumali/va-noro-xnumali.vadr.sqa
+out: va-noro-xnumali/va-noro-xnumali.vadr.sqc
+out: va-noro-xnumali/va-noro-xnumali.vadr.ftr
+out: va-noro-xnumali/va-noro-xnumali.vadr.sgm
+out: va-noro-xnumali/va-noro-xnumali.vadr.mdl
+out: va-noro-xnumali/va-noro-xnumali.vadr.alt
+out: va-noro-xnumali/va-noro-xnumali.vadr.alc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.sqa
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.ftr
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.sgm
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.mdl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali/va-noro-xnumali.vadr.alc
+rmdir: va-noro-xnumali
+# --xnumali 20: VP1 protein not reported, indfantn alert, sequence fails
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --xnumali 20 -m $VADRSCRIPTSDIR/testfiles/models/NC_001959.cm -i $VADRSCRIPTSDIR/testfiles/models/NC_001959.xnumali.minfo -x $VADRSCRIPTSDIR/testfiles/models/blastx-NC_001959-xnumali $VADRSCRIPTSDIR/testfiles/noro.xnumali.fa va-noro-xnumali20 > va-noro-xnumali20.out
+desc: annotate-noro-xnumali-20
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.pass.tbl
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.fail.tbl
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.sqa
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.sqc
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.ftr
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.sgm
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.mdl
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.alt
+out: va-noro-xnumali20/va-noro-xnumali20.vadr.alc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.sqa
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.ftr
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.sgm
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.mdl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-xnumali20/va-noro-xnumali20.vadr.alc
+rmdir: va-noro-xnumali20

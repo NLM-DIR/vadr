@@ -178,6 +178,7 @@ $execs_H{"esl-ssplit"}    = $env_vadr_bioeasel_dir . "/scripts/esl-ssplit.pl";
 $execs_H{"blastx"}        = $env_vadr_blast_dir    . "/blastx";
 $execs_H{"blastn"}        = $env_vadr_blast_dir    . "/blastn";
 $execs_H{"makeblastdb"}   = $env_vadr_blast_dir    . "/makeblastdb";
+$execs_H{"blastdbcmd"}    = $env_vadr_blast_dir    . "/blastdbcmd";
 $execs_H{"parse_blast"}   = $env_vadr_scripts_dir  . "/parse_blast.pl";
 $execs_H{"glsearch"}      = $env_vadr_fasta_dir    . "/glsearch36";
 $execs_H{"minimap2"}      = $env_vadr_minimap2_dir . "/minimap2";
@@ -339,7 +340,7 @@ $opt_group_desc_H{++$g} = "options for controlling blastx protein validation sta
 #        option               type   default  group  requires incompat            preamble-output                                                                          help-output    
 opt_Add("--xmatrix",     "string",   undef,      $g,     undef,"--pv_skip,--pv_hmmer", "use the matrix <s> with blastx (e.g. BLOSUM45)",                                   "use the matrix <s> with blastx (e.g. BLOSUM45)", \%opt_HH, \@opt_order_A);
 opt_Add("--xdrop",       "integer",  25,         $g,     undef,"--pv_skip,--pv_hmmer", "set the xdrop value for blastx to <n>",                                            "set the xdrop value for blastx to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--xnumali",     "integer",  20,         $g,     undef,"--pv_skip,--pv_hmmer", "number of alignments to keep in blastx output and consider if --xlongest is <n>",  "number of alignments to keep in blastx output and consider if --xlongest is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--xnumali",     "integer",  undef,      $g,     undef,"--pv_skip,--pv_hmmer", "set blastx -num_alignments to <n> (default: number of seqs in blastx db, so no alignments discarded)",  "set blastx -num_alignments to <n> (default: number of seqs in blastx db, so no alignments discarded)", \%opt_HH, \@opt_order_A);
 opt_Add("--xnolongest",  "boolean",  0,          $g,     undef,"--pv_skip,--pv_hmmer", "do not consider longest blastx hit, only max scoring",                             "do not consider longest blastx hit, only max scoring", \%opt_HH, \@opt_order_A);
 opt_Add("--xnocomp",     "boolean",  0,          $g,     undef,"--pv_skip,--pv_hmmer", "turn off composition-based for blastx statistics with -comp_based_stats 0",        "turn off composition-based for blastx statistics with comp_based_stats 0", \%opt_HH, \@opt_order_A);
 opt_Add("--xwordsize",   "integer",  3,          $g,     undef,"--pv_skip,--pv_hmmer", "set the blastx word size value to <n> (must be in range [2..7])",                   "set the blastx word size value to <n> (must be in range [2..7])", \%opt_HH, \@opt_order_A);
@@ -375,6 +376,7 @@ opt_Add("--mm2_asm5",     "boolean", 0,         $g,"--minimap2", undef,      "us
 opt_Add("--mm2_asm10",    "boolean", 0,         $g,"--minimap2", "--mm2_asm5",  "use -x asm10 with minimap2, instead of -x asm20",                 "use -x asm10 with minimap2, instead of -x asm20", \%opt_HH, \@opt_order_A);
 opt_Add("--mm2_k",        "integer", 0,         $g,"--minimap2", "--mm2_asm5,--mm2_asm10", "use -k <n> option with minimap2, instead of -x asm20", "use -k <n> option with minimap2, instead of -x asm20", \%opt_HH, \@opt_order_A);
 opt_Add("--mm2_w",        "integer", 0,         $g,"--minimap2", "--mm2_asm5,--mm2_asm10", "use -w <n> option with minimap2, instead of -x asm20", "use -w <n> option with minimap2, instead of -x asm20", \%opt_HH, \@opt_order_A);
+opt_Add("--mm2_z",        "integer", 10000,     $g,"--minimap2", undef,      "use -z <n> (z-drop) with minimap2, instead of the -x asm20 default of 200", "use -z <n> (z-drop) with minimap2, instead of the -x asm20 default of 200 (default: 10000)", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options related to replacing Ns with expected nucleotides";
 #        option               type   default group requires incompat  preamble-output                                                                 help-output    
@@ -602,6 +604,7 @@ my $options_okay =
                 'mm2_asm10'     => \$GetOptions_H{"--mm2_asm10"},
                 'mm2_k=s'       => \$GetOptions_H{"--mm2_k"},
                 'mm2_w=s'       => \$GetOptions_H{"--mm2_w"},
+                'mm2_z=s'       => \$GetOptions_H{"--mm2_z"},
 # options related to replacing Ns with expected nucleotides
                 'r'                => \$GetOptions_H{"-r"},
                 'r_minlen=s'       => \$GetOptions_H{"--r_minlen"},
@@ -1484,8 +1487,20 @@ if($do_split) {
                                                   scalar(@seq_name_A)), 
                                           $progress_w, $FH_HR->{"log"}, *STDOUT);
 
-  # execute the $ncpu scripts
-  utl_RunCommand($script_cmd, opt_Get("-v", \%opt_HH), 0, $FH_HR);
+  # execute the $ncpu scripts, the first script runs in the foreground;
+  # if it fails, kill any background scripts before failing
+  utl_RunCommand($script_cmd, opt_Get("-v", \%opt_HH), 1, $FH_HR);
+  if($? != 0) { 
+    my @pid_file_A = ();
+    for(my $s = 1; $s < $nscript; $s++) { 
+      if(exists $cpu_out_file_AH[$s]{"pid"}) { push(@pid_file_A, $cpu_out_file_AH[$s]{"pid"}); }
+    }
+    vdr_KillProcessTreesInPidFiles(\@pid_file_A);
+    ofile_FAIL("ERROR in v-annotate.pl, the following command failed:\n$script_cmd\n" . 
+               "Specifically the job that was supposed to create the following output and err files:\n" . 
+               "\t" . $cpu_out_file_AH[0]{"out"} . "\t" . $cpu_out_file_AH[0]{"err"} . "\n" . 
+               vdr_ErrFileTailString($cpu_out_file_AH[0]{"err"}, 5), 1, $FH_HR);
+  }
 
 
   my $nscripts_finished = 1; # the final script has finished
@@ -4108,6 +4123,15 @@ sub add_classification_alerts {
   my $nseq = scalar(keys (%{$seq_len_HR}));
   my $do_clsonly = opt_Get("--cls_only", $opt_HHR);
 
+  # alert detail for each of the possible causes of a noannotn alert
+  # (see 'check for noannotn alert' comment below), these strings appear
+  # inside [] at the end of the noannotn alert description in the .alt
+  # and .alt.list files and in the .fail.tbl 'Additional note(s) to submitter' 
+  # lines; do not include ':' or ';' characters, see alert_instance_parse()
+  my %noannotn_detail_H = ("cls" => "no match to any model in classification stage",
+                           "rpn" => "match in N-replacement pre-screen but not in classification stage",
+                           "cdt" => "match in classification stage but not in coverage determination stage");
+
   # create the model index hash which gives index in $mdl_info_AHR[] 
   # for a given model name, this allows us to find model length given model name
   my %mdl_idx_H = ();
@@ -4165,6 +4189,10 @@ sub add_classification_alerts {
   # if we used blastn for the cdt stage, we may have overlapping hits in sequence coords, 
   # this is relevant if/when we call helper_sort_hit_array for the dupregin alert below
   my $do_blastn_cdt = opt_Get("-s", \%opt_HH) ? 1 : 0;
+  # with -s, std.cls hits are from blastn and can overlap each other in the sequence, 
+  # summed scores count overlapping positions only once (see blastn_dedup_summed_score())
+  # so we use the length of the sequence covered by >= 1 hit when computing score per nt
+  my $do_blastn_cls = opt_Get("-s", \%opt_HH) ? 1 : 0;
 
   %{$cls_output_HHR} = ();
   foreach my $seq_name (sort keys(%{$seq_len_HR})) { 
@@ -4181,7 +4209,7 @@ sub add_classification_alerts {
     if($do_clsonly) {
       # add noannotn if nec
       if(! defined $stg_results_HHHR->{$seq_name}) { 
-        alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, "noannotn", $seq_name, "VADRNULL", $FH_HR);
+        alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, "noannotn", $seq_name, $noannotn_detail_H{"cls"}, $FH_HR);
       }
       else {
         my ($score1, $score2) = (undef, undef);
@@ -4192,7 +4220,9 @@ sub add_classification_alerts {
           $cls_output_HHR->{$seq_name}{"subgroup1"} = $stg_results_HHHR->{$seq_name}{"std.cls.1"}{"subgroup"}; # can be undef
           my @score_A = split(",", $stg_results_HHHR->{$seq_name}{"std.cls.1"}{"score"});
           $score1 = utl_ASum(\@score_A);
-          my $s_len = vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cls.1"}{"s_coords"}, $FH_HR);
+          my $s_len = ($do_blastn_cls) ? 
+              vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cls.1"}{"s_coords"}, $FH_HR) : 
+              vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cls.1"}{"s_coords"}, $FH_HR);
           my $scov = $s_len / $seq_len;
           $scpnt1 = ($score1 / $s_len);
           $cls_output_HHR->{$seq_name}{"score"} = sprintf("%.1f", $score1);
@@ -4207,7 +4237,9 @@ sub add_classification_alerts {
           $cls_output_HHR->{$seq_name}{"subgroup2"} = $stg_results_HHHR->{$seq_name}{"std.cls.2"}{"subgroup"}; # can be undef
           my @score_A = split(",", $stg_results_HHHR->{$seq_name}{"std.cls.2"}{"score"});
           $score2 = utl_ASum(\@score_A);
-          $scpnt2 = ($score2 / vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cls.2"}{"s_coords"}, $FH_HR));
+          $scpnt2 = ($do_blastn_cls) ? 
+              ($score2 / vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cls.2"}{"s_coords"}, $FH_HR)) : 
+              ($score2 / vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cls.2"}{"s_coords"}, $FH_HR));
           if(defined $score1) { 
             $cls_output_HHR->{$seq_name}{"scdiff"}  = sprintf("%.1f", ($score1 - $score2));
             $cls_output_HHR->{$seq_name}{"diffpnt"} = sprintf("%.3f", ($scpnt1 - $scpnt2));
@@ -4219,15 +4251,22 @@ sub add_classification_alerts {
       # check for noannotn alert: 3 possibilities
       # 1) no hits in round 1 search (most common cause of noannotn)
       # 2) >= 1 hits in -r       classification stage (rpn.cls.1)  but 0 hits in standard classification stage (std.cls.1) (rare)
-      # 3) >= 1 hits in standard classification stage (std.cdt.bs) but 0 hits in coverage determination stage (std.cdt.bs) (rare)
-      if((! defined $stg_results_HHHR->{$seq_name}) || # case 1
-         ((defined $stg_results_HHHR->{$seq_name}) &&
-          (defined $stg_results_HHHR->{$seq_name}{"rpn.cls.1"}) &&
-          (! defined $stg_results_HHHR->{$seq_name}{"std.cls.1"})) || # case 2
-         ((defined $stg_results_HHHR->{$seq_name}) &&
-          (defined $stg_results_HHHR->{$seq_name}{"std.cls.1"}) &&
-          (! defined $stg_results_HHHR->{$seq_name}{"std.cdt.bs"}))) { # case 3
-        alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, "noannotn", $seq_name, "VADRNULL", $FH_HR);
+      # 3) >= 1 hits in standard classification stage (std.cls.1)  but 0 hits in coverage determination stage (std.cdt.bs) (rare)
+      # each case has its own alert detail (%noannotn_detail_H key)
+      my $noannotn_case = undef;
+      if(! defined $stg_results_HHHR->{$seq_name}) { 
+        $noannotn_case = "cls"; # case 1
+      }
+      elsif((defined $stg_results_HHHR->{$seq_name}{"rpn.cls.1"}) &&
+            (! defined $stg_results_HHHR->{$seq_name}{"std.cls.1"})) { 
+        $noannotn_case = "rpn"; # case 2
+      }
+      elsif((defined $stg_results_HHHR->{$seq_name}{"std.cls.1"}) &&
+            (! defined $stg_results_HHHR->{$seq_name}{"std.cdt.bs"})) { 
+        $noannotn_case = "cdt"; # case 3
+      }
+      if(defined $noannotn_case) { 
+        alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, "noannotn", $seq_name, $noannotn_detail_H{$noannotn_case}, $FH_HR);
       }
       else { 
         if(! defined $stg_results_HHHR->{$seq_name}{"std.cls.1"}) { 
@@ -4240,7 +4279,9 @@ sub add_classification_alerts {
         foreach my $rkey (keys (%{$stg_results_HHHR->{$seq_name}})) { 
           my @score_A = split(",", $stg_results_HHHR->{$seq_name}{$rkey}{"score"});
           $score_H{$rkey} = utl_ASum(\@score_A);
-          $scpnt_H{$rkey} = $score_H{$rkey} / vdr_CoordsLength($stg_results_HHHR->{$seq_name}{$rkey}{"s_coords"}, $FH_HR);
+          $scpnt_H{$rkey} = (($do_blastn_cls) && ($rkey =~ m/^std\.cls\./)) ? 
+              $score_H{$rkey} / vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{$rkey}{"s_coords"}, $FH_HR) : 
+              $score_H{$rkey} / vdr_CoordsLength($stg_results_HHHR->{$seq_name}{$rkey}{"s_coords"}, $FH_HR);
         }
         my $have_cdt_bs = (defined $stg_results_HHHR->{$seq_name}{"std.cdt.bs"}) ? 1 : 0;
 
@@ -4370,8 +4411,10 @@ sub add_classification_alerts {
           $cls_output_HHR->{$seq_name}{"nhits"}   = $nhits;
           $cls_output_HHR->{$seq_name}{"bias"}    = $bias_sum;
           $cls_output_HHR->{$seq_name}{"bstrand"} = $stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"bstrand"};
-          my $s_len = vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"s_coords"}, $FH_HR);
-          my $m_len = vdr_CoordsLength($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"m_coords"}, $FH_HR);
+          # hits can overlap (especially blastn hits with -s), so count each 
+          # sequence/model position only once when computing coverage
+          my $s_len = vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"s_coords"}, $FH_HR);
+          my $m_len = vdr_CoordsLengthNoOverlap($stg_results_HHHR->{$seq_name}{"std.cdt.bs"}{"m_coords"}, $FH_HR);
           my $scov = $s_len / $seq_len;
           my $scov2print = sprintf("%.3f", $scov);
           my $mcov2print = sprintf("%.3f", $m_len / $mdl_len);
@@ -6278,16 +6321,20 @@ sub add_frameshift_alerts_for_one_sequence {
                 }
               }
               # add insertnn alert, if nec
-              if($rf2ilen_AR->[$rfpos] > 0) { 
+              # $rf2ilen_AR->[$rfpos] is the length of the insert after $rfpos in model (positive strand)
+              # orientation; for a negative strand feature the insert after $rfpos in the direction
+              # of the feature is the insert after ($rfpos-1) in model orientation
+              my $ins_len = ($strand eq "+") ? $rf2ilen_AR->[$rfpos] : $rf2ilen_AR->[($rfpos-1)];
+              if($ins_len > 0) { 
                 my $local_nmaxins = (defined $insertn_posn_exc_AH[$ftr_idx]{$rfpos}) ? $insertn_posn_exc_AH[$ftr_idx]{$rfpos} : $nmaxins;
-                if($rf2ilen_AR->[$rfpos] > $local_nmaxins) { 
+                if($ins_len > $local_nmaxins) { 
                   $alert_scoords = sprintf("seq:%s;", ($strand eq "+") ? 
-                                           vdr_CoordsSegmentCreate($uapos+1, $uapos+1 + $rf2ilen_AR->[$rfpos]-1, $strand, $FH_HR) : 
-                                           vdr_CoordsSegmentCreate($uapos+1 + $rf2ilen_AR->[$rfpos]-1, $uapos+1, $strand, $FH_HR));
+                                           vdr_CoordsSegmentCreate($uapos+1, $uapos + $ins_len, $strand, $FH_HR) : 
+                                           vdr_CoordsSegmentCreate($uapos-1, $uapos - $ins_len, $strand, $FH_HR));
                   $alert_mcoords = sprintf("mdl:%s;", vdr_CoordsSegmentCreate($rfpos, $rfpos, $strand, $FH_HR));
                   alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "insertnn", $seq_name, $ftr_idx, 
                                              sprintf("%s%s%d>%d", 
-                                                     $alert_scoords, $alert_mcoords, $rf2ilen_AR->[$rfpos], $local_nmaxins), $FH_HR);
+                                                     $alert_scoords, $alert_mcoords, $ins_len, $local_nmaxins), $FH_HR);
                 }
               }
 
@@ -8637,7 +8684,9 @@ sub add_protein_validation_alerts {
                     $alt_scoords = "seq:";
                     if($p_blastx_feature_flag) { 
                       if(defined $n_scoords) { 
-                        $alt_scoords .= vdr_CoordsRelativeToAbsolute($n_scoords, vdr_CoordsSegmentCreate($p_qstart, $p_qstop, $p_strand, $FH_HR), $FH_HR) . ";";
+                        # query is the feature fetched in its own orientation, so use strand relative to query
+                        # (prior to this $p_strand was used, which gave incorrect coords for negative strand features)
+                        $alt_scoords .= vdr_CoordsRelativeToAbsolute($n_scoords, vdr_CoordsSegmentCreate($p_qstart, $p_qstop, helper_blastx_query_strand($p_strand, 1, $n_scoords, $FH_HR), $FH_HR), $FH_HR) . ";";
                       }
                       else { 
                         $alt_scoords .= "VADRNULL;";
@@ -8658,8 +8707,10 @@ sub add_protein_validation_alerts {
                     if($p_blastx_feature_flag) { 
                       # query blast sequence was a fetched feature sequence determine absolute (sequence) nt coords using
                       # vdr_CoordsRelativeToAbsolute(), this will correctly handle case where we have multiple segments
+                      # query is the feature fetched in its own orientation, so use strand relative to query
+                      # (prior to this $n_strand was used, which gave incorrect coords for negative strand features)
                       my $abs_p_qcoords = vdr_CoordsRelativeToAbsolute($n_scoords, 
-                                                                       vdr_CoordsSegmentCreate($p_qstart, $p_qstop, $n_strand, $FH_HR), 
+                                                                       vdr_CoordsSegmentCreate($p_qstart, $p_qstop, helper_blastx_query_strand($p_strand, 1, $n_scoords, $FH_HR), $FH_HR), 
                                                                        $FH_HR);
                       $p_sstart = vdr_Feature5pMostPosition($abs_p_qcoords, $FH_HR); 
                       $p_sstop  = vdr_Feature3pMostPosition($abs_p_qcoords, $FH_HR); 
@@ -8736,11 +8787,19 @@ sub add_protein_validation_alerts {
                       my @p_ins_len_A  = ();
                       my $nins = helper_blastx_breakdown_max_indel_str($p_ins, \@p_ins_qpos_A, \@p_ins_spos_A, \@p_ins_len_A, $FH_HR);
                       for(my $ins_idx = 0; $ins_idx < $nins; $ins_idx++) {
+                        # determine $ins_aa_mpos: the subject (protein) position after which the insert occurs;
+                        # parse_blast.pl reports the subject position before the insert if the blastx alignment
+                        # is to the positive strand of the query, and the subject position after the insert
+                        # if it is to the negative strand of the query
+                        my $ins_aa_mpos = $p_ins_spos_A[$ins_idx];
+                        if(helper_blastx_query_strand($p_strand, $p_blastx_feature_flag, $p_ftr_scoords, $FH_HR) eq "-") { 
+                          $ins_aa_mpos--;
+                        }
                         # see github issue #84: subject insert position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_ins_spos undef and use default xmaxins
                         my $nt_ins_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_ins_spos_A[$ins_idx], "+", $FH_HR), $FH_HR)) {
+                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR), $FH_HR)) {
                           $nt_ins_spos = vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
-                                                                                                          vdr_CoordsSinglePositionSegmentCreate($p_ins_spos_A[$ins_idx], "+", $FH_HR),
+                                                                                                          vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR),
                                                                                                           $FH_HR), $FH_HR);
                         }
                         my $local_xmaxins = ((defined $nt_ins_spos) && (defined $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos})) ? $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos} : $xmaxins;
@@ -8748,7 +8807,7 @@ sub add_protein_validation_alerts {
                           if(defined $alt_str_HH{$ftr_results_prefix}{"insertnp"}) { $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= ":VADRSEP:"; } # we are adding another instance
                           else                               { $alt_str_HH{$ftr_results_prefix}{"insertnp"}  = ""; } # initialize
                           ($alt_scoords, $alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
-                                                                                                     $p_ins_qpos_A[$ins_idx], $p_ins_spos_A[$ins_idx], $p_ins_len_A[$ins_idx], 
+                                                                                                     $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
                                                                                                      $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
                                                                                                      $seq_len_HR->{$seq_name}, $FH_HR);
                           $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= sprintf("%s%s%d>%d", 
@@ -8766,13 +8825,15 @@ sub add_protein_validation_alerts {
                       for(my $del_idx = 0; $del_idx < $ndel; $del_idx++) {
                         # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos undef and use default xmaxdel
                         my $nt_del_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx], "+", $FH_HR), $FH_HR)) {
-                          $nt_del_spos = 1 + vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
-                                                                                                              vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx], "+", $FH_HR),
-                                                                                                              $FH_HR), $FH_HR);
+                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
+                          $nt_del_spos = vdr_Feature5pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
+                                                                                                         vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR),
+                                                                                                         $FH_HR), $FH_HR);
                         }
-                        # we add 1 to make nt_del_spos bc the value returned from vdr_Feature3pMostPosition is the nucleotide subject position of the 3' most nt in the AA
-                        # just before the deletion so deletion actually starts at that position + 1
+                        # $p_del_spos_A[$del_idx] is the AA just before the deletion, so the deletion starts at the
+                        # 5'-most model position of the next AA (the first deleted position, which is also the first
+                        # position of the deletinp model coords); this is not simply 1 more than the 3'-most position
+                        # of the AA before the deletion for negative strand CDSs or if that AA ends a CDS segment
 
                         my $local_xmaxdel = ((defined $nt_del_spos) && (defined $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos})) ? $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos} : $xmaxdel;
                         if($p_del_len_A[$del_idx] > $local_xmaxdel) { 
@@ -8986,7 +9047,21 @@ sub run_blastx_and_summarize_output {
   if(opt_IsUsed("--xwordsize", $opt_HHR)) { 
     $blastx_options .= " -word_size " . opt_Get("--xwordsize", $opt_HHR); 
   }
-  my $xnumali = opt_Get("--xnumali", $opt_HHR);
+  # determine the number of alignments to keep in the blastx output (-num_alignments):
+  # if --xnumali was used, use that exact value (user override, may truncate);
+  # otherwise default to the number of sequences in the blastx db, so that NO
+  # alignments are ever discarded due to top-N truncation. This guarantees that each
+  # predicted CDS's own proteins are always evaluated by the fewest-fatal alt-selection,
+  # regardless of their blastx score rank. blastx -num_alignments is a reporting limit
+  # applied after all hits are scored and sorted (unlike -max_target_seqs), so raising
+  # it cannot change or miss any hit, only report more of them.
+  my $xnumali = undef;
+  if(opt_IsUsed("--xnumali", $opt_HHR)) {
+    $xnumali = opt_Get("--xnumali", $opt_HHR);
+  }
+  else {
+    $xnumali = blastx_db_num_seqs($execs_HR, $blastx_db_file, $out_root, $mdl_name, $opt_HHR, $ofile_info_HHR);
+  }
 
   my $blastx_out_file = $out_root . "." . $mdl_name . ".blastx.out";
   my $blastx_cmd = $execs_HR->{"blastx"} . " -num_threads $ncpu -num_alignments $xnumali -query $blastx_query_fa_file -db $blastx_db_file -seg no -out $blastx_out_file" . $blastx_options;
@@ -9000,6 +9075,61 @@ sub run_blastx_and_summarize_output {
   ofile_AddClosedFileToOutputInfo($ofile_info_HHR, $mdl_name . ".blastx-summary", $blastx_summary_file, 0, $do_keep, "parsed (summarized) blastx output");
 
   return;
+}
+
+#################################################################
+# Subroutine:  blastx_db_num_seqs()
+# Incept:      EPN, Tue Jun 16 2026 (w/Claude)
+#
+# Purpose:    Return the number of sequences in a blastx (protein) db,
+#             by running 'blastdbcmd -info' and parsing its output. Used
+#             to set blastx -num_alignments high enough that no alignment
+#             is ever discarded due to top-N truncation.
+#
+# Arguments:
+#  $execs_HR:        REF to hash of executables, must include "blastdbcmd"
+#  $blastx_db_file:  path to the blastx db
+#  $out_root:        output root, used to name the temporary info file
+#  $mdl_name:        model name, used to name the temporary info file
+#  $opt_HHR:         REF to 2D hash of option values
+#  $ofile_info_HHR:  REF to 2D hash of output file information
+#
+# Returns:    number of sequences in the db (>= 1)
+#
+# Dies:       if blastdbcmd output cannot be parsed
+#
+#################################################################
+sub blastx_db_num_seqs {
+  my $sub_name = "blastx_db_num_seqs";
+  my $nargs_exp = 6;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($execs_HR, $blastx_db_file, $out_root, $mdl_name, $opt_HHR, $ofile_info_HHR) = @_;
+  my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
+
+  my $info_file = $out_root . "." . $mdl_name . ".blastx.dbinfo";
+  utl_RunCommand($execs_HR->{"blastdbcmd"} . " -db $blastx_db_file -info > $info_file", opt_Get("-v", $opt_HHR), 0, $FH_HR);
+
+  # 'blastdbcmd -info' output includes a line of the form:
+  #   \t<N> sequences; <M> total residues
+  # where <N> and <M> may contain commas (e.g. '3,576 sequences;')
+  my $nseq = undef;
+  open(INFO, $info_file) || ofile_FileOpenFailure($info_file, $sub_name, $!, "reading", $FH_HR);
+  while(my $line = <INFO>) {
+    if($line =~ /([\d\,]+)\s+sequences;/) {
+      $nseq = $1;
+      $nseq =~ s/\,//g;
+      last;
+    }
+  }
+  close(INFO);
+  unlink $info_file;
+
+  if((! defined $nseq) || ($nseq !~ /^\d+$/) || ($nseq < 1)) {
+    ofile_FAIL("ERROR in $sub_name, unable to parse number of sequences from blastdbcmd -info output for db $blastx_db_file", 1, $FH_HR);
+  }
+
+  return $nseq;
 }
 
 #################################################################
@@ -9973,6 +10103,44 @@ sub helper_blastx_breakdown_max_indel_str {
 }
 
 #################################################################
+# Subroutine: helper_blastx_query_strand
+# Incept:     EPN, Tue Oct  6 2026 (w/Claude)
+#
+# Purpose: Determine the strand of a blastx alignment relative to
+#          the blastx query sequence, for converting blastx query
+#          positions to sequence coordinates.
+#
+#          If the query is the full sequence, this is $blastx_strand.
+#          If the query is a single fetched feature, the feature was
+#          fetched in its own orientation (e.g. reverse complemented
+#          if it is on the negative strand), so the alignment is to
+#          the positive strand of the query if $blastx_strand matches
+#          the strand of the feature in the sequence ($ftr_scoords)
+#          and to the negative strand of the query otherwise.
+#
+# Arguments:
+#   $blastx_strand: strand of blastx hit (a 'p_strand' value in ftr_results)
+#   $is_feature:    '1' if blastx query is a fetched feature, '0' if full sequence
+#   $ftr_scoords:   sequence coords of the feature, only used if $is_feature
+#   $FH_HR:         ref to hash of file handles, including 'log'
+#
+# Returns:  "+" or "-"
+#
+#################################################################
+sub helper_blastx_query_strand {
+  my $sub_name  = "helper_blastx_query_strand";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($blastx_strand, $is_feature, $ftr_scoords, $FH_HR) = (@_);
+
+  if(! $is_feature) { 
+    return $blastx_strand;
+  }
+  return ($blastx_strand eq vdr_FeatureSummaryStrand($ftr_scoords, $FH_HR)) ? "+" : "-";
+}
+
+#################################################################
 # Subroutine: helper_blastx_max_indel_token_to_alt_coords
 # Incept:     EPN, Tue May 25 18:42:57 2021
 #
@@ -9982,8 +10150,12 @@ sub helper_blastx_breakdown_max_indel_str {
 #
 # Arguments:
 #   $is_insert:     '1' if this is an insert, '0' if delete
-#   $spos:          sequence position of indel
-#   $aa_mpos:       amino acid position of indel
+#   $spos:          query sequence position of indel, from parse_blast.pl: for an insert, the
+#                   position just before the insert if the blastx alignment is to the positive
+#                   strand of the query and the position just after the insert if it is to the
+#                   negative strand of the query; for a delete, the position just prior to (5'
+#                   of) the deletion
+#   $aa_mpos:       amino acid (subject) position after which the indel occurs
 #   $len:           length of indel in nucleotides
 #   $is_feature:    '1' if sequence is a feature so $ins_spos is relative to the feature coords $ftr_coords
 #                   '0' if sequence is a the full sequence (not a feature) so $ins_spos is absolute coords
@@ -10016,16 +10188,25 @@ sub helper_blastx_max_indel_token_to_alt_coords {
   my $alt_scoords      = undef; # to return: alert sequence coords string
   my $alt_mcoords      = undef; # to return: alert model    coords string
 
+  # determine strand of the blastx alignment relative to the blastx query, see
+  # helper_blastx_query_strand(). Prior to this, $ftr_strand and $blastx_strand were
+  # used directly for feature queries, which gave incorrect sequence coords for
+  # negative strand features and could cause a fatal error on an insert near
+  # the 5' end of the feature (negative relative stop position).
+  my $query_blastx_strand = helper_blastx_query_strand($blastx_strand, $is_feature, $ftr_scoords, $FH_HR);
+
   if($is_insert) { 
     # determine sequence coordinates
     # determine coordinates in full sequence, this is complicated by fact that blastx query can be full seq or a single feature
-    if(($is_feature && ($ftr_strand eq "+")) || ((! $is_feature) && ($blastx_strand eq "+"))) { 
-      # blast alignment is to positive strand
-      $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos + $len - 1, $blastx_strand, $FH_HR);
+    # $spos is the query position just before (positive strand) or just after
+    # (negative strand) the inserted nucleotides
+    if($query_blastx_strand eq "+") {
+      # blast alignment is to positive strand of query
+      $relative_scoords = vdr_CoordsSegmentCreate($spos + 1, $spos + $len, "+", $FH_HR);
     }
     else { 
-      # blast alignment is to negative strand
-      $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos - $len + 1, $blastx_strand, $FH_HR);
+      # blast alignment is to negative strand of query
+      $relative_scoords = vdr_CoordsSegmentCreate($spos + $len, $spos + 1, "-", $FH_HR);
     }
     $absolute_scoords = ($is_feature) ? 
         $ftr_scoords : vdr_CoordsSegmentCreate(1, $seq_len, "+", $FH_HR); # the full sequence
@@ -10051,7 +10232,9 @@ sub helper_blastx_max_indel_token_to_alt_coords {
   }
   else { # delete
     # determine sequence coordinates
-    $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos, $blastx_strand, $FH_HR);
+    # use $query_blastx_strand (not $blastx_strand), else for a negative strand feature query
+    # the returned single position is reported on the wrong (+) strand
+    $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos, $query_blastx_strand, $FH_HR);
     $absolute_scoords = ($is_feature) ? 
         $ftr_scoords : vdr_CoordsSegmentCreate(1, $seq_len, "+", $FH_HR); # the full sequence
     $alt_scoords = sprintf("seq:%s;", vdr_CoordsRelativeToAbsolute($absolute_scoords, $relative_scoords, $FH_HR));
@@ -15046,8 +15229,10 @@ sub helper_sort_hit_array {
       ofile_FAIL("ERROR in $sub_name, not all regions are on same strand, region 1: $tosort_AR->[0] $bstrand, region " . $i+1 . ": $tosort_AR->[$i] $strand", 1, $FH_HR);
     }
   }
-  # the <=> comparison function means sort numerically ascending
-  @{$order_AR} = (sort {$hash{$a} <=> $hash{$b}} (keys %hash));
+  # the <=> comparison function means sort numerically ascending,
+  # break ties by original index so order is deterministic (otherwise
+  # tied values are output in perl's per-process hash key order)
+  @{$order_AR} = (sort {($hash{$a} <=> $hash{$b}) || ($a <=> $b)} (keys %hash));
 
   # now that we have the sorted order, we can easily check for dups
   if(! $allow_dups) { 
@@ -15326,6 +15511,12 @@ sub write_v_annotate_scripts_for_split_mode {
   if($v_annotate_plus_opts =~ /\s+\-\-maxnjobs\s+\d+\s*/) { 
     $v_annotate_plus_opts =~ s/\s+\-\-maxnjobs\s+\d+\s*/ /;
   }
+  # remove --wait option (may or may not exist) unless -p is also used:
+  # without -p, --wait only applies to this --split parent, and the child
+  # v-annotate.pl commands would die because --wait requires -p or --split
+  if((! opt_IsUsed("-p", $opt_HHR)) && ($v_annotate_plus_opts =~ /\s+\-\-wait\s+\d+\s*/)) { 
+    $v_annotate_plus_opts =~ s/\s+\-\-wait\s+\d+\s*/ /;
+  }
   $v_annotate_plus_opts =~ s/\s+$//; # remove trailing whitespace if we created it
 
   # printf("in $sub_name, root command with opts:\n$v_annotate_plus_opts\n");
@@ -15359,7 +15550,9 @@ sub write_v_annotate_scripts_for_split_mode {
     }
     $cpu_out_file_AHR->[$fidx]{"out"} = $out_file; # may overwrite previous one
     my $FH = $out_FH_A[$fidx];
-    print $FH "$v_annotate_plus_opts $sidx_opt $fasta_file $out_dir > $out_file\n";
+    # if this command fails, report which chunk failed and exit, so the
+    # script does not go on to its next chunk and the parent detects the failure
+    print $FH "$v_annotate_plus_opts $sidx_opt $fasta_file $out_dir > $out_file || { echo \"ERROR: v-annotate.pl failed on $fasta_file (output directory $out_dir)\" 1>&2; exit 1; }\n";
     push(@{$chunk_outdir_AR}, $out_dir); # save chunk directory
     $sidx += $nseqs_per_chunk_AR->[($i-1)]; # update number of sequences for next command
 
@@ -15373,11 +15566,15 @@ sub write_v_annotate_scripts_for_split_mode {
   # smallest sequence subset
 
   my $err_file = undef;
-  for($fidx = 1; $fidx < $ncpu; $fidx++) { 
-    if($out_ncmd_A[$fidx] > 0) { 
+  my $pid_file = undef;
+  for($fidx = 1; $fidx < $ncpu; $fidx++) {
+    if($out_ncmd_A[$fidx] > 0) {
       $err_file = $out_scriptname_A[$fidx] . ".err";
+      $pid_file = $out_scriptname_A[$fidx] . ".pid";
       $cpu_out_file_AHR->[$fidx]{"err"} = $err_file;
-      $script_cmd .= "sh " . $out_scriptname_A[$fidx] . " > /dev/null 2> $err_file &\n"; 
+      $cpu_out_file_AHR->[$fidx]{"pid"} = $pid_file; # pid file for OOM-kill detection
+      $script_cmd .= "sh " . $out_scriptname_A[$fidx] . " > /dev/null 2> $err_file & echo \$! > $pid_file\n";
+      push(@{$to_remove_AR}, $pid_file);
     }
     push(@{$to_remove_AR}, $out_scriptname_A[$fidx]);
     push(@{$to_remove_AR}, $err_file);
