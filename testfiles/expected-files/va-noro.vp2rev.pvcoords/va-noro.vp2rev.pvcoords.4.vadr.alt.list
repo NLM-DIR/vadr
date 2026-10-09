@@ -1,0 +1,6 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+vp2fwd-del	NC_001959-vp2only	CDS	VP2	DELETION_OF_NT	7249..7249:+	7250..7285:+	too large of a deletion in protein-based alignment [36>27]
+vp2fwd-del5p	NC_001959-vp2only	CDS	VP2	DELETION_OF_NT	6964..6964:+	6965..7000:+	too large of a deletion in protein-based alignment [36>27]
+vp2fwd-ins3p	NC_001959-vp2only	CDS	VP2	INSERTION_OF_NT	7400..7432:+	7399..7399:+	too large of an insertion in protein-based alignment [33>27]
+vp2fwd-ins5p	NC_001959-vp2only	CDS	VP2	INSERTION_OF_NT	6965..6997:+	6964..6964:+	too large of an insertion in protein-based alignment [33>27]
+vp2fwd-insrow	NC_001959-vp2only	CDS	VP2	INSERTION_OF_NT	7115..7147:+	7114..7114:+	too large of an insertion in protein-based alignment [33>27]
