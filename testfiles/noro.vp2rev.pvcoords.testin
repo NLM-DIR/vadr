@@ -1,0 +1,83 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+# 
+# Tests of sequence coordinates of protein-validation (blastx) alerts
+# insertnp, deletinp, indf5pst, indf3pst and indfstrp for a negative
+# strand CDS, using a reverse complemented model of the NC_001959 VP2
+# region (models/NC_001959-vp2rev.*, built by models/make-NC_001959-vp2rev.pl).
+# Some alerts derive from blastx hits to the full sequence and some from
+# hits to the fetched CDS (which is reverse complemented).
+# Insert and deletion coordinates of the protein-based alerts (insertnp,
+# deletinp) should match those of the nucleotide-based alerts (insertnn,
+# deletinn), up to ambiguous gap placement. Command 4 tests the same
+# inserts and deletions on a positive strand CDS.
+#
+# 1: indels, and 5' and 3' truncations of the blastx alignment
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.1.fa va-noro.vp2rev.pvcoords.1 > va-noro.vp2rev.pvcoords.1.out
+desc: annotate-noro-vp2rev-pvcoords-1-indels-ends
+out: va-noro.vp2rev.pvcoords.1/va-noro.vp2rev.pvcoords.1.vadr.alt
+out: va-noro.vp2rev.pvcoords.1/va-noro.vp2rev.pvcoords.1.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.1.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.1.vadr.alt.list
+rmdir: va-noro.vp2rev.pvcoords.1
+#
+# 2: insert near the 5' end of the CDS
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.2.fa va-noro.vp2rev.pvcoords.2 > va-noro.vp2rev.pvcoords.2.out
+desc: annotate-noro-vp2rev-pvcoords-2-5p-insert
+out: va-noro.vp2rev.pvcoords.2/va-noro.vp2rev.pvcoords.2.vadr.alt
+out: va-noro.vp2rev.pvcoords.2/va-noro.vp2rev.pvcoords.2.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.2.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.2.vadr.alt.list
+rmdir: va-noro.vp2rev.pvcoords.2
+#
+# 3: protein-based strand mismatch (indfstrp); --xlonescore set high so that
+# the blastx hit to the full sequence (opposite strand from the nucleotide
+# prediction) is not used and the hit to the fetched CDS is
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --xlonescore 100000 --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.3.fa va-noro.vp2rev.pvcoords.3 > va-noro.vp2rev.pvcoords.3.out
+desc: annotate-noro-vp2rev-pvcoords-3-strand
+out: va-noro.vp2rev.pvcoords.3/va-noro.vp2rev.pvcoords.3.vadr.alt
+out: va-noro.vp2rev.pvcoords.3/va-noro.vp2rev.pvcoords.3.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.3.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.3.vadr.alt.list
+rmdir: va-noro.vp2rev.pvcoords.3
+#
+# 4: inserts and deletions in a positive strand CDS
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2only.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959.pvcoords.vp2only.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2only.pvcoords.4.fa va-noro.vp2rev.pvcoords.4 > va-noro.vp2rev.pvcoords.4.out
+desc: annotate-noro-vp2only-pvcoords-4-pos-indels
+out: va-noro.vp2rev.pvcoords.4/va-noro.vp2rev.pvcoords.4.vadr.alt
+out: va-noro.vp2rev.pvcoords.4/va-noro.vp2rev.pvcoords.4.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.4.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.4.vadr.alt.list
+rmdir: va-noro.vp2rev.pvcoords.4
+#
+# 5: insertn_exc and deletin_exc exceptions at the model positions reported by
+# the alerts in command 1 suppress both the nucleotide-based and protein-based
+# alerts, negative strand CDS
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.exc.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.1.fa va-noro.vp2rev.pvcoords.5 > va-noro.vp2rev.pvcoords.5.out
+desc: annotate-noro-vp2rev-pvcoords-5-indel-exceptions
+out: va-noro.vp2rev.pvcoords.5/va-noro.vp2rev.pvcoords.5.vadr.alt
+out: va-noro.vp2rev.pvcoords.5/va-noro.vp2rev.pvcoords.5.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.5.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.5.vadr.alt.list
+rmdir: va-noro.vp2rev.pvcoords.5
+#
+# 6: as 5, positive strand CDS (alerts from command 4)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2only.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959.pvcoords.exc.vp2only.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2only.pvcoords.4.fa va-noro.vp2rev.pvcoords.6 > va-noro.vp2rev.pvcoords.6.out
+desc: annotate-noro-vp2only-pvcoords-6-indel-exceptions
+out: va-noro.vp2rev.pvcoords.6/va-noro.vp2rev.pvcoords.6.vadr.alt
+out: va-noro.vp2rev.pvcoords.6/va-noro.vp2rev.pvcoords.6.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.6.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.6.vadr.alt.list
+rmdir: va-noro.vp2rev.pvcoords.6

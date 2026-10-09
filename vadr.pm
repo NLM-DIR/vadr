@@ -140,6 +140,8 @@ require "sqp_utils.pm";
 # vdr_ParseQsubFile()
 # vdr_SubmitJob()
 # vdr_WaitForFarmJobsToFinish()
+# vdr_ErrFileTailString()
+# vdr_KillProcessTreesInPidFiles()
 #
 # Subroutines related to sequence and model coordinates: 
 # vdr_CoordsToSegments()
@@ -4147,7 +4149,7 @@ sub vdr_WaitForFarmJobsToFinish {
         ($keep_going)) { 
     # check to see if jobs are finished, every $cur_sleep seconds
     sleep($cur_sleep_secs);
-    $secs_waited += $chunk_secs;
+    $secs_waited += $cur_sleep_secs; # track actual elapsed sleep time (was $chunk_secs, causing ~200h timeout instead of --wait minutes)
     if($secs_waited >= $doubling_secs) { 
       $cur_sleep_secs *= 2;
     }
@@ -4183,15 +4185,39 @@ sub vdr_WaitForFarmJobsToFinish {
           }
         }
         if(($do_errcheck) && (-s $errfile_A[$i])) { # errfile exists and is non-empty, this is a failure, even if we saw $finished_str above
-          if(! $is_finished_A[$i]) { 
+          if(! $is_finished_A[$i]) {
             $nfinished++;
           }
           $is_finished_A[$i] = 1;
           $is_failed_A[$i] = 1;
           $nfail++;
         }
+        # check if background process PID is gone (OOM-killed) without writing $finished_str
+        if((! $is_finished_A[$i]) && (exists $out_file_AHR->[$i]{"pid"})) {
+          my $this_pid_file = $out_file_AHR->[$i]{"pid"};
+          if(-s $this_pid_file) { # pid file exists and is non-empty
+            my $this_pid = `cat $this_pid_file`; chomp $this_pid;
+            if(($this_pid =~ /^\d+$/) && (! kill(0, $this_pid))) { # process no longer exists
+              # double-check out file for finished_str in case of narrow race
+              my $final_line = (-s $outfile_A[$i]) ? `tail -n 1 $outfile_A[$i]` : "";
+              chomp $final_line;
+              if($final_line =~ m/\Q$finished_str\E/) { # process finished just before we checked
+                if(defined $success_AR) { $success_AR->[$i] = 1; }
+                $is_finished_A[$i] = 1;
+                $nfinished++;
+              }
+              else { # process died without completing (e.g. OOM-killed)
+                $is_finished_A[$i] = 1;
+                $is_failed_A[$i] = 1;
+                $nfinished++;
+                $nfail++;
+              }
+            }
+          }
+        }
       }
     }
+    if($nfail > 0) { $keep_going = 0; } # fail fast once any job is detected dead
 
     # output update
     ofile_OutputString($log_FH, 1, sprintf("#\t%4d of %4d jobs finished (%.1f minutes spent waiting)\n", $nfinished, $njobs, $secs_waited / 60.));
@@ -4202,13 +4228,28 @@ sub vdr_WaitForFarmJobsToFinish {
     }
   }
 
-  if($nfail > 0) { 
+  # if any job failed or we timed out, kill any still-running jobs we
+  # have pid files for (only local background jobs, e.g. with --split)
+  if(($nfail > 0) || ($nfinished < $njobs)) { 
+    my @pid_file_A = ();
+    for(my $i = 0; $i < $njobs; $i++) {
+      if((! $is_finished_A[$i]) && (exists $out_file_AHR->[$i]{"pid"})) { 
+        push(@pid_file_A, $out_file_AHR->[$i]{"pid"});
+      }
+    }
+    vdr_KillProcessTreesInPidFiles(\@pid_file_A);
+  }
+
+  if($nfail > 0) {
     # construct error message
-    my $errmsg = "ERROR in $sub_name, $nfail of $njobs finished in error (output to their respective error files).\n";
+    my $errmsg = "ERROR in $sub_name, $nfail of $njobs jobs failed (check output/error files for each).\n";
     $errmsg .= "Specifically the jobs that were supposed to create the following output and err files:\n";
-    for(my $i = 0; $i < $njobs; $i++) { 
-      if($is_failed_A[$i]) { 
+    for(my $i = 0; $i < $njobs; $i++) {
+      if($is_failed_A[$i]) {
         $errmsg .= "\t$outfile_A[$i]\t$errfile_A[$i]\n";
+        # include the final few non-blank lines of the err file, if any, 
+        # which usually contain the failed job's error message
+        $errmsg .= vdr_ErrFileTailString($errfile_A[$i], 5);
       }
     }
     ofile_FAIL($errmsg, 1, $FH_HR);
@@ -4216,6 +4257,124 @@ sub vdr_WaitForFarmJobsToFinish {
 
   # if we get here we have no failures
   return $nfinished;
+}
+
+#################################################################
+# Subroutine:  vdr_ErrFileTailString()
+# Incept:      EPN, Thu Oct  8 2026 (w/Claude)
+#
+# Purpose: Return a string for an error message that lists the 
+#          final <$nlines> non-blank lines of an err file, or ""
+#          if the file does not exist, is empty or can't be read.
+#
+# Arguments:
+#   $errfile:  the err file
+#   $nlines:   maximum number of lines to include
+#
+# Returns:  string, possibly ""
+#
+# Dies:     never
+#
+#################################################################
+sub vdr_ErrFileTailString { 
+  my $sub_name = "vdr_ErrFileTailString()";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($errfile, $nlines) = @_;
+
+  my @err_line_A = ();
+  if((-s $errfile) && (open(my $err_FH, "<", $errfile))) { 
+    while(my $line = <$err_FH>) { 
+      if($line =~ m/\S/) { push(@err_line_A, $line); }
+      if(scalar(@err_line_A) > $nlines) { shift(@err_line_A); }
+    }
+    close($err_FH);
+  }
+  my $ret_str = "";
+  if(scalar(@err_line_A) > 0) { 
+    $ret_str .= "\tfinal lines of $errfile:\n";
+    foreach my $line (@err_line_A) { $ret_str .= "\t\t$line"; }
+    if($err_line_A[-1] !~ m/\n$/) { $ret_str .= "\n"; }
+  }
+  return $ret_str;
+}
+
+#################################################################
+# Subroutine:  vdr_KillProcessTreesInPidFiles()
+# Incept:      EPN, Thu Oct  8 2026 (w/Claude)
+#
+# Purpose: Kill each process whose pid is in one of a list of pid
+#          files, along with all of its descendants (e.g. a --split
+#          worker script, the v-annotate.pl it is running, and that
+#          v-annotate.pl's cmalign/blastx processes). Used so that
+#          background jobs do not keep running after we fail.
+#          Sends TERM to all of them, waits briefly, then sends 
+#          KILL to any that are still alive. Descendants are found
+#          with 'ps -A -o pid= -o ppid='; if that fails, only the
+#          processes in the pid files are killed.
+#
+# Arguments:
+#   $pid_file_AR:  REF to array of pid file names, missing or
+#                  empty files are skipped
+#
+# Returns:  void
+#
+# Dies:     never
+#
+#################################################################
+sub vdr_KillProcessTreesInPidFiles { 
+  my $sub_name = "vdr_KillProcessTreesInPidFiles()";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($pid_file_AR) = @_;
+
+  # read the root pids
+  my @root_pid_A = ();
+  foreach my $pid_file (@{$pid_file_AR}) { 
+    if((-s $pid_file) && (open(my $pid_FH, "<", $pid_file))) { 
+      my $pid = <$pid_FH>;
+      close($pid_FH);
+      if((defined $pid) && ($pid =~ /^(\d+)\s*$/) && ($1 > 1)) { 
+        push(@root_pid_A, $1);
+      }
+    }
+  }
+  if(scalar(@root_pid_A) == 0) { return; }
+
+  # build parent -> children map of all processes
+  my %children_HA = ();
+  my $ps_output = `ps -A -o pid= -o ppid= 2>/dev/null`;
+  foreach my $line (split(/\n/, $ps_output)) { 
+    if($line =~ /^\s*(\d+)\s+(\d+)\s*$/) { 
+      push(@{$children_HA{$2}}, $1);
+    }
+  }
+
+  # collect each root and all of its descendants, roots first, so 
+  # worker scripts are stopped before they can start another command
+  my @kill_pid_A = ();
+  my %seen_H = ();
+  my @queue_A = @root_pid_A;
+  while(scalar(@queue_A) > 0) { 
+    my $pid = shift(@queue_A);
+    if($seen_H{$pid}) { next; }
+    $seen_H{$pid} = 1;
+    push(@kill_pid_A, $pid);
+    if(defined $children_HA{$pid}) { push(@queue_A, @{$children_HA{$pid}}); }
+  }
+
+  kill('TERM', @kill_pid_A);
+  # wait up to 5 seconds for them to exit, then KILL any survivors
+  for(my $s = 0; $s < 5; $s++) { 
+    if(scalar(grep { kill(0, $_) } @kill_pid_A) == 0) { return; }
+    sleep(1);
+  }
+  my @alive_A = grep { kill(0, $_) } @kill_pid_A;
+  if(scalar(@alive_A) > 0) { kill('KILL', @alive_A); }
+
+  return;
 }
 
 #################################################################

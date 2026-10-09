@@ -1129,7 +1129,9 @@ sub findSubjectGaps {
   $local_QueryPositionIndex = $query_start;
   $local_SubjectPositionIndex = $subject_start;
   if ($old_gap_overhang) {
-    $local_QueryStartDeletion = $query_start - $old_gap_overhang - 1;
+    # $old_gap_overhang is a number of alignment columns, each of which is
+    # $local_residue_qlen query positions (3 for blastx)
+    $local_QueryStartDeletion = $query_start - ($local_residue_qlen * $old_gap_overhang) - 1;
     $local_SubjectStartDeletion = $subject_start - 1;
     $local_state = $local_StateInGap;
   }
