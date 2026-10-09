@@ -3,24 +3,6 @@
 			gene	ORF1
 5	5377	misc_feature
 			note	similar to nonstructural polyprotein
-5	1201	mat_peptide
-			product	p48
-			protein_id	NC_001959.2-manually-added-frameshifts-1_1
-1202	2290	mat_peptide
-			product	NTPase
-			protein_id	NC_001959.2-manually-added-frameshifts-1_1
-2291	2893	mat_peptide
-			product	p22
-			protein_id	NC_001959.2-manually-added-frameshifts-1_1
-2894	3307	mat_peptide
-			product	VPg
-			protein_id	NC_001959.2-manually-added-frameshifts-1_1
-3308	3850	mat_peptide
-			product	Pro
-			protein_id	NC_001959.2-manually-added-frameshifts-1_1
-3851	5374	mat_peptide
-			product	RdRp
-			protein_id	NC_001959.2-manually-added-frameshifts-1_1
 5361	6958	gene
 			gene	ORF2
 5361	5806	misc_feature
@@ -54,24 +36,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 5	5374	misc_feature
 			note	similar to nonstructural polyprotein
-5	1198	mat_peptide
-			product	p48
-			protein_id	NC_001959.2-manually-added-frameshifts-2_1
-1199	2287	mat_peptide
-			product	NTPase
-			protein_id	NC_001959.2-manually-added-frameshifts-2_1
-2288	2890	mat_peptide
-			product	p22
-			protein_id	NC_001959.2-manually-added-frameshifts-2_1
-2891	3304	mat_peptide
-			product	VPg
-			protein_id	NC_001959.2-manually-added-frameshifts-2_1
-3305	3847	mat_peptide
-			product	Pro
-			protein_id	NC_001959.2-manually-added-frameshifts-2_1
-3848	5371	mat_peptide
-			product	RdRp
-			protein_id	NC_001959.2-manually-added-frameshifts-2_1
 5358	6951	gene
 			gene	ORF2
 5358	5800	misc_feature

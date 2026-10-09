@@ -3,9 +3,6 @@
 			gene	ORF1
 <1	>1002	misc_feature
 			note	similar to nonstructural polyprotein
-<1	>1002	mat_peptide
-			product	NTPase
-			protein_id	NC_029646/1000-1004,C,1005-2000_1
 
 Additional note(s) to submitter:
 ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:nonstructural polyprotein) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:6(1),M:1004; frame:<2(3)>; length:<5:(997)>; shifted_avgpp:0.974; exp_avgpp:0.925;]; seq-coords:6..1002:+; mdl-coords:1005..2000:+; mdl:NC_029646;

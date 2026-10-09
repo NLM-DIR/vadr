@@ -1,14 +1,8 @@
 >Feature gi|106060735|ref|NC_001959.2|
-5	1338	mat_peptide
-			product	p48
-			protein_id	106060735_1
 5	>1610	gene
 			gene	ORF1
 5	>1610	misc_feature
 			note	similar to nonstructural polyprotein
-1339	>1610	mat_peptide
-			product	NTPase
-			protein_id	106060735_1
 
 Additional note(s) to submitter:
 ERROR: LOW_COVERAGE: (*sequence*) low sequence fraction with significant similarity to homology model [0.837<0.900]; seq-coords:424..685:+; mdl-coords:-; mdl:NC_001959;

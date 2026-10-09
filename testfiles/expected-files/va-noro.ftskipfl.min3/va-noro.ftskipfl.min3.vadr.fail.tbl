@@ -3,9 +3,6 @@
 			gene	ORF1
 <1	15	misc_feature
 			note	similar to nonstructural polyprotein
-<1	11	mat_peptide
-			product	RdRp
-			protein_id	LC312762.1_2
 <1	>190	gene
 			gene	ORF2
 <1	>190	CDS

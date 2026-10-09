@@ -3,24 +3,6 @@
 			gene	ORF1
 5	5098	misc_feature
 			note	similar to nonstructural polyprotein
-5	994	mat_peptide
-			product	p48
-			protein_id	NC_029646/1-5000,6000-5042-2inserts-deletes_1
-995	2092	mat_peptide
-			product	NTPase
-			protein_id	NC_029646/1-5000,6000-5042-2inserts-deletes_1
-2093	2629	mat_peptide
-			product	p22
-			protein_id	NC_029646/1-5000,6000-5042-2inserts-deletes_1
-2630	3028	mat_peptide
-			product	VPg
-			protein_id	NC_029646/1-5000,6000-5042-2inserts-deletes_1
-3029	3571	mat_peptide
-			product	Pro
-			protein_id	NC_029646/1-5000,6000-5042-2inserts-deletes_1
-3572	5095	mat_peptide
-			product	RdRp
-			protein_id	NC_029646/1-5000,6000-5042-2inserts-deletes_1
 5081	>5959	gene
 			gene	ORF2
 5081	>5959	misc_feature
@@ -45,24 +27,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 5	5098	misc_feature
 			note	similar to nonstructural polyprotein
-5	994	mat_peptide
-			product	p48
-			protein_id	NC_029646/1-5000,6000-5041-2inserts-deletes_1
-995	2092	mat_peptide
-			product	NTPase
-			protein_id	NC_029646/1-5000,6000-5041-2inserts-deletes_1
-2093	2629	mat_peptide
-			product	p22
-			protein_id	NC_029646/1-5000,6000-5041-2inserts-deletes_1
-2630	3028	mat_peptide
-			product	VPg
-			protein_id	NC_029646/1-5000,6000-5041-2inserts-deletes_1
-3029	3571	mat_peptide
-			product	Pro
-			protein_id	NC_029646/1-5000,6000-5041-2inserts-deletes_1
-3572	5095	mat_peptide
-			product	RdRp
-			protein_id	NC_029646/1-5000,6000-5041-2inserts-deletes_1
 5081	>5958	gene
 			gene	ORF2
 5081	>5958	misc_feature

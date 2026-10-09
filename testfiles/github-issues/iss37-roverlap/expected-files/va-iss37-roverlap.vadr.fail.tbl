@@ -1,14 +1,8 @@
 >Feature NC_029646.1-N2
-<1	644	mat_peptide
-			product	p48
-			protein_id	NC_029646.1-N2_1
 <1	>795	gene
 			gene	ORF1
 <1	>795	misc_feature
 			note	similar to nonstructural polyprotein
-645	>795	mat_peptide
-			product	NTPase
-			protein_id	NC_029646.1-N2_1
 
 Additional note(s) to submitter:
 ERROR: AMBIGUITY_AT_CDS_END: (CDS:nonstructural polyprotein) final nucleotide of CDS is an ambiguous nucleotide [-]; seq-coords:796..865:+; mdl-coords:1191..1260:+; mdl:NC_029646;

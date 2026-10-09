@@ -3,9 +3,6 @@
 			gene	ORF1
 <221	>1200	misc_feature
 			note	similar to nonstructural polyprotein
-<221	>1200	mat_peptide
-			product	p48
-			protein_id	NC_001959-10extraNs-at-start_1
 
 Additional note(s) to submitter:
 ERROR: LOW_COVERAGE: (*sequence*) low sequence fraction with significant similarity to homology model [0.818<0.900]; seq-coords:1..219:+; mdl-coords:-; mdl:NC_001959;

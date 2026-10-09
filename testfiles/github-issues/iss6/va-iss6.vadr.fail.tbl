@@ -9,31 +9,25 @@
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len100_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len100_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len100_2
+			protein_id	ENTOY100A-stop-mut-at-30-len100_1
 67	79	CDS
 85	95
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len100_3
+			protein_id	ENTOY100A-stop-mut-at-30-len100_2
 67	75	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len100_3
+			protein_id	ENTOY100A-stop-mut-at-30-len100_2
 76	79	mat_peptide
 85	92
 			product	protein three mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len100_3
+			protein_id	ENTOY100A-stop-mut-at-30-len100_2
 98	84	CDS
 			product	protein four
-			protein_id	ENTOY100A-stop-mut-at-30-len100_4
+			protein_id	ENTOY100A-stop-mut-at-30-len100_3
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:71..73:+; mdl-coords:71..73:+; mdl:ENTOY100A;
@@ -50,31 +44,25 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len99_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len99_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len99_2
+			protein_id	ENTOY100A-stop-mut-at-30-len99_1
 67	79	CDS
 85	95
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len99_3
+			protein_id	ENTOY100A-stop-mut-at-30-len99_2
 67	75	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len99_3
+			protein_id	ENTOY100A-stop-mut-at-30-len99_2
 76	79	mat_peptide
 85	92
 			product	protein three mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len99_3
+			protein_id	ENTOY100A-stop-mut-at-30-len99_2
 98	84	CDS
 			product	protein four
-			protein_id	ENTOY100A-stop-mut-at-30-len99_4
+			protein_id	ENTOY100A-stop-mut-at-30-len99_3
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:71..73:+; mdl-coords:71..73:+; mdl:ENTOY100A;
@@ -91,31 +79,25 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len98_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len98_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len98_2
+			protein_id	ENTOY100A-stop-mut-at-30-len98_1
 67	79	CDS
 85	95
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len98_3
+			protein_id	ENTOY100A-stop-mut-at-30-len98_2
 67	75	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len98_3
+			protein_id	ENTOY100A-stop-mut-at-30-len98_2
 76	79	mat_peptide
 85	92
 			product	protein three mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len98_3
+			protein_id	ENTOY100A-stop-mut-at-30-len98_2
 98	84	CDS
 			product	protein four
-			protein_id	ENTOY100A-stop-mut-at-30-len98_4
+			protein_id	ENTOY100A-stop-mut-at-30-len98_3
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:71..73:+; mdl-coords:71..73:+; mdl:ENTOY100A;
@@ -132,32 +114,26 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len97_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len97_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len97_2
+			protein_id	ENTOY100A-stop-mut-at-30-len97_1
 67	79	CDS
 85	95
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len97_3
+			protein_id	ENTOY100A-stop-mut-at-30-len97_2
 67	75	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len97_3
+			protein_id	ENTOY100A-stop-mut-at-30-len97_2
 76	79	mat_peptide
 85	92
 			product	protein three mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len97_3
+			protein_id	ENTOY100A-stop-mut-at-30-len97_2
 <97	84	CDS
 			product	protein four
 			codon_start	3
-			protein_id	ENTOY100A-stop-mut-at-30-len97_4
+			protein_id	ENTOY100A-stop-mut-at-30-len97_3
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:71..73:+; mdl-coords:71..73:+; mdl:ENTOY100A;
@@ -174,23 +150,17 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len75_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len75_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len75_2
+			protein_id	ENTOY100A-stop-mut-at-30-len75_1
 67	75	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len75_3
+			protein_id	ENTOY100A-stop-mut-at-30-len75_2
 67	>75	CDS
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len75_3
+			protein_id	ENTOY100A-stop-mut-at-30-len75_2
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:71..73:+; mdl-coords:71..73:+; mdl:ENTOY100A;
@@ -207,23 +177,17 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len74_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len74_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len74_2
+			protein_id	ENTOY100A-stop-mut-at-30-len74_1
 67	>74	CDS
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len74_3
+			protein_id	ENTOY100A-stop-mut-at-30-len74_2
 67	>74	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len74_3
+			protein_id	ENTOY100A-stop-mut-at-30-len74_2
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:71..73:+; mdl-coords:71..73:+; mdl:ENTOY100A;
@@ -240,23 +204,17 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len73_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len73_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len73_2
+			protein_id	ENTOY100A-stop-mut-at-30-len73_1
 67	>73	CDS
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len73_3
+			protein_id	ENTOY100A-stop-mut-at-30-len73_2
 67	>73	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len73_3
+			protein_id	ENTOY100A-stop-mut-at-30-len73_2
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:71..73:+; mdl-coords:71..73:+; mdl:ENTOY100A;
@@ -273,23 +231,17 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len72_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len72_1
 32	47	CDS
 47	64
 66	>72
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len72_2
+			protein_id	ENTOY100A-stop-mut-at-30-len72_1
 67	>72	CDS
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len72_3
+			protein_id	ENTOY100A-stop-mut-at-30-len72_2
 67	>72	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len72_3
+			protein_id	ENTOY100A-stop-mut-at-30-len72_2
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
@@ -306,23 +258,17 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len71_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len71_1
 32	47	CDS
 47	64
 66	>71
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len71_2
+			protein_id	ENTOY100A-stop-mut-at-30-len71_1
 67	>71	CDS
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len71_3
+			protein_id	ENTOY100A-stop-mut-at-30-len71_2
 67	>71	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len71_3
+			protein_id	ENTOY100A-stop-mut-at-30-len71_2
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
@@ -339,23 +285,17 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len70_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len70_1
 32	47	CDS
 47	64
 66	>70
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len70_2
+			protein_id	ENTOY100A-stop-mut-at-30-len70_1
 67	>70	CDS
 			product	protein three
-			protein_id	ENTOY100A-stop-mut-at-30-len70_3
+			protein_id	ENTOY100A-stop-mut-at-30-len70_2
 67	>70	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len70_3
+			protein_id	ENTOY100A-stop-mut-at-30-len70_2
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
@@ -372,15 +312,9 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len34_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len34_1
 32	>34	CDS
 			product	protein two
-			protein_id	ENTOY100A-stop-mut-at-30-len34_2
+			protein_id	ENTOY100A-stop-mut-at-30-len34_1
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
@@ -397,12 +331,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len33_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len33_1
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
@@ -419,12 +347,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len32_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len32_1
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
@@ -441,12 +363,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-stop-mut-at-30-len31_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-stop-mut-at-30-len31_1
 
 Additional note(s) to submitter:
 ERROR: MUTATION_AT_END: (CDS:protein one) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;

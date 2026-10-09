@@ -9,31 +9,25 @@
 			note	stem-loop 1
 11	37	misc_feature
 			note	similar to protein one
-11	28	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-fs4_1
-29	34	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-fs4_1
 38	53	CDS
 53	70
 72	79
 			product	protein two
-			protein_id	ENTOY100A-fs4_2
+			protein_id	ENTOY100A-fs4_1
 73	85	CDS
 91	101
 			product	protein three
-			protein_id	ENTOY100A-fs4_3
+			protein_id	ENTOY100A-fs4_2
 73	81	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-fs4_3
+			protein_id	ENTOY100A-fs4_2
 82	85	mat_peptide
 91	98
 			product	protein three mp2
-			protein_id	ENTOY100A-fs4_3
+			protein_id	ENTOY100A-fs4_2
 104	90	CDS
 			product	protein four
-			protein_id	ENTOY100A-fs4_4
+			protein_id	ENTOY100A-fs4_3
 
 Additional note(s) to submitter:
 ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS [0.70<0.80]; seq-coords:28..28:+; mdl-coords:22..22:+; mdl:ENTOY100A;
@@ -48,31 +42,25 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has 
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-fs5_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-fs5_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-fs5_2
+			protein_id	ENTOY100A-fs5_1
 67	79	CDS
 85	95
 			product	protein three
-			protein_id	ENTOY100A-fs5_3
+			protein_id	ENTOY100A-fs5_2
 67	75	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-fs5_3
+			protein_id	ENTOY100A-fs5_2
 76	79	mat_peptide
 85	92
 			product	protein three mp2
-			protein_id	ENTOY100A-fs5_3
+			protein_id	ENTOY100A-fs5_2
 98	84	CDS
 			product	protein four
-			protein_id	ENTOY100A-fs5_4
+			protein_id	ENTOY100A-fs5_3
 
 Additional note(s) to submitter:
 ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS [0.60<0.80]; seq-coords:22..22:+; mdl-coords:22..22:+; mdl:ENTOY100A;
@@ -87,31 +75,25 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has 
 			note	stem-loop 1
 11	28	misc_feature
 			note	similar to protein one
-11	19	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-fs10_1
-20	25	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-fs10_1
 29	44	CDS
 44	61
 63	70
 			product	protein two
-			protein_id	ENTOY100A-fs10_2
+			protein_id	ENTOY100A-fs10_1
 64	76	CDS
 82	92
 			product	protein three
-			protein_id	ENTOY100A-fs10_3
+			protein_id	ENTOY100A-fs10_2
 64	72	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-fs10_3
+			protein_id	ENTOY100A-fs10_2
 73	76	mat_peptide
 82	89
 			product	protein three mp2
-			protein_id	ENTOY100A-fs10_3
+			protein_id	ENTOY100A-fs10_2
 95	81	CDS
 			product	protein four
-			protein_id	ENTOY100A-fs10_4
+			protein_id	ENTOY100A-fs10_3
 
 Additional note(s) to submitter:
 ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS [0.60<0.80]; seq-coords:19..19:+; mdl-coords:22..22:+; mdl:ENTOY100A;
@@ -126,31 +108,25 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has 
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-fs11_1
-23	28	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-fs11_1
 32	47	CDS
 47	64
 66	73
 			product	protein two
-			protein_id	ENTOY100A-fs11_2
+			protein_id	ENTOY100A-fs11_1
 67	79	CDS
 85	95
 			product	protein three
-			protein_id	ENTOY100A-fs11_3
+			protein_id	ENTOY100A-fs11_2
 67	75	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-fs11_3
+			protein_id	ENTOY100A-fs11_2
 76	79	mat_peptide
 85	92
 			product	protein three mp2
-			protein_id	ENTOY100A-fs11_3
+			protein_id	ENTOY100A-fs11_2
 98	84	CDS
 			product	protein four
-			protein_id	ENTOY100A-fs11_4
+			protein_id	ENTOY100A-fs11_3
 
 Additional note(s) to submitter:
 ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS [0.70<0.80]; seq-coords:22..22:+; mdl-coords:22..22:+; mdl:ENTOY100A;

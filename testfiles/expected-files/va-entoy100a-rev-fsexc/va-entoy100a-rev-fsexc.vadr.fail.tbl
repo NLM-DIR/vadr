@@ -1,33 +1,27 @@
 >Feature ENTOY100A-REV-fs1
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs1_4
+			protein_id	ENTOY100A-REV-fs1_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs1_3
+			protein_id	ENTOY100A-REV-fs1_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs1_3
+			protein_id	ENTOY100A-REV-fs1_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs1_3
+			protein_id	ENTOY100A-REV-fs1_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs1_2
+			protein_id	ENTOY100A-REV-fs1_1
 94	68	gene
 			gene	one
 91	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs1_1
-91	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs1_1
 97	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -45,33 +39,27 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 >Feature ENTOY100A-REV-fs2
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs2_4
+			protein_id	ENTOY100A-REV-fs2_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs2_3
+			protein_id	ENTOY100A-REV-fs2_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs2_3
+			protein_id	ENTOY100A-REV-fs2_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs2_3
+			protein_id	ENTOY100A-REV-fs2_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs2_2
+			protein_id	ENTOY100A-REV-fs2_1
 98	68	gene
 			gene	one
 95	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs2_1
-95	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs2_1
 101	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -89,33 +77,27 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 >Feature ENTOY100A-REV-fs4
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs4_4
+			protein_id	ENTOY100A-REV-fs4_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs4_3
+			protein_id	ENTOY100A-REV-fs4_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs4_3
+			protein_id	ENTOY100A-REV-fs4_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs4_3
+			protein_id	ENTOY100A-REV-fs4_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs4_2
+			protein_id	ENTOY100A-REV-fs4_1
 99	68	gene
 			gene	one
 96	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs4_1
-96	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs4_1
 102	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -171,33 +153,27 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has 
 >Feature ENTOY100A-REV-fs6
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs6_4
+			protein_id	ENTOY100A-REV-fs6_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs6_3
+			protein_id	ENTOY100A-REV-fs6_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs6_3
+			protein_id	ENTOY100A-REV-fs6_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs6_3
+			protein_id	ENTOY100A-REV-fs6_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs6_2
+			protein_id	ENTOY100A-REV-fs6_1
 96	68	gene
 			gene	one
 93	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs6_1
-93	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs6_1
 99	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -215,33 +191,27 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model is a
 >Feature ENTOY100A-REV-fs7
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs7_4
+			protein_id	ENTOY100A-REV-fs7_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs7_3
+			protein_id	ENTOY100A-REV-fs7_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs7_3
+			protein_id	ENTOY100A-REV-fs7_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs7_3
+			protein_id	ENTOY100A-REV-fs7_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs7_2
+			protein_id	ENTOY100A-REV-fs7_1
 92	68	gene
 			gene	one
 89	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs7_1
-89	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs7_1
 95	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -259,33 +229,27 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 >Feature ENTOY100A-REV-fs8
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs8_4
+			protein_id	ENTOY100A-REV-fs8_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs8_3
+			protein_id	ENTOY100A-REV-fs8_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs8_3
+			protein_id	ENTOY100A-REV-fs8_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs8_3
+			protein_id	ENTOY100A-REV-fs8_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs8_2
+			protein_id	ENTOY100A-REV-fs8_1
 91	68	gene
 			gene	one
 88	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs8_1
-88	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs8_1
 94	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -304,33 +268,27 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 >Feature ENTOY100A-REV-fs9
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs9_4
+			protein_id	ENTOY100A-REV-fs9_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs9_3
+			protein_id	ENTOY100A-REV-fs9_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs9_3
+			protein_id	ENTOY100A-REV-fs9_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs9_3
+			protein_id	ENTOY100A-REV-fs9_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs9_2
+			protein_id	ENTOY100A-REV-fs9_1
 90	68	gene
 			gene	one
 87	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs9_1
-87	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs9_1
 93	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -348,33 +306,27 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model is a
 >Feature ENTOY100A-REV-fs10
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs10_4
+			protein_id	ENTOY100A-REV-fs10_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs10_3
+			protein_id	ENTOY100A-REV-fs10_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs10_3
+			protein_id	ENTOY100A-REV-fs10_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs10_3
+			protein_id	ENTOY100A-REV-fs10_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs10_2
+			protein_id	ENTOY100A-REV-fs10_1
 90	68	gene
 			gene	one
 87	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs10_1
-87	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs10_1
 93	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -391,33 +343,27 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has 
 >Feature ENTOY100A-REV-fs11
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs11_4
+			protein_id	ENTOY100A-REV-fs11_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs11_3
+			protein_id	ENTOY100A-REV-fs11_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs11_3
+			protein_id	ENTOY100A-REV-fs11_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs11_3
+			protein_id	ENTOY100A-REV-fs11_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs11_2
+			protein_id	ENTOY100A-REV-fs11_1
 93	68	gene
 			gene	one
 90	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs11_1
-90	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs11_1
 96	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -434,33 +380,27 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has 
 >Feature ENTOY100A-REV-fs12
 3	17	CDS
 			product	protein four
-			protein_id	ENTOY100A-REV-fs12_4
+			protein_id	ENTOY100A-REV-fs12_3
 34	22	CDS
 16	6
 			product	protein three
-			protein_id	ENTOY100A-REV-fs12_3
+			protein_id	ENTOY100A-REV-fs12_2
 25	22	mat_peptide
 16	9
 			product	protein three mp2
-			protein_id	ENTOY100A-REV-fs12_3
+			protein_id	ENTOY100A-REV-fs12_2
 34	26	mat_peptide
 			product	protein three mp1
-			protein_id	ENTOY100A-REV-fs12_3
+			protein_id	ENTOY100A-REV-fs12_2
 69	54	CDS
 54	37
 35	28
 			product	protein two
-			protein_id	ENTOY100A-REV-fs12_2
+			protein_id	ENTOY100A-REV-fs12_1
 93	68	gene
 			gene	one
 90	70	misc_feature
 			note	similar to protein one
-78	73	mat_peptide
-			product	protein one mp2
-			protein_id	ENTOY100A-REV-fs12_1
-90	79	mat_peptide
-			product	protein one mp1
-			protein_id	ENTOY100A-REV-fs12_1
 96	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
