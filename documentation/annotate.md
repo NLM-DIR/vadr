@@ -1127,7 +1127,7 @@ user, this is "-" for alerts that are never omitted from those files.
 #### More information on *always fatal* alert codes <a name="always2"></a>
 | alert code | short description/error name | relevant options | relevant feature types | omitted in `.tbl` and `.alt.list` by | 
 |------------|------------------------------|------------------|------------------------|--------------------------------------|
-| [*noannotn*](#noannotn1)  | NO_ANNOTATION                | none | - | - <a name="noannotn2"></a> | 
+| [*noannotn*](#noannotn1)  | NO_ANNOTATION                | `-r`, `--msub` (alert detail reports which of three causes applied, see [here](alerts.md#example-noannotn)) | - | - <a name="noannotn2"></a> | 
 | [*revcompl*](#revcompl1)  | REVCOMPLEM                   | none | - | - <a name="revcompl2"></a> |  
 | [*unexdivg*](#unexdivg1)  | UNEXPECTED_DIVERGENCE        | none | - | - <a name="unexdivg2"></a> |  
 | [*noftrann*](#noftrann1)  | NO_FEATURES_ANNOTATED        | none | - | - <a name="noftrann2"></a> | 

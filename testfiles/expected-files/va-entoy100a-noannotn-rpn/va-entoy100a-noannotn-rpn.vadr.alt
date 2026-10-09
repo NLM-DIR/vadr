@@ -1,0 +1,4 @@
+#      seq                         ftr   ftr   ftr  alert           alert             seq  seq     mdl  mdl  alert 
+#idx   name                 model  type  name  idx  code      fail  description    coords  len  coords  len  detail
+#----  -------------------  -----  ----  ----  ---  --------  ----  -------------  ------  ---  ------  ---  ------
+2.1.1  ENTOY100A-NOANNOTN2  -      -     -       -  noannotn  yes   NO_ANNOTATION       -    -       -    -  no significant similarity detected [match in N-replacement pre-screen but not in classification stage]

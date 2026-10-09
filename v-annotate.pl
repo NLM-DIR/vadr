@@ -4123,6 +4123,15 @@ sub add_classification_alerts {
   my $nseq = scalar(keys (%{$seq_len_HR}));
   my $do_clsonly = opt_Get("--cls_only", $opt_HHR);
 
+  # alert detail for each of the possible causes of a noannotn alert
+  # (see 'check for noannotn alert' comment below), these strings appear
+  # inside [] at the end of the noannotn alert description in the .alt
+  # and .alt.list files and in the .fail.tbl 'Additional note(s) to submitter' 
+  # lines; do not include ':' or ';' characters, see alert_instance_parse()
+  my %noannotn_detail_H = ("cls" => "no match to any model in classification stage",
+                           "rpn" => "match in N-replacement pre-screen but not in classification stage",
+                           "cdt" => "match in classification stage but not in coverage determination stage");
+
   # create the model index hash which gives index in $mdl_info_AHR[] 
   # for a given model name, this allows us to find model length given model name
   my %mdl_idx_H = ();
@@ -4200,7 +4209,7 @@ sub add_classification_alerts {
     if($do_clsonly) {
       # add noannotn if nec
       if(! defined $stg_results_HHHR->{$seq_name}) { 
-        alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, "noannotn", $seq_name, "VADRNULL", $FH_HR);
+        alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, "noannotn", $seq_name, $noannotn_detail_H{"cls"}, $FH_HR);
       }
       else {
         my ($score1, $score2) = (undef, undef);
@@ -4242,15 +4251,22 @@ sub add_classification_alerts {
       # check for noannotn alert: 3 possibilities
       # 1) no hits in round 1 search (most common cause of noannotn)
       # 2) >= 1 hits in -r       classification stage (rpn.cls.1)  but 0 hits in standard classification stage (std.cls.1) (rare)
-      # 3) >= 1 hits in standard classification stage (std.cdt.bs) but 0 hits in coverage determination stage (std.cdt.bs) (rare)
-      if((! defined $stg_results_HHHR->{$seq_name}) || # case 1
-         ((defined $stg_results_HHHR->{$seq_name}) &&
-          (defined $stg_results_HHHR->{$seq_name}{"rpn.cls.1"}) &&
-          (! defined $stg_results_HHHR->{$seq_name}{"std.cls.1"})) || # case 2
-         ((defined $stg_results_HHHR->{$seq_name}) &&
-          (defined $stg_results_HHHR->{$seq_name}{"std.cls.1"}) &&
-          (! defined $stg_results_HHHR->{$seq_name}{"std.cdt.bs"}))) { # case 3
-        alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, "noannotn", $seq_name, "VADRNULL", $FH_HR);
+      # 3) >= 1 hits in standard classification stage (std.cls.1)  but 0 hits in coverage determination stage (std.cdt.bs) (rare)
+      # each case has its own alert detail (%noannotn_detail_H key)
+      my $noannotn_case = undef;
+      if(! defined $stg_results_HHHR->{$seq_name}) { 
+        $noannotn_case = "cls"; # case 1
+      }
+      elsif((defined $stg_results_HHHR->{$seq_name}{"rpn.cls.1"}) &&
+            (! defined $stg_results_HHHR->{$seq_name}{"std.cls.1"})) { 
+        $noannotn_case = "rpn"; # case 2
+      }
+      elsif((defined $stg_results_HHHR->{$seq_name}{"std.cls.1"}) &&
+            (! defined $stg_results_HHHR->{$seq_name}{"std.cdt.bs"})) { 
+        $noannotn_case = "cdt"; # case 3
+      }
+      if(defined $noannotn_case) { 
+        alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, "noannotn", $seq_name, $noannotn_detail_H{$noannotn_case}, $FH_HR);
       }
       else { 
         if(! defined $stg_results_HHHR->{$seq_name}{"std.cls.1"}) { 

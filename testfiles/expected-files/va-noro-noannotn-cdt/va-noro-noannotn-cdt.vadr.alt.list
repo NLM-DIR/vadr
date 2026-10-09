@@ -1,0 +1,2 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+NOROFRAG-NOANNOTN3	NC_039477	-	*sequence*	NO_ANNOTATION	-	-	no significant similarity detected [match in classification stage but not in coverage determination stage]

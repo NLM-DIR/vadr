@@ -1,0 +1,67 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+#
+# Tests of the alert detail reported for each of the possible causes of a noannotn 
+# (NO_ANNOTATION) alert.
+#
+# noannotn case 1: no match to any model in the classification stage (shuffled ENTOY100A sequence)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --pv_skip --mdir $VADRSCRIPTSDIR/testfiles/models --mkey entoy100a $VADRSCRIPTSDIR/testfiles/entoy100a-noannotn.fa va-entoy100a-noannotn-cls > va-entoy100a-noannotn-cls.out
+desc: annotate-entoy100a-noannotn-cls
+out: va-entoy100a-noannotn-cls/va-entoy100a-noannotn-cls.vadr.pass.tbl 
+out: va-entoy100a-noannotn-cls/va-entoy100a-noannotn-cls.vadr.fail.tbl
+out: va-entoy100a-noannotn-cls/va-entoy100a-noannotn-cls.vadr.alt.list
+out: va-entoy100a-noannotn-cls/va-entoy100a-noannotn-cls.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-cls/va-entoy100a-noannotn-cls.vadr.pass.tbl 
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-cls/va-entoy100a-noannotn-cls.vadr.fail.tbl 
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-cls/va-entoy100a-noannotn-cls.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-cls/va-entoy100a-noannotn-cls.vadr.alt
+rmdir: va-entoy100a-noannotn-cls
+#
+# noannotn case 1 with --cls_only (only the .sqc file is output, which lists alert codes
+# but not alert details, so this checks the .sqc format is unaffected by the noannotn detail)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --cls_only --pv_skip --mdir $VADRSCRIPTSDIR/testfiles/models --mkey entoy100a $VADRSCRIPTSDIR/testfiles/entoy100a-noannotn.fa va-entoy100a-noannotn-clsonly > va-entoy100a-noannotn-clsonly.out
+desc: annotate-entoy100a-noannotn-clsonly
+out: va-entoy100a-noannotn-clsonly/va-entoy100a-noannotn-clsonly.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-clsonly/va-entoy100a-noannotn-clsonly.vadr.sqc
+rmdir: va-entoy100a-noannotn-clsonly
+#
+# noannotn case 2: match in -r N-replacement pre-screen but not in classification stage
+# (the --r_file blastn db holds the shuffled sequence named as ENTOY100A, so the 
+#  -r pre-processing blastn search finds a hit but the standard cmsearch does not)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -r --r_file $VADRSCRIPTSDIR/testfiles/models/entoy100a-noannotn-decoy.fa --pv_skip --mdir $VADRSCRIPTSDIR/testfiles/models --mkey entoy100a $VADRSCRIPTSDIR/testfiles/entoy100a-noannotn-rpn.fa va-entoy100a-noannotn-rpn > va-entoy100a-noannotn-rpn.out
+desc: annotate-entoy100a-noannotn-rpn
+out: va-entoy100a-noannotn-rpn/va-entoy100a-noannotn-rpn.vadr.pass.tbl 
+out: va-entoy100a-noannotn-rpn/va-entoy100a-noannotn-rpn.vadr.fail.tbl
+out: va-entoy100a-noannotn-rpn/va-entoy100a-noannotn-rpn.vadr.alt.list
+out: va-entoy100a-noannotn-rpn/va-entoy100a-noannotn-rpn.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-rpn/va-entoy100a-noannotn-rpn.vadr.pass.tbl 
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-rpn/va-entoy100a-noannotn-rpn.vadr.fail.tbl 
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-rpn/va-entoy100a-noannotn-rpn.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-noannotn-rpn/va-entoy100a-noannotn-rpn.vadr.alt
+rmdir: va-entoy100a-noannotn-rpn
+#
+# noannotn case 3: match in classification stage but not in coverage determination stage
+# (--msub substitutes a different model for the coverage determination stage, 
+#  to which this 100nt fragment has no hits)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --pv_skip --msub $VADRSCRIPTSDIR/testfiles/noro.3.noannotn.msub --mdir $VADRSCRIPTSDIR/testfiles/models --mkey noro.3 $VADRSCRIPTSDIR/testfiles/noro.noannotn.fa va-noro-noannotn-cdt > va-noro-noannotn-cdt.out
+desc: annotate-noro-noannotn-cdt
+out: va-noro-noannotn-cdt/va-noro-noannotn-cdt.vadr.fail.tbl
+out: va-noro-noannotn-cdt/va-noro-noannotn-cdt.vadr.alt.list
+out: va-noro-noannotn-cdt/va-noro-noannotn-cdt.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-noannotn-cdt/va-noro-noannotn-cdt.vadr.fail.tbl 
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-noannotn-cdt/va-noro-noannotn-cdt.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro-noannotn-cdt/va-noro-noannotn-cdt.vadr.alt
+rmdir: va-noro-noannotn-cdt
+#

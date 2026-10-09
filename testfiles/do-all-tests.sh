@@ -56,6 +56,7 @@ for t in \
     do-extrant-tests.sh \
     do-pvcoords-tests.sh \
     do-xnumali-tests.sh \
+    do-noannotn-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do
     sh $VADRSCRIPTSDIR/testfiles/$t

@@ -1,0 +1,12 @@
+>Feature ENTOY100A
+5	22	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
+10	19	stem_loop
+			note	stem-loop 1
+32	47	CDS
+47	64
+66	73
+			product	protein two
+			protein_id	ENTOY100A_1
