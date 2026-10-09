@@ -1486,8 +1486,20 @@ if($do_split) {
                                                   scalar(@seq_name_A)), 
                                           $progress_w, $FH_HR->{"log"}, *STDOUT);
 
-  # execute the $ncpu scripts
-  utl_RunCommand($script_cmd, opt_Get("-v", \%opt_HH), 0, $FH_HR);
+  # execute the $ncpu scripts, the first script runs in the foreground;
+  # if it fails, kill any background scripts before failing
+  utl_RunCommand($script_cmd, opt_Get("-v", \%opt_HH), 1, $FH_HR);
+  if($? != 0) { 
+    my @pid_file_A = ();
+    for(my $s = 1; $s < $nscript; $s++) { 
+      if(exists $cpu_out_file_AH[$s]{"pid"}) { push(@pid_file_A, $cpu_out_file_AH[$s]{"pid"}); }
+    }
+    vdr_KillProcessTreesInPidFiles(\@pid_file_A);
+    ofile_FAIL("ERROR in v-annotate.pl, the following command failed:\n$script_cmd\n" . 
+               "Specifically the job that was supposed to create the following output and err files:\n" . 
+               "\t" . $cpu_out_file_AH[0]{"out"} . "\t" . $cpu_out_file_AH[0]{"err"} . "\n" . 
+               vdr_ErrFileTailString($cpu_out_file_AH[0]{"err"}, 5), 1, $FH_HR);
+  }
 
 
   my $nscripts_finished = 1; # the final script has finished
@@ -15353,6 +15365,12 @@ sub write_v_annotate_scripts_for_split_mode {
   if($v_annotate_plus_opts =~ /\s+\-\-maxnjobs\s+\d+\s*/) { 
     $v_annotate_plus_opts =~ s/\s+\-\-maxnjobs\s+\d+\s*/ /;
   }
+  # remove --wait option (may or may not exist) unless -p is also used:
+  # without -p, --wait only applies to this --split parent, and the child
+  # v-annotate.pl commands would die because --wait requires -p or --split
+  if((! opt_IsUsed("-p", $opt_HHR)) && ($v_annotate_plus_opts =~ /\s+\-\-wait\s+\d+\s*/)) { 
+    $v_annotate_plus_opts =~ s/\s+\-\-wait\s+\d+\s*/ /;
+  }
   $v_annotate_plus_opts =~ s/\s+$//; # remove trailing whitespace if we created it
 
   # printf("in $sub_name, root command with opts:\n$v_annotate_plus_opts\n");
@@ -15386,7 +15404,9 @@ sub write_v_annotate_scripts_for_split_mode {
     }
     $cpu_out_file_AHR->[$fidx]{"out"} = $out_file; # may overwrite previous one
     my $FH = $out_FH_A[$fidx];
-    print $FH "$v_annotate_plus_opts $sidx_opt $fasta_file $out_dir > $out_file\n";
+    # if this command fails, report which chunk failed and exit, so the
+    # script does not go on to its next chunk and the parent detects the failure
+    print $FH "$v_annotate_plus_opts $sidx_opt $fasta_file $out_dir > $out_file || { echo \"ERROR: v-annotate.pl failed on $fasta_file (output directory $out_dir)\" 1>&2; exit 1; }\n";
     push(@{$chunk_outdir_AR}, $out_dir); # save chunk directory
     $sidx += $nseqs_per_chunk_AR->[($i-1)]; # update number of sequences for next command
 
@@ -15400,11 +15420,15 @@ sub write_v_annotate_scripts_for_split_mode {
   # smallest sequence subset
 
   my $err_file = undef;
-  for($fidx = 1; $fidx < $ncpu; $fidx++) { 
-    if($out_ncmd_A[$fidx] > 0) { 
+  my $pid_file = undef;
+  for($fidx = 1; $fidx < $ncpu; $fidx++) {
+    if($out_ncmd_A[$fidx] > 0) {
       $err_file = $out_scriptname_A[$fidx] . ".err";
+      $pid_file = $out_scriptname_A[$fidx] . ".pid";
       $cpu_out_file_AHR->[$fidx]{"err"} = $err_file;
-      $script_cmd .= "sh " . $out_scriptname_A[$fidx] . " > /dev/null 2> $err_file &\n"; 
+      $cpu_out_file_AHR->[$fidx]{"pid"} = $pid_file; # pid file for OOM-kill detection
+      $script_cmd .= "sh " . $out_scriptname_A[$fidx] . " > /dev/null 2> $err_file & echo \$! > $pid_file\n";
+      push(@{$to_remove_AR}, $pid_file);
     }
     push(@{$to_remove_AR}, $out_scriptname_A[$fidx]);
     push(@{$to_remove_AR}, $err_file);
