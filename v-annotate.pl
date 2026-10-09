@@ -15280,6 +15280,12 @@ sub write_v_annotate_scripts_for_split_mode {
   if($v_annotate_plus_opts =~ /\s+\-\-maxnjobs\s+\d+\s*/) { 
     $v_annotate_plus_opts =~ s/\s+\-\-maxnjobs\s+\d+\s*/ /;
   }
+  # remove --wait option (may or may not exist) unless -p is also used:
+  # without -p, --wait only applies to this --split parent, and the child
+  # v-annotate.pl commands would die because --wait requires -p or --split
+  if((! opt_IsUsed("-p", $opt_HHR)) && ($v_annotate_plus_opts =~ /\s+\-\-wait\s+\d+\s*/)) { 
+    $v_annotate_plus_opts =~ s/\s+\-\-wait\s+\d+\s*/ /;
+  }
   $v_annotate_plus_opts =~ s/\s+$//; # remove trailing whitespace if we created it
 
   # printf("in $sub_name, root command with opts:\n$v_annotate_plus_opts\n");
