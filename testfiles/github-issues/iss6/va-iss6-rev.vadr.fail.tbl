@@ -22,10 +22,6 @@
 			gene	one
 90	70	misc_feature
 			note	similar to protein one
-78	73	misc_feature
-			note	similar to protein one mp2
-90	79	misc_feature
-			note	similar to protein one mp1
 96	79	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -61,10 +57,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 89	69	misc_feature
 			note	similar to protein one
-77	72	misc_feature
-			note	similar to protein one mp2
-89	78	misc_feature
-			note	similar to protein one mp1
 95	78	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -100,10 +92,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 88	68	misc_feature
 			note	similar to protein one
-76	71	misc_feature
-			note	similar to protein one mp2
-88	77	misc_feature
-			note	similar to protein one mp1
 94	77	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -140,10 +128,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 87	67	misc_feature
 			note	similar to protein one
-75	70	misc_feature
-			note	similar to protein one mp2
-87	76	misc_feature
-			note	similar to protein one mp1
 93	76	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -171,10 +155,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 65	45	misc_feature
 			note	similar to protein one
-53	48	misc_feature
-			note	similar to protein one mp2
-65	54	misc_feature
-			note	similar to protein one mp1
 71	54	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -202,10 +182,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 64	44	misc_feature
 			note	similar to protein one
-52	47	misc_feature
-			note	similar to protein one mp2
-64	53	misc_feature
-			note	similar to protein one mp1
 70	53	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -233,10 +209,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 63	43	misc_feature
 			note	similar to protein one
-51	46	misc_feature
-			note	similar to protein one mp2
-63	52	misc_feature
-			note	similar to protein one mp1
 69	52	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -264,10 +236,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 62	42	misc_feature
 			note	similar to protein one
-50	45	misc_feature
-			note	similar to protein one mp2
-62	51	misc_feature
-			note	similar to protein one mp1
 68	51	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -295,10 +263,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 61	41	misc_feature
 			note	similar to protein one
-49	44	misc_feature
-			note	similar to protein one mp2
-61	50	misc_feature
-			note	similar to protein one mp1
 67	50	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -326,10 +290,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 60	40	misc_feature
 			note	similar to protein one
-48	43	misc_feature
-			note	similar to protein one mp2
-60	49	misc_feature
-			note	similar to protein one mp1
 66	49	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -349,10 +309,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 24	4	misc_feature
 			note	similar to protein one
-12	7	misc_feature
-			note	similar to protein one mp2
-24	13	misc_feature
-			note	similar to protein one mp1
 30	13	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -369,10 +325,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 23	3	misc_feature
 			note	similar to protein one
-11	6	misc_feature
-			note	similar to protein one mp2
-23	12	misc_feature
-			note	similar to protein one mp1
 29	12	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -389,10 +341,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 22	2	misc_feature
 			note	similar to protein one
-10	5	misc_feature
-			note	similar to protein one mp2
-22	11	misc_feature
-			note	similar to protein one mp1
 28	11	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
@@ -409,10 +357,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	similar to protein one
 24	>1	gene
 			gene	one
-9	4	misc_feature
-			note	similar to protein one mp2
-21	10	misc_feature
-			note	similar to protein one mp1
 27	10	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA

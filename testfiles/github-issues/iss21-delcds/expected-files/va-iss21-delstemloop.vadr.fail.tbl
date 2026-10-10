@@ -15,9 +15,9 @@ ERROR: DELETION_OF_FEATURE: (*sequence*) internal deletion of a complete feature
 42	62	CDS
 			product	protein two
 			protein_id	entoy.delcds/cds3-sgm1-deleted/1-70,79-123_2
-<73	74	misc_feature
+<73	74	stem_loop
 77	85
-			note	similar to SL1
+			product	SL1
 
 Additional note(s) to submitter:
 ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complete section in multi-section feature with other section(s) annotated [segment 1 of 3 deleted]; seq-coords:-; mdl-coords:73..78:+; mdl:entoy.delcds;
@@ -29,9 +29,9 @@ ERROR: INDEFINITE_ANNOTATION_START: (stem_loop:SL1) alignment to homology model 
 42	62	CDS
 			product	protein two
 			protein_id	entoy.delcds/cds3-sgm2-deleted/1-79,84-123_2
-73	78	misc_feature
+73	78	stem_loop
 81	89
-			note	similar to SL1
+			product	SL1
 
 Additional note(s) to submitter:
 ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complete section in multi-section feature with other section(s) annotated [segment 2 of 3 deleted]; seq-coords:-; mdl-coords:80..82:+; mdl:entoy.delcds;
@@ -42,9 +42,9 @@ ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complet
 42	62	CDS
 			product	protein two
 			protein_id	entoy.delcds/cds3-sgm3-deleted/1-83,97-123_2
-73	78	misc_feature
+73	78	stem_loop
 80	>82
-			note	similar to SL1
+			product	SL1
 
 Additional note(s) to submitter:
 ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complete section in multi-section feature with other section(s) annotated [segment 3 of 3 deleted]; seq-coords:-; mdl-coords:85..93:+; mdl:entoy.delcds;
@@ -55,8 +55,8 @@ ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complet
 42	62	CDS
 			product	protein two
 			protein_id	entoy.delcds/cds3-sgm1and2-deleted/1-65,87-123_2
-<66	72	misc_feature
-			note	similar to SL1
+<66	72	stem_loop
+			product	SL1
 
 Additional note(s) to submitter:
 ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complete section in multi-section feature with other section(s) annotated [segment 1 of 3 deleted]; seq-coords:-; mdl-coords:73..78:+; mdl:entoy.delcds;
@@ -69,8 +69,8 @@ ERROR: INDEFINITE_ANNOTATION_START: (stem_loop:SL1) alignment to homology model 
 42	62	CDS
 			product	protein two
 			protein_id	entoy.delcds/cds3-sgm2and3-deleted/1-79,97-123_2
-73	>78	misc_feature
-			note	similar to SL1
+73	>78	stem_loop
+			product	SL1
 
 Additional note(s) to submitter:
 ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complete section in multi-section feature with other section(s) annotated [segment 2 of 3 deleted]; seq-coords:-; mdl-coords:80..82:+; mdl:entoy.delcds;
@@ -82,8 +82,8 @@ ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complet
 42	62	CDS
 			product	protein two
 			protein_id	entoy.delcds/cds3-sgm1and3-deleted/1-70,79..84,97-123_2
-<72	>74	misc_feature
-			note	similar to SL1
+<72	>74	stem_loop
+			product	SL1
 
 Additional note(s) to submitter:
 ERROR: DELETION_OF_FEATURE_SECTION: (stem_loop:SL1) internal deletion of complete section in multi-section feature with other section(s) annotated [segment 1 of 3 deleted]; seq-coords:-; mdl-coords:73..78:+; mdl:entoy.delcds;

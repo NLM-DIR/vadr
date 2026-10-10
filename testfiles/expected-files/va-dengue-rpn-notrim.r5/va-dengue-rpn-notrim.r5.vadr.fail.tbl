@@ -3,8 +3,6 @@
 			gene	POLY
 <1	>1485	misc_feature
 			note	similar to polyprotein
-1	1485	misc_feature
-			note	similar to envelope protein E
 
 Additional note(s) to submitter:
 ERROR: AMBIGUITY_AT_CDS_START: (CDS:polyprotein) first nucleotide of CDS is an ambiguous nucleotide [-]; seq-coords:1..35:+; mdl-coords:935..969:+; mdl:NC_001477;
@@ -14,8 +12,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:envelope protein E) mat_peptide
 			gene	POLY
 <1	>87	misc_feature
 			note	similar to polyprotein
-<1	>87	misc_feature
-			note	similar to RNA-dependent RNA polymerase NS5
 
 Additional note(s) to submitter:
 ERROR: AMBIGUITY_AT_CDS_END: (CDS:polyprotein) final nucleotide of CDS is an ambiguous nucleotide [-]; seq-coords:87..87:+; mdl-coords:10065..10065:+; mdl:NC_001474;

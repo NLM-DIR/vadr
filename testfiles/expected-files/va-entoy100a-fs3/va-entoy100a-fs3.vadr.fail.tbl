@@ -9,10 +9,6 @@
 			note	stem-loop 1
 1	22	misc_feature
 			note	similar to protein one
-1	13	misc_feature
-			note	similar to protein one mp1
-14	19	misc_feature
-			note	similar to protein one mp2
 23	38	CDS
 38	55
 57	64
@@ -51,10 +47,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 1	21	misc_feature
 			note	similar to protein one
-1	12	misc_feature
-			note	similar to protein one mp1
-13	18	misc_feature
-			note	similar to protein one mp2
 22	37	CDS
 37	54
 56	63
@@ -84,16 +76,12 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			gene	one
 <1	17	misc_feature
 			note	similar to protein one
-<1	8	misc_feature
-			note	similar to protein one mp1
 <1	8	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
 			note	ncRNA 1
-<1	5	misc_feature
-			note	similar to stem_loop.1
-9	14	misc_feature
-			note	similar to protein one mp2
+<1	5	stem_loop
+			note	stem-loop 1
 18	33	CDS
 33	50
 52	59
@@ -124,16 +112,12 @@ ERROR: INDEFINITE_ANNOTATION_END: (stem_loop:stem_loop.1) alignment to homology 
 			gene	one
 <1	16	misc_feature
 			note	similar to protein one
-<1	7	misc_feature
-			note	similar to protein one mp1
 <1	7	ncRNA
 			product	enRNA
 			ncRNA_class	lncRNA
 			note	ncRNA 1
-<1	4	misc_feature
-			note	similar to stem_loop.1
-8	13	misc_feature
-			note	similar to protein one mp2
+<1	4	stem_loop
+			note	stem-loop 1
 17	32	CDS
 32	49
 51	58

@@ -3,18 +3,6 @@
 			gene	ORF1
 5	5443	misc_feature
 			note	similar to nonstructural polyprotein
-5	1198	misc_feature
-			note	similar to p48
-1199	2356	misc_feature
-			note	similar to NTPase
-2357	2959	misc_feature
-			note	similar to p22
-2960	3373	misc_feature
-			note	similar to VPg
-3374	3916	misc_feature
-			note	similar to Pro
-3917	5440	misc_feature
-			note	similar to RdRp
 5427	7019	gene
 			gene	ORF2
 5427	7019	CDS
