@@ -9,10 +9,6 @@
 			note	stem-loop 1
 11	32	misc_feature
 			note	similar to protein one
-11	23	misc_feature
-			note	similar to protein one mp1
-24	29	misc_feature
-			note	similar to protein one mp2
 33	48	CDS
 48	65
 67	74
@@ -51,10 +47,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	36	misc_feature
 			note	similar to protein one
-11	27	misc_feature
-			note	similar to protein one mp1
-28	33	misc_feature
-			note	similar to protein one mp2
 37	52	CDS
 52	69
 71	78
@@ -83,18 +75,16 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp1) mat_peptide ma
 ERROR: UNEXPECTED_LENGTH: (mat_peptide:protein one mp1) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [17]; seq-coords:11..27:+; mdl-coords:11..22:+; mdl:ENTOY100A;
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
 >Feature ENTOY100A-fs4
-5	28	misc_feature
-			note	similar to enRNA
+5	28	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
 8	39	gene
 			gene	one
 10	24	stem_loop
 			note	stem-loop 1
 11	37	misc_feature
 			note	similar to protein one
-11	28	misc_feature
-			note	similar to protein one mp1
-29	34	misc_feature
-			note	similar to protein one mp2
 38	53	CDS
 53	70
 72	79
@@ -121,8 +111,10 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp1) mat_peptide ma
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS [0.70<0.80]; seq-coords:28..28:+; mdl-coords:22..22:+; mdl:ENTOY100A;
 >Feature ENTOY100A-fs5
-5	22	misc_feature
-			note	similar to enRNA
+5	22	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
 8	33	gene
 			gene	one
 10	20	stem_loop
@@ -159,18 +151,16 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has 
 Additional note(s) to submitter:
 ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS [0.60<0.80]; seq-coords:22..22:+; mdl-coords:22..22:+; mdl:ENTOY100A;
 >Feature ENTOY100A-fs6
-5	25	misc_feature
-			note	similar to enRNA
+5	25	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
 8	36	gene
 			gene	one
 10	24	stem_loop
 			note	stem-loop 1
 11	34	misc_feature
 			note	similar to protein one
-11	25	misc_feature
-			note	similar to protein one mp1
-26	31	misc_feature
-			note	similar to protein one mp2
 35	50	CDS
 50	67
 69	76
@@ -209,10 +199,6 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model is a
 			note	stem-loop 1
 11	30	misc_feature
 			note	similar to protein one
-11	21	misc_feature
-			note	similar to protein one mp1
-22	27	misc_feature
-			note	similar to protein one mp2
 31	46	CDS
 46	63
 65	72
@@ -251,10 +237,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide ma
 			note	stem-loop 1
 11	29	misc_feature
 			note	similar to protein one
-11	20	misc_feature
-			note	similar to protein one mp1
-21	26	misc_feature
-			note	similar to protein one mp2
 30	45	CDS
 45	62
 64	71
@@ -284,18 +266,16 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp1) mat_peptide ma
 ERROR: UNEXPECTED_LENGTH: (mat_peptide:protein one mp1) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [10]; seq-coords:11..20:+; mdl-coords:11..22:+; mdl:ENTOY100A;
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
 >Feature ENTOY100A-fs9
-5	19	misc_feature
-			note	similar to enRNA
+5	19	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
 8	30	gene
 			gene	one
 10	18	stem_loop
 			note	stem-loop 1
 11	28	misc_feature
 			note	similar to protein one
-11	19	misc_feature
-			note	similar to protein one mp1
-20	25	misc_feature
-			note	similar to protein one mp2
 29	44	CDS
 44	61
 63	70
@@ -324,18 +304,16 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp1) mat_peptide ma
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model is a gap at 3' boundary [-]; seq-coords:19..19:+; mdl-coords:22..22:+; mdl:ENTOY100A;
 >Feature ENTOY100A-fs10
-5	19	misc_feature
-			note	similar to enRNA
+5	19	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
 8	30	gene
 			gene	one
 10	17	stem_loop
 			note	stem-loop 1
 11	28	misc_feature
 			note	similar to protein one
-11	19	misc_feature
-			note	similar to protein one mp1
-20	25	misc_feature
-			note	similar to protein one mp2
 29	44	CDS
 44	61
 63	70
@@ -363,18 +341,16 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp1) mat_peptide ma
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein one mp2) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS [0.60<0.80]; seq-coords:19..19:+; mdl-coords:22..22:+; mdl:ENTOY100A;
 >Feature ENTOY100A-fs11
-5	22	misc_feature
-			note	similar to enRNA
+5	22	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
 8	33	gene
 			gene	one
 10	18	stem_loop
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	misc_feature
-			note	similar to protein one mp1
-23	28	misc_feature
-			note	similar to protein one mp2
 32	47	CDS
 47	64
 66	73
@@ -412,10 +388,6 @@ ERROR: INDEFINITE_ANNOTATION_END: (ncRNA:enRNA) alignment to homology model has 
 			note	stem-loop 1
 11	31	misc_feature
 			note	similar to protein one
-11	22	misc_feature
-			note	similar to protein one mp1
-23	28	misc_feature
-			note	similar to protein one mp2
 32	47	CDS
 47	64
 66	73

@@ -87,11 +87,6 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or ma
 35	22	misc_feature
 16	6
 			note	similar to protein three
-25	22	misc_feature
-16	9
-			note	similar to protein three mp2
-35	26	misc_feature
-			note	similar to protein three mp1
 70	55	misc_feature
 55	38
 36	28
@@ -213,11 +208,6 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or ma
 33	22	misc_feature
 16	6
 			note	similar to protein three
-25	22	misc_feature
-16	9
-			note	similar to protein three mp2
-33	26	misc_feature
-			note	similar to protein three mp1
 68	53	misc_feature
 53	36
 34	28
@@ -377,11 +367,6 @@ ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible
 36	22	misc_feature
 16	6
 			note	similar to protein three
-25	22	misc_feature
-16	9
-			note	similar to protein three mp2
-36	26	misc_feature
-			note	similar to protein three mp1
 72	57	misc_feature
 57	39
 37	28
@@ -583,11 +568,6 @@ ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible
 34	21	misc_feature
 15	6
 			note	similar to protein three
-24	21	misc_feature
-15	9
-			note	similar to protein three mp2
-34	26	misc_feature
-			note	similar to protein three mp1
 69	54	CDS
 54	37
 35	28
@@ -627,11 +607,6 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 40	27	misc_feature
 21	6
 			note	similar to protein three
-30	27	misc_feature
-21	9
-			note	similar to protein three mp2
-40	32	misc_feature
-			note	similar to protein three mp1
 75	60	CDS
 60	43
 41	34
@@ -672,11 +647,6 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 31	21	misc_feature
 16	6
 			note	similar to protein three
-22	21	misc_feature
-16	9
-			note	similar to protein three mp2
-31	23	misc_feature
-			note	similar to protein three mp1
 66	51	CDS
 51	34
 32	25
@@ -715,11 +685,6 @@ ERROR: UNEXPECTED_LENGTH: (mat_peptide:protein three mp2) length of complete cod
 31	20	misc_feature
 14	6
 			note	similar to protein three
-22	20	misc_feature
-14	9
-			note	similar to protein three mp2
-31	23	misc_feature
-			note	similar to protein three mp1
 66	51	CDS
 51	34
 32	25
@@ -759,11 +724,6 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 37	25	misc_feature
 17	6
 			note	similar to protein three
-28	25	misc_feature
-17	9
-			note	similar to protein three mp2
-37	29	misc_feature
-			note	similar to protein three mp1
 72	57	CDS
 57	40
 38	31
@@ -803,11 +763,6 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 35	23	misc_feature
 17	6
 			note	similar to protein three
-26	23	misc_feature
-17	9
-			note	similar to protein three mp2
-35	27	misc_feature
-			note	similar to protein three mp1
 70	55	misc_feature
 55	38
 36	29
@@ -848,11 +803,6 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 34	22	misc_feature
 16	6
 			note	similar to protein three
-25	22	misc_feature
-16	9
-			note	similar to protein three mp2
-34	26	misc_feature
-			note	similar to protein three mp1
 69	54	misc_feature
 54	37
 35	28

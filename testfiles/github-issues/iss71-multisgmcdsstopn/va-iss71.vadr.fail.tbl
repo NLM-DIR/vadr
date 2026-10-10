@@ -6,11 +6,6 @@
 2	14	misc_feature
 20	30
 			note	similar to protein three
-2	10	misc_feature
-			note	similar to protein three mp1
-11	14	misc_feature
-20	27
-			note	similar to protein three mp2
 33	19	CDS
 			product	protein four
 			protein_id	ENTOY100A/66..100,stop-at-67..69_2

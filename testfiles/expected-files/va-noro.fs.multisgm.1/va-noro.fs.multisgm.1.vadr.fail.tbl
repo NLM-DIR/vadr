@@ -3,18 +3,6 @@
 			gene	ORF1
 5	5377	misc_feature
 			note	similar to nonstructural polyprotein
-5	1201	misc_feature
-			note	similar to p48
-1202	2290	misc_feature
-			note	similar to NTPase
-2291	2893	misc_feature
-			note	similar to p22
-2894	3307	misc_feature
-			note	similar to VPg
-3308	3850	misc_feature
-			note	similar to Pro
-3851	5374	misc_feature
-			note	similar to RdRp
 5361	6958	gene
 			gene	ORF2
 5361	5806	misc_feature
@@ -48,18 +36,6 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be tr
 			gene	ORF1
 5	5374	misc_feature
 			note	similar to nonstructural polyprotein
-5	1198	misc_feature
-			note	similar to p48
-1199	2287	misc_feature
-			note	similar to NTPase
-2288	2890	misc_feature
-			note	similar to p22
-2891	3304	misc_feature
-			note	similar to VPg
-3305	3847	misc_feature
-			note	similar to Pro
-3848	5371	misc_feature
-			note	similar to RdRp
 5358	6951	gene
 			gene	ORF2
 5358	5800	misc_feature

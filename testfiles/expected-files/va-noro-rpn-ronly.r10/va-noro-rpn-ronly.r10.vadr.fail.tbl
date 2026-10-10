@@ -3,8 +3,6 @@
 			gene	ORF1
 <1	810	misc_feature
 			note	similar to nonstructural polyprotein
-<1	807	misc_feature
-			note	similar to RdRp
 791	>1336	gene
 			gene	ORF2
 791	>1336	misc_feature
