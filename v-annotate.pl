@@ -5921,7 +5921,9 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
           # with, because an earlier doctoring in this iteration for another feature 
           # (e.g. in an alternative feature set) already moved it; in that case 
           # the alignment was not changed so there is nothing to update
+          # and "did_swap" stays "no"
           if($res_apos != -1) { 
+            $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"did_swap"} = "yes";
             # if the residue that filled the gap was in an insert column, update
             # the --ifile-derived insert info ($seq_inserts_HHR) to match the
             # alignment, else that residue is counted twice when the alignment is
@@ -5944,7 +5946,7 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
           # multiple features can share the same start or stop codon (e.g. features in
           # an alternative feature set), each adds its own identical doctoring to 
           # @do_dcr_idx_A, but a second 'insert' type RF swap would undo the first one
-          ; # do nothing
+          ; # do nothing, "did_swap" stays "no"
         }
         else { # $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"dcr_type"} eq "insert"
           $dcr_ins_done_H{$dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"indel_apos"}} = 1;
@@ -5964,6 +5966,7 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
           }
           $msa->set_rf($new_rf);
           if(defined $new_sscons) { $msa->set_ss_cons($new_sscons); }
+          $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"did_swap"} = "yes";
 
           # update the rf2a_A map
           msa_create_rfpos_to_apos_map($msa, \@rf2a_A, $FH_HR);
@@ -15909,6 +15912,8 @@ sub doctoring_closest_residue_is_insert {
 #           doctoring limit hasn't been reached (we can only doctor a 
 #           sequence twice). If '1' $seq_dcr_info_HAR will have been added to
 #           and caller will actually do the doctoring of the alignment.
+#           The "did_swap" value of the added %{$dcr_output_HAHR} entry is
+#           "no", the caller changes it to "yes" if it performs the swap.
 #
 # Alignment doctoring examples: 
 #
@@ -16076,7 +16081,7 @@ sub doctoring_check_new_codon_validity {
   $dcr_output_HAHR->{$seq_name}[$ndcr]{"orig_seq_uapos"} = $uapos;
   $dcr_output_HAHR->{$seq_name}[$ndcr]{"codon_type"}     = $start_or_stop;
   $dcr_output_HAHR->{$seq_name}[$ndcr]{"dcr_iter"}       = $seq_doctor_ctr+1;
-  $dcr_output_HAHR->{$seq_name}[$ndcr]{"did_swap"}       = "no"; # possibly changed to "yes" below
+  $dcr_output_HAHR->{$seq_name}[$ndcr]{"did_swap"}       = "no"; # changed to "yes" by caller if swap is performed
 
   my $new_codon_is_valid = 0; # possibly set to '1' below
   my $orig_codon = undef; # needed so we can reverse complement if nec
@@ -16201,7 +16206,7 @@ sub doctoring_check_new_codon_validity {
   ###################################################
 
   if(($new_codon_is_valid) && ($seq_doctor_ctr <= 1)) { 
-    $dcr_output_HAHR->{$seq_name}[$ndcr]{"did_swap"}  = "yes";
+    # caller will attempt the swap, and set "did_swap" to "yes" if it succeeds
     return $ndcr;
   }
 

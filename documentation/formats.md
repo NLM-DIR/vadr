@@ -694,7 +694,8 @@ NC_012532.1  FAIL       zika-circular  pass                0  1..73:+,75..137:+,
 
 `.dcr` data lines have 17 fields, the names of which appear in the
 first two comment lines in each file. There is one data line for each
-**alignment doctoring** that was performed. An alignment doctoring
+**alignment doctoring** that was considered, and field 17 tells you
+whether it was performed. An alignment doctoring
 occurs only in rare cases. There are two types of alignment
 doctorings: *insert* type and *delete* types. 
 
@@ -737,7 +738,17 @@ are met:
 For every situation where criteria 1 to 3 above are met for either
 insert or delete types, a line of
 information will be output to the `.dcr` file. If criteria 4 is also
-met, then field 17 will be `yes`, otherwise it will be `no`.
+met, the doctoring (swap) is attempted. Field 17 is `yes` if the swap
+was performed and `no` otherwise.
+
+A swap can fail even when criterion 4 is met. This happens when an
+earlier doctoring of the same sequence in the same iteration has
+already filled the gap or used the nucleotide, typically
+for another CDS that shares the same start or stop codon, for example
+in an alternative feature set. The alignment is left unchanged by the
+failed swap, and its field 17 is `no`. So a line with a valid `new
+codon` (field 15) and `no` in field 17 is a doctoring that was
+attempted but not performed.
 
 For any doctoring that causes an existing valid start or stop codon in
 a nearby CDS to become invalid (even more rare), a second doctoring
@@ -769,7 +780,7 @@ header section.
 |  14 | `orig codon`          | start or stop codon before potential doctoring (swap) | 
 |  15 | `new codon`           | start or stop codon after potential doctoring (swap) | 
 |  16 | `dcr iter`            | doctoring iteration, `1` if first time the gap and nucleotide may be swapped, `2` if second (swapping back because first swap invalidated previously valid start/stop codon), cannot exceed `2` |
-|  17 | `did swap`            | `yes` if doctoring (swap) took place because it created a valid start or stop codon, `no` if doctoring (swap) did not occur because it would not have created a valid start or stop codon |
+|  17 | `did swap`            | `yes` if doctoring (swap) took place, `no` if it did not, either because it would not have created a valid start or stop codon, or because the swap was not possible (an earlier doctoring of the same sequence already filled the gap or used the nucleotide) |
 
 ---
 ### Explanation of `.scn`-suffixed output files<a name="scn"></a>
