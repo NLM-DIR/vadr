@@ -1353,6 +1353,20 @@ if((! $do_clsonly) && (! opt_Get("--ignore_nnclass", \%opt_HH))) {
     }
   }
 }
+# A group or subgroup value that starts with :FILE: names the
+# classification alignment file (handled above), it is not a group or
+# subgroup name. Remove these values so they are never reported as a
+# group/subgroup in the output. Sequences that are not classified by
+# nearest neighbor (e.g. those that are not aligned, or all sequences if
+# --ignore_nnclass) will then have group and subgroup reported as '-'.
+for(my $mdl_idx = 0; $mdl_idx < $nmdl; $mdl_idx++) { 
+  foreach my $grp_key ("group", "subgroup") { 
+    if((defined $mdl_info_AH[$mdl_idx]{$grp_key}) && 
+       (defined vdr_ModelInfoCheckForFileKey($mdl_info_AH[$mdl_idx]{$grp_key}))) { 
+      delete $mdl_info_AH[$mdl_idx]{$grp_key};
+    }
+  }
+}
 
 ###########################################
 # Copy and validate the input sequence file
