@@ -497,9 +497,11 @@ my @seq_A         = ();   # array of sequence names
 my %seq_okey_H    = ();   # key is seq name, value is best okey for this sequence
 my %seq_mdl_H     = ();   # key is seq name, value is best model for this sequence
 my %seq_sc_H      = ();   # key is seq name, value is score for best model for this sequence
+my %seq_exc_okey_H = ();  # key is seq name, value is okey of first library excluded from annotation (by --only or --skip)
+                          # that this sequence matched, only used to report sequences that match no library
 if($do_clsonly) { 
   foreach $okey (@okey_clsonly_used_A) {
-    parse_sqc_clsonly_file($sqc_H{$okey}, $okey, \@{$other_okey_HA{$okey}}, \%okey2skip_ant_H, \%seq_H, \@seq_A, \%seq_okey_H, \%seq_mdl_H, \%seq_sc_H, \%opt_HH, $FH_HR);
+    parse_sqc_clsonly_file($sqc_H{$okey}, $okey, \@{$other_okey_HA{$okey}}, \%okey2skip_ant_H, \%seq_H, \@seq_A, \%seq_okey_H, \%seq_mdl_H, \%seq_sc_H, \%seq_exc_okey_H, \%opt_HH, $FH_HR);
   }
 }
     
@@ -563,13 +565,18 @@ foreach $okey (@okey_A) {
 if($n_okey_ant_used > 0) { 
   foreach $okey (@okey_A) {
     if((defined $seqlist_HA{$okey}) || ((! $do_clsonly) && (! $okey2skip_ant_H{$okey}))) { # if ! $do_clsonly, we didn't run --cls_only mode
-      if($n_okey_ant_used == 1) { 
+      # if we only have 1 library to annotate with, annotate all sequences with it, unless
+      # -m was used and we ran the classification stage, in which case we only annotate the
+      # sequences that matched this library, so that sequences that matched no library are 
+      # not annotated (they are reported in the combined output files, see output_combined_files())
+      if(($n_okey_ant_used == 1) && ((! $do_multi) || (! $do_clsonly))) { 
         $okey_fa_file = $in_fa_file;
         $progress_str = "Annotating $in_nseq sequences with $okey model library ";
       }
       else {
         $okey_fa_file = $dir_tail . "/" . $dir_tail . "." . $okey . ".fa";
         $in_sqfile->fetch_seqs_given_names(\@{$seqlist_HA{$okey}}, 60, $okey_fa_file);
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "$okey.fa", $okey_fa_file, 1, 1, "fasta file with input sequences annotated with $okey library");
         $progress_str = sprintf("Annotating %*d %-*s sequences ", length($in_nseq), scalar(@{$seqlist_HA{$okey}}), $ant_okey_width, $okey);
       }
       my $ant_outdir = $dir_tail . "/" . $dir_tail . "." . $okey;
@@ -751,6 +758,8 @@ sub parse_config_file {
 #  $seq_okey_HR:      REF to hash, key is sequence name, value is winning mkey, to fill here
 #  $seq_mdl_HR:       REF to hash, key is sequence name, value is winning model, to fill here
 #  $seq_sc_HR:        REF to hash, key is sequence name, value is winning score, to fill here
+#  $seq_exc_okey_HR:  REF to hash, key is sequence name, value is okey of first library that
+#                     sequence PASSed in but that is excluded from annotation, to fill here
 #  $opt_HHR:          REF to 2D hash of option values, see top of sqp_opts.pm for description
 #  $FH_HR:            REF to hash of file handles
 #
@@ -761,10 +770,10 @@ sub parse_config_file {
 #################################################################
 sub parse_sqc_clsonly_file { 
   my $sub_name = "parse_sqc_clsonly_file"; 
-  my $nargs_exp = 11;
+  my $nargs_exp = 12;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($sqc_file, $okey, $other_okey_AR, $okey2skip_ant_HR, $seq_HR, $seq_AR, $seq_okey_HR, $seq_mdl_HR, $seq_sc_HR, $opt_HHR, $FH_HR) = (@_);
+  my ($sqc_file, $okey, $other_okey_AR, $okey2skip_ant_HR, $seq_HR, $seq_AR, $seq_okey_HR, $seq_mdl_HR, $seq_sc_HR, $seq_exc_okey_HR, $opt_HHR, $FH_HR) = (@_);
 
   my $do_lone  = opt_Get("--lone", $opt_HHR);
   my $do_first = opt_Get("--first", $opt_HHR);
@@ -831,6 +840,11 @@ sub parse_sqc_clsonly_file {
           #printf("seq_okey_HR->{$seqname}: $seq_okey_HR->{$seqname}\n");
           #printf("seq_mdl_HR->{$seqname}:  $seq_mdl_HR->{$seqname}\n");
           #printf("seq_sc_HR->{$seqname}:   $seq_sc_HR->{$seqname}\n");
+        }
+        if((! defined $okey2use) && (! defined $seq_exc_okey_HR->{$seqname})) { 
+          # sequence matched a library we will not annotate with (due to --only or --skip),
+          # keep track of this so we can report it if it doesn't match any other library
+          $seq_exc_okey_HR->{$seqname} = $okey;
         }
       }
     }
