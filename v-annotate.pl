@@ -5914,10 +5914,28 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
       $seq_doctor_ctr++; 
       for(my $dcr_idx = 0; $dcr_idx < scalar(@do_dcr_idx_A); $dcr_idx++) { 
         my $dcr_output_idx = $do_dcr_idx_A[$dcr_idx];
-        if($dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"dcr_type"} eq "delete") { 
-          $msa->swap_gap_and_closest_residue($i, 
-                                             $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"indel_apos"}, 
-                                             $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"before"});
+        if($dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"dcr_type"} eq "delete") {
+          my $gap_apos = $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"indel_apos"};
+          my ($res_apos, $swap_errmsg) = $msa->swap_gap_and_closest_residue($i, $gap_apos, 
+                                                                           $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"before"});
+          # the swap fails if $gap_apos is no longer a gap or there is no residue to swap 
+          # with, because an earlier doctoring in this iteration for another feature 
+          # (e.g. in an alternative feature set) already moved it; in that case 
+          # the alignment was not changed so there is nothing to update
+          if($res_apos != -1) { 
+            # if the residue that filled the gap was in an insert column, update
+            # the --ifile-derived insert info ($seq_inserts_HHR) to match the
+            # alignment, else that residue is counted twice when the alignment is
+            # reparsed. We determine the moved residue's unaligned position from
+            # the alignment, because with earlier swaps in this iteration it may
+            # not be the residue the doctoring was proposed for ("new_seq_uapos").
+            my $msa_rf = $msa->get_rf;
+            if(substr($msa_rf, $res_apos-1, 1) =~ m/[\.\-\~]/) { 
+              my $moved_sqstring = substr($msa->get_sqstring_aligned($i), 0, $gap_apos);
+              my $moved_uapos = ($moved_sqstring =~ tr/a-zA-Z//); # number of residues up to and including $gap_apos
+              $seq_inserts_HHR->{$seq_name}{"ins"} = vdr_ShrinkInsertTokenInInsertString($seq_inserts_HHR->{$seq_name}{"ins"}, $moved_uapos, $FH_HR);
+            }
+          }
         }
         else { # $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"dcr_type"} eq "insert"
           # rewrite RF by swapping insert and start position, remember this can only happen if we have 1 seq in the alignment
