@@ -11944,9 +11944,19 @@ sub output_tabular {
 
       if(defined $mdl_nn_cls_ct_HHR->{$mdl_name}) {
 	# potentially > 1 group(s)/subgroup(s) for this model, determined by nearest-neighbor-based classification
-	my @grp_subgrp_tbl_order_A = (sort { $mdl_nn_cls_ct_HHR->{$mdl_name}{$b} <=> $mdl_nn_cls_ct_HHR->{$mdl_name}{$a} or 
+	my %grp_subgrp_ct_H = %{$mdl_nn_cls_ct_HHR->{$mdl_name}};
+	# sequences classified to this model but not classified by nearest neighbor
+	# (e.g. not aligned) have group and subgroup '-', count them in that row
+	my $nn_cls_ct = 0;
+	foreach my $grp_subgrp (keys %grp_subgrp_ct_H) { $nn_cls_ct += $grp_subgrp_ct_H{$grp_subgrp}; }
+	if($mdl_cls_ct_HR->{$mdl_name} > $nn_cls_ct) { 
+	  my $no_grp_subgrp = ":GROUP:-:SUBGROUP:-";
+	  if(! defined $grp_subgrp_ct_H{$no_grp_subgrp}) { $grp_subgrp_ct_H{$no_grp_subgrp} = 0; }
+	  $grp_subgrp_ct_H{$no_grp_subgrp} += $mdl_cls_ct_HR->{$mdl_name} - $nn_cls_ct;
+	}
+	my @grp_subgrp_tbl_order_A = (sort { $grp_subgrp_ct_H{$b} <=> $grp_subgrp_ct_H{$a} or 
 						 $a cmp $b 
-				      } keys (%{$mdl_nn_cls_ct_HHR->{$mdl_name}}));
+				      } keys (%grp_subgrp_ct_H));
 
 	foreach my $grp_subgrp (@grp_subgrp_tbl_order_A) { 
 	  if($grp_subgrp =~ /^:GROUP:(\S+):SUBGROUP:(\S+)$/) {
@@ -11955,7 +11965,7 @@ sub output_tabular {
 	    push(@data_mdl_AA, [$mdl_tbl_idx, $mdl_name, 
 				$mdl_group, 
 				$mdl_subgroup,
-				$mdl_nn_cls_ct_HHR->{$mdl_name}{$grp_subgrp},
+				$grp_subgrp_ct_H{$grp_subgrp},
 				(defined $mdl_pass_ct_H{$mdl_grp_subgrp}) ? $mdl_pass_ct_H{$mdl_grp_subgrp} : 0,
 				(defined $mdl_fail_ct_H{$mdl_grp_subgrp}) ? $mdl_fail_ct_H{$mdl_grp_subgrp} : 0]);
 	  }
