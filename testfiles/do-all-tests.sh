@@ -57,6 +57,7 @@ for t in \
     do-pvcoords-tests.sh \
     do-xnumali-tests.sh \
     do-noannotn-tests.sh \
+    do-vscan-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do
     sh $VADRSCRIPTSDIR/testfiles/$t

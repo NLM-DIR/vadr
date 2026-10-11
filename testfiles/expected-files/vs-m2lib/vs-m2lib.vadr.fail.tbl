@@ -1,0 +1,27 @@
+>Feature ENTOY100A-NOANNOTN1
+
+Additional note(s) to submitter:
+ERROR: NO_ANNOTATION: (*sequence*) no significant similarity detected [no match to any model library]; seq-coords:-; mdl-coords:-; mdl:-;
+>Feature gi|1339273835|gb|MG746117.1|
+<1	>1623	gene
+			gene	ORF2
+<1	>1623	misc_feature
+			note	similar to VP1
+
+Additional note(s) to submitter:
+ERROR: INDEFINITE_ANNOTATION_START: (CDS:VP1) protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint [72>5]; seq-coords:1..72:+; mdl-coords:5085..5085:+; mdl:NC_039476;
+>Feature gi|507309522|gb|JX439803.1|
+<1	810	gene
+			gene	ORF1
+<1	810	misc_feature
+			note	similar to nonstructural polyprotein
+791	>1336	gene
+			gene	ORF2
+791	>1336	misc_feature
+			note	similar to VP1
+
+Additional note(s) to submitter:
+ERROR: LOW_COVERAGE: (*sequence*) low sequence fraction with significant similarity to homology model [0.885<0.900]; seq-coords:1..69:+,1253..1336:+; mdl-coords:-; mdl:NC_029646;
+ERROR: INDEFINITE_ANNOTATION_START: (CDS:nonstructural polyprotein) protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint [72>5]; seq-coords:1..72:+; mdl-coords:5..5:+; mdl:NC_029646;
+ERROR: INDEFINITE_ANNOTATION_END: (CDS:VP1) protein-based alignment does not extend close enough to nucleotide-based alignment 3' endpoint [75>5, no valid stop codon in nucleotide-based prediction]; seq-coords:1262..1336:+; mdl-coords:6692..6692:+; mdl:NC_029646;
+ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:RdRp) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:NC_029646;

@@ -1,0 +1,6 @@
+#seq  seq                            seq                                 sub            fatal 
+#idx  name                           len  library  model      grp        grp  p/f       alerts
+#---  ----------------------------  ----  -------  ---------  ---------  ---  --------  ------
+1     ENTOY100A-NOANNOTN1            100  -        -          -          -    NO-MATCH  noannotn
+2     gi|1215708385|gb|KY594653.1|   301  noro.3   NC_039477  Norovirus  GII  PASS      -     
+3     gi|1339273835|gb|MG746117.1|  1626  noro.3   NC_039476  Norovirus  GII  FAIL      indf5pst
