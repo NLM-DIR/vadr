@@ -727,7 +727,8 @@ are met:
   (start codon case) or 3' of gap (stop codon case)
 
 3. the adjacent nucleotide is aligned to a reference position (is not
-  an insertion)
+  an insertion), including when other gapped reference positions
+  separate it from the gap
 
 4. swapping the gapped position in the start/stop codon with the
   adjacent nucleotide will result in a valid start or stop codon
