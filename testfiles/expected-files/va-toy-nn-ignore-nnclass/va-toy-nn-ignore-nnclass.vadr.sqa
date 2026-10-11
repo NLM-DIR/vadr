@@ -1,0 +1,9 @@
+#seq  seq                     seq             best         sub                             seq   
+#idx  name                    len  p/f   ant  model   grp  grp  nfa  nfn  nf5  nf3  nfalt  alerts
+#---  ----------------------  ---  ----  ---  ------  ---  ---  ---  ---  ---  ---  -----  ------
+1     seq1_should_be_E30       32  PASS  yes  toy-nn  -    -      1    0    0    0      0  -     
+2     seq2_should_be_E18       32  PASS  yes  toy-nn  -    -      1    0    0    0      0  -     
+3     seq3_closest_to_CVB5     32  PASS  yes  toy-nn  -    -      1    0    0    0      0  -     
+4     seq4_different_inserts   36  PASS  yes  toy-nn  -    -      1    0    0    0      0  -     
+5     seq5_partial_region      32  PASS  yes  toy-nn  -    -      1    0    0    0      0  -     
+6     seq6_revcomp_of_seq1     32  FAIL  no   toy-nn  -    -      -    -    -    -      -  REVCOMPLEM(revcompl)
