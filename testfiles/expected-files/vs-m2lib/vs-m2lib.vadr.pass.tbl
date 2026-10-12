@@ -1,0 +1,27 @@
+>Feature gi|1215708385|gb|KY594653.1|
+<1	>301	gene
+			gene	ORF2
+<1	>301	CDS
+			product	VP1
+			codon_start	3
+			protein_id	1215708385_1
+>Feature gi|281314094|gb|GU211727.1|
+<1	>86	gene
+			gene	POLY
+<1	>86	CDS
+			product	polyprotein
+			codon_start	1
+			protein_id	281314094_1
+<1	>86	mat_peptide
+			product	RNA-dependent RNA polymerase NS5
+			protein_id	281314094_1
+>Feature gi|770146038|gb|KM031079.1|
+<1	>515	gene
+			gene	POLY
+<1	>515	CDS
+			product	polyprotein
+			codon_start	2
+			protein_id	770146038_1
+<1	>515	mat_peptide
+			product	RNA-dependent RNA polymerase NS5
+			protein_id	770146038_1

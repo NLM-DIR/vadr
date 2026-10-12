@@ -1,0 +1,59 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+#
+# Tests of v-scan.pl -m output combined across model libraries, with
+# the dengue.2 and noro.3 model libraries in testfiles/models (config
+# file vscan-m.config).
+#
+# vscan-m.fa: 6 sequences, 3 match noro.3 and 2 dengue.2. ENTOY100A-NOANNOTN1
+# (a shuffled toy sequence) matches neither, so it is not annotated and
+# is reported as NO-MATCH in the .slb file and as failing (NO_ANNOTATION)
+# in the combined files. Two of the noro sequences FAIL.
+command: mkdir -p vs-m2lib-cfg; sed "s:@MDIR@:$VADRSCRIPTSDIR/testfiles/models:" $VADRSCRIPTSDIR/testfiles/vscan-m.config > vs-m2lib-cfg/vscan-m.config; perl $VADRSCRIPTSDIR/v-scan.pl -f -m -c vs-m2lib-cfg/vscan-m.config $VADRSCRIPTSDIR/testfiles/vscan-m.fa vs-m2lib > vs-m2lib.out
+desc: vscan-m-2lib
+out: vs-m2lib/vs-m2lib.vadr.slb
+out: vs-m2lib/vs-m2lib.vadr.alt.list
+out: vs-m2lib/vs-m2lib.vadr.pass.list
+out: vs-m2lib/vs-m2lib.vadr.fail.list
+out: vs-m2lib/vs-m2lib.vadr.pass.tbl
+out: vs-m2lib/vs-m2lib.vadr.fail.tbl
+out: vs-m2lib/vs-m2lib.vadr.fail.fa
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m2lib/vs-m2lib.vadr.slb
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m2lib/vs-m2lib.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m2lib/vs-m2lib.vadr.pass.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m2lib/vs-m2lib.vadr.fail.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m2lib/vs-m2lib.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m2lib/vs-m2lib.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m2lib/vs-m2lib.vadr.fail.fa
+rmdir: vs-m2lib
+rmdir: vs-m2lib-cfg
+##
+# vscan-m1.fa: 3 sequences, ENTOY100A-NOANNOTN1 and 2 that match only
+# noro.3. ENTOY100A-NOANNOTN1 is not annotated with noro.3, so it is not
+# in the noro.3 library's own output files.
+command: mkdir -p vs-m1lib-cfg; sed "s:@MDIR@:$VADRSCRIPTSDIR/testfiles/models:" $VADRSCRIPTSDIR/testfiles/vscan-m.config > vs-m1lib-cfg/vscan-m.config; perl $VADRSCRIPTSDIR/v-scan.pl -f -m -c vs-m1lib-cfg/vscan-m.config $VADRSCRIPTSDIR/testfiles/vscan-m1.fa vs-m1lib > vs-m1lib.out
+desc: vscan-m-1lib
+out: vs-m1lib/vs-m1lib.vadr.slb
+out: vs-m1lib/vs-m1lib.vadr.alt.list
+out: vs-m1lib/vs-m1lib.vadr.fail.list
+out: vs-m1lib/vs-m1lib.noro.3.vadr.alt.list
+out: vs-m1lib/vs-m1lib.noro.3.vadr.fail.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m1lib/vs-m1lib.vadr.slb
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m1lib/vs-m1lib.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m1lib/vs-m1lib.vadr.fail.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m1lib/vs-m1lib.noro.3.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m1lib/vs-m1lib.noro.3.vadr.fail.list
+rmdir: vs-m1lib
+rmdir: vs-m1lib-cfg

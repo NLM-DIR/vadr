@@ -497,9 +497,11 @@ my @seq_A         = ();   # array of sequence names
 my %seq_okey_H    = ();   # key is seq name, value is best okey for this sequence
 my %seq_mdl_H     = ();   # key is seq name, value is best model for this sequence
 my %seq_sc_H      = ();   # key is seq name, value is score for best model for this sequence
+my %seq_exc_okey_H = ();  # key is seq name, value is okey of first library excluded from annotation (by --only or --skip)
+                          # that this sequence matched, only used to report sequences that match no library
 if($do_clsonly) { 
   foreach $okey (@okey_clsonly_used_A) {
-    parse_sqc_clsonly_file($sqc_H{$okey}, $okey, \@{$other_okey_HA{$okey}}, \%okey2skip_ant_H, \%seq_H, \@seq_A, \%seq_okey_H, \%seq_mdl_H, \%seq_sc_H, \%opt_HH, $FH_HR);
+    parse_sqc_clsonly_file($sqc_H{$okey}, $okey, \@{$other_okey_HA{$okey}}, \%okey2skip_ant_H, \%seq_H, \@seq_A, \%seq_okey_H, \%seq_mdl_H, \%seq_sc_H, \%seq_exc_okey_H, \%opt_HH, $FH_HR);
   }
 }
     
@@ -563,13 +565,18 @@ foreach $okey (@okey_A) {
 if($n_okey_ant_used > 0) { 
   foreach $okey (@okey_A) {
     if((defined $seqlist_HA{$okey}) || ((! $do_clsonly) && (! $okey2skip_ant_H{$okey}))) { # if ! $do_clsonly, we didn't run --cls_only mode
-      if($n_okey_ant_used == 1) { 
+      # if we only have 1 library to annotate with, annotate all sequences with it, unless
+      # -m was used and we ran the classification stage, in which case we only annotate the
+      # sequences that matched this library, so that sequences that matched no library are 
+      # not annotated (they are reported in the combined output files, see output_combined_files())
+      if(($n_okey_ant_used == 1) && ((! $do_multi) || (! $do_clsonly))) { 
         $okey_fa_file = $in_fa_file;
         $progress_str = "Annotating $in_nseq sequences with $okey model library ";
       }
       else {
         $okey_fa_file = $dir_tail . "/" . $dir_tail . "." . $okey . ".fa";
         $in_sqfile->fetch_seqs_given_names(\@{$seqlist_HA{$okey}}, 60, $okey_fa_file);
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "$okey.fa", $okey_fa_file, 1, 1, "fasta file with input sequences annotated with $okey library");
         $progress_str = sprintf("Annotating %*d %-*s sequences ", length($in_nseq), scalar(@{$seqlist_HA{$okey}}), $ant_okey_width, $okey);
       }
       my $ant_outdir = $dir_tail . "/" . $dir_tail . "." . $okey;
@@ -620,10 +627,20 @@ if($do_clsonly) {
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
 
+###########################################################
+# With -m, output files that combine all libraries' output
+###########################################################
+my @unmatched_str_A = (); # lines about sequences that matched no library to output to log, filled by output_combined_files()
+if($do_multi) { 
+  $start_secs = ofile_OutputProgressPrior("Generating combined output files", $progress_w, $log_FH, *STDOUT);
+  output_combined_files(\@seq_name_A, \%seq_len_H, \@okey_ant_used_A, \@ant_outdir_A, \%seq_exc_okey_H, $dir_tail, $out_root, $in_sqfile, \@unmatched_str_A, \%opt_HH, \%ofile_info_HH);
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+}
+
 ###############################################
 # Output lib, mdl and alc files, and conclude #
 ###############################################
-output_lib_mdl_and_alc_files_and_remove_temp_files($in_nseq, $sample_nseq, $do_clsonly, \@okey_ant_used_A, \@mdl_file_A, \@alc_file_A, \@to_remove_A, \%opt_HH, \%ofile_info_HH);
+output_lib_mdl_and_alc_files_and_remove_temp_files($in_nseq, $sample_nseq, $do_clsonly, \@okey_ant_used_A, \@mdl_file_A, \@alc_file_A, \@unmatched_str_A, \@to_remove_A, \%opt_HH, \%ofile_info_HH);
 
 my $z = 0;
 if($do_keep) {
@@ -751,6 +768,8 @@ sub parse_config_file {
 #  $seq_okey_HR:      REF to hash, key is sequence name, value is winning mkey, to fill here
 #  $seq_mdl_HR:       REF to hash, key is sequence name, value is winning model, to fill here
 #  $seq_sc_HR:        REF to hash, key is sequence name, value is winning score, to fill here
+#  $seq_exc_okey_HR:  REF to hash, key is sequence name, value is okey of first library that
+#                     sequence PASSed in but that is excluded from annotation, to fill here
 #  $opt_HHR:          REF to 2D hash of option values, see top of sqp_opts.pm for description
 #  $FH_HR:            REF to hash of file handles
 #
@@ -761,10 +780,10 @@ sub parse_config_file {
 #################################################################
 sub parse_sqc_clsonly_file { 
   my $sub_name = "parse_sqc_clsonly_file"; 
-  my $nargs_exp = 11;
+  my $nargs_exp = 12;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($sqc_file, $okey, $other_okey_AR, $okey2skip_ant_HR, $seq_HR, $seq_AR, $seq_okey_HR, $seq_mdl_HR, $seq_sc_HR, $opt_HHR, $FH_HR) = (@_);
+  my ($sqc_file, $okey, $other_okey_AR, $okey2skip_ant_HR, $seq_HR, $seq_AR, $seq_okey_HR, $seq_mdl_HR, $seq_sc_HR, $seq_exc_okey_HR, $opt_HHR, $FH_HR) = (@_);
 
   my $do_lone  = opt_Get("--lone", $opt_HHR);
   my $do_first = opt_Get("--first", $opt_HHR);
@@ -832,6 +851,11 @@ sub parse_sqc_clsonly_file {
           #printf("seq_mdl_HR->{$seqname}:  $seq_mdl_HR->{$seqname}\n");
           #printf("seq_sc_HR->{$seqname}:   $seq_sc_HR->{$seqname}\n");
         }
+        if((! defined $okey2use) && (! defined $seq_exc_okey_HR->{$seqname})) { 
+          # sequence matched a library we will not annotate with (due to --only or --skip),
+          # keep track of this so we can report it if it doesn't match any other library
+          $seq_exc_okey_HR->{$seqname} = $okey;
+        }
       }
     }
   }
@@ -856,6 +880,7 @@ sub parse_sqc_clsonly_file {
 #  $okey_ant_used_AR:  ref to array of option keys we want to output .mdl and .alc files for
 #  $mdl_file_AR:       ref to array of .mdl files to output
 #  $alc_file_AR:       ref to array of .alc files to output
+#  $unmatched_str_AR:  ref to array of lines about sequences that matched no library to output, can be empty
 #  $to_remove_AR:      ref to array of files to remove
 #  $opt_HHR:           ref to 2D hash of option values, see top of sqp_opts.pm for description
 #  $ofile_info_HHR:    ref to 2D hash of output file information, added to here
@@ -865,10 +890,10 @@ sub parse_sqc_clsonly_file {
 #################################################################
 sub output_lib_mdl_and_alc_files_and_remove_temp_files { 
   my $sub_name = "output_lib_mdl_and_alc_files_and_remove_temp_files";
-  my $nargs_exp = 9;
+  my $nargs_exp = 10;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($in_nseq, $sample_nseq, $do_clsonly, $okey_ant_used_AR, $mdl_file_AR, $alc_file_AR, $to_remove_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_nseq, $sample_nseq, $do_clsonly, $okey_ant_used_AR, $mdl_file_AR, $alc_file_AR, $unmatched_str_AR, $to_remove_AR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # close the file we may output to stdout and the log
   if($do_clsonly) {
@@ -908,6 +933,12 @@ sub output_lib_mdl_and_alc_files_and_remove_temp_files {
     push(@conclude_A, @file_A);
     push(@conclude_A, "#");
   } # end of 'if(($do_multi) && ($do_clsonly))'
+
+  # report sequences that matched no library (only possible with -m)
+  if(scalar(@{$unmatched_str_AR}) > 0) { 
+    push(@conclude_A, @{$unmatched_str_AR});
+    push(@conclude_A, "#");
+  }
 
   # for each model we ran v-annotate.pl for, output the mdl and alc files
   for(my $m = 0; $m < $n_okey; $m++) {
@@ -1336,6 +1367,278 @@ sub parse_log_file_for_out_files {
   if(! $did_print) {
     ofile_FAIL("ERROR in $sub_name, unable to find any output files listed in $log_file\n", 1, $FH_HR);
   }
+  return;
+}
+
+#################################################################
+# Subroutine:  output_combined_files()
+# Incept:      EPN, Fri Oct  2 2026 (w/Claude)
+#
+# Purpose:    With -m, output files that combine the per-library 
+#             v-annotate.pl output for all libraries, with one entry
+#             per input sequence, in input order:
+#             <out>.vadr.slb:       per-sequence library assignment
+#                                   and pass/fail status table
+#             <out>.vadr.pass.tbl:  feature table for passing seqs
+#             <out>.vadr.fail.tbl:  feature table for failing seqs
+#             <out>.vadr.pass.list: list of passing seqs
+#             <out>.vadr.fail.list: list of failing seqs
+#             <out>.vadr.alt.list:  list of alerts in feature tables
+#             <out>.vadr.pass.fa:   fasta file of passing seqs
+#             <out>.vadr.fail.fa:   fasta file of failing seqs
+#
+#             Sequences that matched no library were not annotated.
+#             They are reported here as failing, with the same
+#             NO_ANNOTATION alert that v-annotate.pl reports for a
+#             sequence with no significant similarity to any model,
+#             but with an alert detail (inside []) that says why the
+#             sequence matched no library (see %noannotn_detail_H),
+#             and as NO-MATCH in the .slb file. Lines describing
+#             them are added to @{$unmatched_str_AR} for the log.
+#
+# Arguments: 
+#  $seq_name_AR:      REF to array of input sequence names, in input order
+#  $seq_len_HR:       REF to hash of input sequence lengths, key is seq name
+#  $okey_ant_used_AR: REF to array of okeys we annotated with
+#  $ant_outdir_AR:    REF to array of v-annotate.pl output directories, one per okey in @{$okey_ant_used_AR}
+#  $seq_exc_okey_HR:  REF to hash, key is seq name, value is okey of a library excluded from 
+#                     annotation that the sequence matched, see parse_sqc_clsonly_file()
+#  $dir_tail:         last directory in output directory path
+#  $out_root:         root for output file names
+#  $in_sqfile:        Bio::Easel::SqFile object for the input fasta file
+#  $unmatched_str_AR: REF to array of lines to output to the log about sequences
+#                     that matched no library, filled here
+#  $opt_HHR:          REF to 2D hash of option values
+#  $ofile_info_HHR:   REF to 2D hash of output file information, added to here
+#
+# Returns:    void
+#
+# Dies:       if a per-library output file cannot be parsed, or 
+#             a sequence is annotated by more than one library, or
+#             the feature table for an annotated sequence is not found
+#
+#################################################################
+sub output_combined_files { 
+  my $sub_name = "output_combined_files";
+  my $nargs_exp = 11;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($seq_name_AR, $seq_len_HR, $okey_ant_used_AR, $ant_outdir_AR, $seq_exc_okey_HR, $dir_tail, $out_root, $in_sqfile, $unmatched_str_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"};
+
+  # the NO_ANNOTATION alert for sequences that matched no library, 
+  # formatted as v-annotate.pl formats it in the .alt.list and .fail.tbl files
+  my %alt_info_HH = ();
+  vdr_AlertInfoInitialize(\%alt_info_HH, $FH_HR);
+  my $noannotn_code  = "noannotn";
+  my $noannotn_sdesc = $alt_info_HH{$noannotn_code}{"sdesc"};
+  my $noannotn_ldesc = $alt_info_HH{$noannotn_code}{"ldesc"};
+
+  # alert detail for each of the two reasons a sequence matched no library,
+  # these strings appear inside [] at the end of the NO_ANNOTATION alert 
+  # description in the combined .alt.list and .fail.tbl files; 
+  # "nomatch": sequence had no PASSing hit in any model library
+  # "excluded": sequence PASSed only in a model library excluded from annotation
+  #             by --only or --skip, "<lib>" is replaced with that library's options key
+  # do not include ':' or ';' characters, and keep these distinct from 
+  # v-annotate.pl's own noannotn alert details so it is clear which program
+  # wrote a NO_ANNOTATION row
+  my %noannotn_detail_H = ("nomatch"  => "no match to any model library",
+                           "excluded" => "only match was to excluded model library <lib>");
+
+  # parse the per-library output files 
+  my %seq_okey_H    = (); # key is seq name, value is okey it was annotated with
+  my %seq_info_HA   = (); # key is seq name, value is array of [model, group, subgroup, p/f] from .sqa file
+  my %seq_fatal_HA  = (); # key is seq name, value is array of fatal alert codes, from .alt file
+  my %seq_altlist_H = (); # key is seq name, value is all lines for that seq from .alt.list file
+  my %seq_tbl_H     = (); # key is seq name, value is feature table block for that seq from .pass.tbl or .fail.tbl file
+  my $line;
+  for(my $z = 0; $z < scalar(@{$okey_ant_used_AR}); $z++) { 
+    my $okey = $okey_ant_used_AR->[$z];
+    my $ant_root = $ant_outdir_AR->[$z] . "/" . $dir_tail . "." . $okey . ".vadr";
+
+    # .sqa file: model, group, subgroup and pass/fail for each sequence annotated with this library
+    my $sqa_file = $ant_root . ".sqa";
+    open(IN, $sqa_file) || ofile_FileOpenFailure($sqa_file, $sub_name, $!, "reading", $FH_HR);
+    while($line = <IN>) { 
+      if($line !~ m/^\#/) { 
+        my @el_A = split(/\s+/, $line);
+        if(scalar(@el_A) < 8) { 
+          ofile_FAIL("ERROR in $sub_name, unable to parse line of $sqa_file:\n$line", 1, $FH_HR);
+        }
+        my ($seq_name, $pf, $mdl, $grp, $subgrp) = ($el_A[1], $el_A[3], $el_A[5], $el_A[6], $el_A[7]);
+        if(defined $seq_okey_H{$seq_name}) { 
+          ofile_FAIL("ERROR in $sub_name, sequence $seq_name annotated with two libraries: $seq_okey_H{$seq_name} and $okey", 1, $FH_HR);
+        }
+        $seq_okey_H{$seq_name} = $okey;
+        @{$seq_info_HA{$seq_name}} = ($mdl, $grp, $subgrp, $pf);
+        @{$seq_fatal_HA{$seq_name}} = ();
+        $seq_altlist_H{$seq_name} = "";
+      }
+    }
+    close(IN);
+
+    # .alt file: fatal alert codes for each sequence, in order, without duplicates
+    my $alt_file = $ant_root . ".alt";
+    if(-e $alt_file) { 
+      my %seen_HH = (); 
+      open(IN, $alt_file) || ofile_FileOpenFailure($alt_file, $sub_name, $!, "reading", $FH_HR);
+      while($line = <IN>) { 
+        if($line !~ m/^\#/) { 
+          my @el_A = split(/\s+/, $line);
+          if(scalar(@el_A) < 8) { 
+            ofile_FAIL("ERROR in $sub_name, unable to parse line of $alt_file:\n$line", 1, $FH_HR);
+          }
+          my ($seq_name, $alt_code, $fail) = ($el_A[1], $el_A[6], $el_A[7]);
+          if(($fail eq "yes") && (defined $seq_fatal_HA{$seq_name}) && (! defined $seen_HH{$seq_name}{$alt_code})) { 
+            push(@{$seq_fatal_HA{$seq_name}}, $alt_code);
+            $seen_HH{$seq_name}{$alt_code} = 1;
+          }
+        }
+      }
+      close(IN);
+    }
+
+    # .alt.list file: all lines for each sequence
+    my $altlist_file = $ant_root . ".alt.list";
+    if(-e $altlist_file) { 
+      open(IN, $altlist_file) || ofile_FileOpenFailure($altlist_file, $sub_name, $!, "reading", $FH_HR);
+      while($line = <IN>) { 
+        if($line !~ m/^\#/) { 
+          my ($seq_name) = split(/\t/, $line);
+          if(! defined $seq_altlist_H{$seq_name}) { 
+            ofile_FAIL("ERROR in $sub_name, sequence $seq_name in $altlist_file not in .sqa file", 1, $FH_HR);
+          }
+          $seq_altlist_H{$seq_name} .= $line;
+        }
+      }
+      close(IN);
+    }
+
+    # .pass.tbl and .fail.tbl files: feature table block for each sequence
+    foreach my $pf_sfx (".pass.tbl", ".fail.tbl") { 
+      my $tbl_file = $ant_root . $pf_sfx;
+      if(-e $tbl_file) { 
+        my $seq_name = undef;
+        open(IN, $tbl_file) || ofile_FileOpenFailure($tbl_file, $sub_name, $!, "reading", $FH_HR);
+        while($line = <IN>) { 
+          if($line =~ m/^\>Feature\s+(\S+)/) { 
+            $seq_name = $1;
+            if(defined $seq_tbl_H{$seq_name}) { 
+              ofile_FAIL("ERROR in $sub_name, read feature table for sequence $seq_name twice", 1, $FH_HR);
+            }
+            $seq_tbl_H{$seq_name} = "";
+          }
+          if(! defined $seq_name) { 
+            ofile_FAIL("ERROR in $sub_name, unable to parse first line of $tbl_file:\n$line", 1, $FH_HR);
+          }
+          $seq_tbl_H{$seq_name} .= $line;
+        }
+        close(IN);
+      }
+    }
+  }
+
+  # open the combined output files 
+  ofile_OpenAndAddFileToOutputInfo($ofile_info_HHR, "comb_slb",       $out_root . ".slb",       1, 1, "per-sequence library and pass/fail status, all libraries");
+  ofile_OpenAndAddFileToOutputInfo($ofile_info_HHR, "comb_pass_tbl",  $out_root . ".pass.tbl",  1, 1, "5 column feature table output for passing sequences, all libraries");
+  ofile_OpenAndAddFileToOutputInfo($ofile_info_HHR, "comb_fail_tbl",  $out_root . ".fail.tbl",  1, 1, "5 column feature table output for failing sequences, all libraries");
+  ofile_OpenAndAddFileToOutputInfo($ofile_info_HHR, "comb_pass_list", $out_root . ".pass.list", 1, 1, "list of passing sequences, all libraries");
+  ofile_OpenAndAddFileToOutputInfo($ofile_info_HHR, "comb_fail_list", $out_root . ".fail.list", 1, 1, "list of failing sequences, all libraries");
+  ofile_OpenAndAddFileToOutputInfo($ofile_info_HHR, "comb_alt_list",  $out_root . ".alt.list",  1, 1, "list of alerts in the feature tables, all libraries");
+  my $pass_tbl_FH  = $FH_HR->{"comb_pass_tbl"};
+  my $fail_tbl_FH  = $FH_HR->{"comb_fail_tbl"};
+  my $pass_list_FH = $FH_HR->{"comb_pass_list"};
+  my $fail_list_FH = $FH_HR->{"comb_fail_list"};
+  my $alt_list_FH  = $FH_HR->{"comb_alt_list"};
+  print $alt_list_FH "#sequence\tmodel\tfeature-type\tfeature-name\terror\tseq-coords\tmdl-coords\terror-description\n";
+
+  # output one entry per input sequence, in input order
+  my @head_AA = ();
+  my @data_AA = ();
+  @{$head_AA[0]} = ("seq", "seq",  "seq", "",        "",      "",    "sub", "",    "fatal");
+  @{$head_AA[1]} = ("idx", "name", "len", "library", "model", "grp", "grp", "p/f", "alerts");
+  my @clj_A      = (1,     1,      0,     1,         1,       1,     1,     1,     1);
+  my @pass_A      = (); # names of passing sequences, in input order
+  my @fail_A      = (); # names of failing sequences (including those that matched no library), in input order
+  my @unmatched_A = (); # names of sequences that matched no library, in input order
+  my %exc_okey_H  = (); # key is okey excluded from annotation that at least one unmatched seq matched
+  my @exc_okey_A  = (); # okeys in %exc_okey_H, in order of first appearance
+  my $n_exc       = 0;  # number of unmatched seqs that matched a library excluded from annotation
+  my $seq_idx = 0;
+  foreach my $seq_name (@{$seq_name_AR}) { 
+    $seq_idx++;
+    if(defined $seq_okey_H{$seq_name}) { 
+      my ($mdl, $grp, $subgrp, $pf) = @{$seq_info_HA{$seq_name}};
+      if(! defined $seq_tbl_H{$seq_name}) { 
+        ofile_FAIL("ERROR in $sub_name, did not find feature table for sequence $seq_name", 1, $FH_HR);
+      }
+      if($pf eq "PASS") { 
+        print $pass_tbl_FH  $seq_tbl_H{$seq_name};
+        print $pass_list_FH $seq_name . "\n";
+        push(@pass_A, $seq_name);
+      }
+      else { 
+        print $fail_tbl_FH  $seq_tbl_H{$seq_name};
+        print $fail_list_FH $seq_name . "\n";
+        push(@fail_A, $seq_name);
+      }
+      print $alt_list_FH $seq_altlist_H{$seq_name};
+      my $fatal_str = (scalar(@{$seq_fatal_HA{$seq_name}}) > 0) ? join(",", @{$seq_fatal_HA{$seq_name}}) : "-";
+      push(@data_AA, [$seq_idx, $seq_name, $seq_len_HR->{$seq_name}, $seq_okey_H{$seq_name}, $mdl, $grp, $subgrp, $pf, $fatal_str]);
+    }
+    else { 
+      # sequence matched no library, report it as failing with a NO_ANNOTATION alert 
+      my $noannotn_detail = $noannotn_detail_H{"nomatch"};
+      if(defined $seq_exc_okey_HR->{$seq_name}) { 
+        $noannotn_detail = $noannotn_detail_H{"excluded"};
+        $noannotn_detail =~ s/<lib>/$seq_exc_okey_HR->{$seq_name}/;
+      }
+      my $noannotn_edesc = $noannotn_ldesc . " [" . $noannotn_detail . "]";
+      print $fail_tbl_FH  ">Feature $seq_name\n";
+      print $fail_tbl_FH  "\nAdditional note(s) to submitter:\n";
+      print $fail_tbl_FH  "ERROR: " . $noannotn_sdesc . ": (*sequence*) " . $noannotn_edesc . "; seq-coords:-; mdl-coords:-; mdl:-;\n";
+      print $fail_list_FH $seq_name . "\n";
+      print $alt_list_FH  $seq_name . "\t-\t-\t*sequence*\t" . $noannotn_sdesc . "\t-\t-\t" . $noannotn_edesc . "\n";
+      push(@fail_A,      $seq_name);
+      push(@unmatched_A, $seq_name);
+      push(@data_AA, [$seq_idx, $seq_name, $seq_len_HR->{$seq_name}, "-", "-", "-", "-", "NO-MATCH", $noannotn_code]);
+      if(defined $seq_exc_okey_HR->{$seq_name}) { 
+        my $exc_okey = $seq_exc_okey_HR->{$seq_name};
+        if(! defined $exc_okey_H{$exc_okey}) { 
+          push(@exc_okey_A, $exc_okey);
+          $exc_okey_H{$exc_okey} = 1;
+        }
+        $n_exc++;
+      }
+    }
+  }
+  ofile_TableHumanOutput(\@data_AA, \@head_AA, \@clj_A, undef, undef, "  ", "-", "#", "#", "", 0, $FH_HR->{"comb_slb"}, undef, $FH_HR);
+  foreach my $key ("comb_slb", "comb_pass_tbl", "comb_fail_tbl", "comb_pass_list", "comb_fail_list", "comb_alt_list") { 
+    close($FH_HR->{$key});
+  }
+
+  # fasta files, fetched from the input file, as v-annotate.pl does
+  my $pass_fa_file = $out_root . ".pass.fa";
+  my $fail_fa_file = $out_root . ".fail.fa";
+  $in_sqfile->fetch_seqs_given_names(\@pass_A, 60, $pass_fa_file);
+  $in_sqfile->fetch_seqs_given_names(\@fail_A, 60, $fail_fa_file);
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "comb_pass_fa", $pass_fa_file, 1, 1, "fasta file with passing sequences, all libraries");
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "comb_fail_fa", $fail_fa_file, 1, 1, "fasta file with failing sequences, all libraries");
+
+  # lines for the log about sequences that matched no library
+  my $n_unmatched = scalar(@unmatched_A);
+  if($n_unmatched > 0) { 
+    my $slb_file = $ofile_info_HHR->{"nodirpath"}{"comb_slb"};
+    push(@{$unmatched_str_AR}, sprintf("# %d of %d sequence%s matched no model library and %s not annotated;", 
+                                       $n_unmatched, scalar(@{$seq_name_AR}), (scalar(@{$seq_name_AR}) == 1) ? "" : "s", ($n_unmatched == 1) ? "was" : "were"));
+    push(@{$unmatched_str_AR}, "# see $slb_file (listed as NO-MATCH) and the combined output files (listed as failing).");
+    if($n_exc > 0) { 
+      push(@{$unmatched_str_AR}, sprintf("# %d of these matched only a model library excluded by --only or --skip: %s", $n_exc, join(", ", @exc_okey_A)));
+    }
+  }
+
   return;
 }
 
