@@ -5769,8 +5769,7 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
             # 'delete' type: gap in first RF position of start (deletion)
             # 'insert' type: insert after first RF position of start (insertion)
             if(($sgm_results_HAHR->{$seq_name}[$sgm_idx]{"startgap"}) && # first RF position of segment aligns to a gap
-               ((($sgm_strand eq "+") && ($rf2ilen_A[($sgm_start_rfpos-1)] == -1)) ||  # + strand: we won't be swapping with an insert
-                (($sgm_strand eq "-") && ($rf2ilen_A[($sgm_start_rfpos)]   == -1)))) { # - strand: we won't be swapping with an insert
+               (! doctoring_closest_residue_is_insert($sgm_start_rfpos, (($sgm_strand eq "+") ? 1 : 0), $rflen, \@rf2a_A, \@rf2ilen_A, \@sq_A))) { # we won't be swapping with an insert
               $dcr_delete_or_insert = "delete";
             }
             elsif((($sgm_strand eq "+") && ($rf2ilen_A[($sgm_start_rfpos)]   == 1)) || # + strand: insert after first RF start position
@@ -5801,8 +5800,7 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
             # 'delete' type: gap in final RF position of stop (deletion)
             # 'insert' type: insert before final RF position of stop (insertion)
             if(($sgm_results_HAHR->{$seq_name}[$sgm_idx]{"stopgap"}) && # final RF position of segment aligns to a gap
-                ((($sgm_strand eq "+") && ($rf2ilen_A[$sgm_stop_rfpos]     == -1)) ||  # + strand: we won't be swapping with an insert
-                 (($sgm_strand eq "-") && ($rf2ilen_A[($sgm_stop_rfpos-1)] == -1)))) { # - strand: we won't be swapping with an insert
+               (! doctoring_closest_residue_is_insert($sgm_stop_rfpos, (($sgm_strand eq "+") ? 0 : 1), $rflen, \@rf2a_A, \@rf2ilen_A, \@sq_A))) { # we won't be swapping with an insert
               $dcr_delete_or_insert = "delete";
             }
             elsif((($sgm_strand eq "+") && ($rf2ilen_A[($sgm_stop_rfpos-1)] == 1))  || # + strand: insert before final RF stop position
@@ -5926,14 +5924,46 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
     # 
     if(($seq_doctor_flag) && ($seq_doctor_ctr <= 1)) { 
       $seq_doctor_ctr++; 
+      my %dcr_ins_done_H = (); # key is <indel_apos>, an 'insert' type doctoring we've already done in this iteration
       for(my $dcr_idx = 0; $dcr_idx < scalar(@do_dcr_idx_A); $dcr_idx++) { 
         my $dcr_output_idx = $do_dcr_idx_A[$dcr_idx];
-        if($dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"dcr_type"} eq "delete") { 
-          $msa->swap_gap_and_closest_residue($i, 
-                                             $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"indel_apos"}, 
-                                             $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"before"});
+        if($dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"dcr_type"} eq "delete") {
+          my $gap_apos = $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"indel_apos"};
+          my ($res_apos, $swap_errmsg) = $msa->swap_gap_and_closest_residue($i, $gap_apos, 
+                                                                           $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"before"});
+          # the swap fails if $gap_apos is no longer a gap or there is no residue to swap 
+          # with, because an earlier doctoring in this iteration for another feature 
+          # (e.g. in an alternative feature set) already moved it; in that case 
+          # the alignment was not changed so there is nothing to update
+          # and "did_swap" stays "no"
+          if($res_apos != -1) { 
+            $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"did_swap"} = "yes";
+            # if the residue that filled the gap was in an insert column, update
+            # the --ifile-derived insert info ($seq_inserts_HHR) to match the
+            # alignment, else that residue is counted twice when the alignment is
+            # reparsed. We determine the moved residue's unaligned position from
+            # the alignment, because with earlier swaps in this iteration it may
+            # not be the residue the doctoring was proposed for ("new_seq_uapos").
+            # We don't propose a doctoring whose closest residue is in an insert
+            # column (doctoring_closest_residue_is_insert()), so this can only
+            # happen if an earlier swap in this iteration moved that closest
+            # residue, and the swap then took the next residue, from an insert column
+            my $msa_rf = $msa->get_rf;
+            if(substr($msa_rf, $res_apos-1, 1) =~ m/[\.\-\~]/) { 
+              my $moved_sqstring = substr($msa->get_sqstring_aligned($i), 0, $gap_apos);
+              my $moved_uapos = ($moved_sqstring =~ tr/a-zA-Z//); # number of residues up to and including $gap_apos
+              $seq_inserts_HHR->{$seq_name}{"ins"} = vdr_ShrinkInsertTokenInInsertString($seq_inserts_HHR->{$seq_name}{"ins"}, $moved_uapos, $FH_HR);
+            }
+          }
+        }
+        elsif(defined $dcr_ins_done_H{$dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"indel_apos"}}) { 
+          # multiple features can share the same start or stop codon (e.g. features in
+          # an alternative feature set), each adds its own identical doctoring to 
+          # @do_dcr_idx_A, but a second 'insert' type RF swap would undo the first one
+          ; # do nothing, "did_swap" stays "no"
         }
         else { # $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"dcr_type"} eq "insert"
+          $dcr_ins_done_H{$dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"indel_apos"}} = 1;
           # rewrite RF by swapping insert and start position, remember this can only happen if we have 1 seq in the alignment
           # because we checked that $do_glsearch is true above, and that if $do_glsearch is true, then we only have 1 alignment
           # but we do another sanity check here
@@ -5950,6 +5980,7 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
           }
           $msa->set_rf($new_rf);
           if(defined $new_sscons) { $msa->set_ss_cons($new_sscons); }
+          $dcr_output_HAHR->{$seq_name}[$dcr_output_idx]{"did_swap"} = "yes";
 
           # update the rf2a_A map
           msa_create_rfpos_to_apos_map($msa, \@rf2a_A, $FH_HR);
@@ -15826,6 +15857,56 @@ sub msa_create_rfpos_to_apos_map {
 }
 
 #################################################################
+# Subroutine: doctoring_closest_residue_is_insert
+# Incept:     EPN, Sat Oct 10 2026 (w/Claude)
+# Purpose:    For a possible 'delete' type doctoring of the gap at
+#             reference position $rfpos, determine if the residue
+#             that would be swapped into the gap, the closest residue
+#             before (if $before) or after (if !$before) the gap in
+#             the alignment, is in an insert column. If so, we won't
+#             doctor. That residue can be separated from the gap by
+#             other gapped reference positions.
+#
+# Arguments:
+#  $rfpos:       reference position of the gap
+#  $before:      '1' to look before (5' of) $rfpos, '0' to look after (3' of) it
+#  $rflen:       number of reference positions
+#  $rf2a_AR:     ref to map of reference positions to alignment positions [1..$rflen]
+#  $rf2ilen_AR:  ref to array of insert lengths after each reference position [0..$rflen], -1 for none
+#  $sq_AR:       ref to array of aligned sequence characters [0..$alen-1]
+#
+# Returns:  '1' if the closest residue is in an insert column, '0' if it
+#           is in a reference position or there is no such residue
+#
+# Dies:     never
+#
+#################################################################
+sub doctoring_closest_residue_is_insert {
+  my $sub_name = "doctoring_closest_residue_is_insert";
+  my $nargs_exp = 6;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($rfpos, $before, $rflen, $rf2a_AR, $rf2ilen_AR, $sq_AR) = (@_);
+
+  # the columns between reference positions r and r+1 are the inserts after r
+  if($before) { 
+    for(my $r = $rfpos-1; $r >= 0; $r--) { 
+      if($rf2ilen_AR->[$r] != -1)                    { return 1; } # insert after $r, before $r+1
+      if($r == 0)                                    { return 0; } # no residue before $rfpos
+      if($sq_AR->[($rf2a_AR->[$r]-1)] =~ m/[a-zA-Z]/) { return 0; } # residue at reference position $r
+    }
+  }
+  else { 
+    for(my $r = $rfpos; $r <= $rflen; $r++) { 
+      if($rf2ilen_AR->[$r] != -1)                        { return 1; } # insert after $r, before $r+1
+      if($r == $rflen)                                   { return 0; } # no residue after $rfpos
+      if($sq_AR->[($rf2a_AR->[($r+1)]-1)] =~ m/[a-zA-Z]/) { return 0; } # residue at reference position $r+1
+    }
+  }
+  return 0; # not reached
+}
+
+#################################################################
 # Subroutine: doctoring_check_new_codon_validity
 # Incept:     EPN, Wed Mar 17 16:07:26 2021
 # Purpose:    Update output information in %{$dcr_output_HAHR} for
@@ -15855,6 +15936,8 @@ sub msa_create_rfpos_to_apos_map {
 #           doctoring limit hasn't been reached (we can only doctor a 
 #           sequence twice). If '1' $seq_dcr_info_HAR will have been added to
 #           and caller will actually do the doctoring of the alignment.
+#           The "did_swap" value of the added %{$dcr_output_HAHR} entry is
+#           "no", the caller changes it to "yes" if it performs the swap.
 #
 # Alignment doctoring examples: 
 #
@@ -16022,7 +16105,7 @@ sub doctoring_check_new_codon_validity {
   $dcr_output_HAHR->{$seq_name}[$ndcr]{"orig_seq_uapos"} = $uapos;
   $dcr_output_HAHR->{$seq_name}[$ndcr]{"codon_type"}     = $start_or_stop;
   $dcr_output_HAHR->{$seq_name}[$ndcr]{"dcr_iter"}       = $seq_doctor_ctr+1;
-  $dcr_output_HAHR->{$seq_name}[$ndcr]{"did_swap"}       = "no"; # possibly changed to "yes" below
+  $dcr_output_HAHR->{$seq_name}[$ndcr]{"did_swap"}       = "no"; # changed to "yes" by caller if swap is performed
 
   my $new_codon_is_valid = 0; # possibly set to '1' below
   my $orig_codon = undef; # needed so we can reverse complement if nec
@@ -16147,7 +16230,7 @@ sub doctoring_check_new_codon_validity {
   ###################################################
 
   if(($new_codon_is_valid) && ($seq_doctor_ctr <= 1)) { 
-    $dcr_output_HAHR->{$seq_name}[$ndcr]{"did_swap"}  = "yes";
+    # caller will attempt the swap, and set "did_swap" to "yes" if it succeeds
     return $ndcr;
   }
 

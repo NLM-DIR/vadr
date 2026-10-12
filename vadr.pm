@@ -227,6 +227,7 @@ require "sqp_utils.pm";
 # vdr_CigarToInsertsHash()
 # vdr_CigarToPositionMap()
 # vdr_UpdateInsertTokenInInsertString()
+# vdr_ShrinkInsertTokenInInsertString()
 #
 #################################################################
 # Subroutine: vdr_FeatureInfoImputeCoords
@@ -9036,6 +9037,100 @@ sub vdr_UpdateInsertTokenInInsertString {
   if(! $found_orig_ins_tok) { 
     ofile_FAIL("ERROR in $sub_name, unable to find orig_ins_tok $orig_ins_tok in insert string $ins_str", 1, $FH_HR);
   }
+
+  return $ret_ins_str;
+}
+
+#################################################################
+# Subroutine:  vdr_ShrinkInsertTokenInInsertString()
+# Incept:      EPN, Wed Jul  1 2026 (w/Claude)
+#
+# Purpose:    Given $ins_str an 'insert string' in the format:
+#              <mdlpos_1>:<uapos_1>:<inslen_1>;...<mdlpos_n>:<uapos_n>:<inslen_n>;
+#              for n inserts, where insert x is defined by:
+#              <mdlpos_x> is model position after which insert occurs 0..mdl_len (0=before first pos)
+#              <uapos_x> is unaligned sequence position of the first aligned nt
+#              <inslen_x> is length of the insert
+#             and an unaligned sequence position $rm_uapos that has just been
+#             swapped out of an insert column and into a match column (e.g. by
+#             alignment 'doctoring' that fixes a disrupted start/stop codon via
+#             $msa->swap_gap_and_closest_residue()), find the insert token whose
+#             range [uapos, uapos+inslen-1] contains $rm_uapos and shrink it by
+#             one nt, so that $ins_str stays consistent with the (already
+#             modified) alignment. If $rm_uapos does not belong to any insert
+#             token (e.g. it was a match-column residue swapped with another
+#             match-column position), $ins_str is returned unmodified.
+#
+# Arguments:
+#   $ins_str:   insert string, can be undefined or "" (no inserts for this seq)
+#   $rm_uapos:  unaligned sequence position removed from its insert token
+#   $FH_HR:     ref to hash of file handles, including "cmd"
+#
+# Returns:     updated insert string
+#
+# Dies:        If we can't parse $ins_str
+#              If $rm_uapos is an interior position (neither the first nor the
+#              last nt) of the insert token that contains it: shrinking would
+#              require splitting that token into two tokens sharing the same
+#              <mdlpos>, which is not supported downstream (parse_stk_and_add_-
+#              alignment_cds_and_mp_alerts() in v-annotate.pl stores at most
+#              one insert run per model position in @rf2ipos_A/@rf2ilen_A, so
+#              two tokens with the same mdlpos could not be represented). This
+#              is not expected to occur in practice because
+#              swap_gap_and_closest_residue() finds the closest non-gap
+#              position by scanning outward column-by-column from the gap, and
+#              insert residues for a given sequence occupy a contiguous span of
+#              alignment columns, so the residue it finds (if any) can only be
+#              the first or last nt of that sequence's insert token, never an
+#              interior one.
+#
+#################################################################
+sub vdr_ShrinkInsertTokenInInsertString {
+  my $nargs_exp = 3;
+  my $sub_name = "vdr_ShrinkInsertTokenInInsertString";
+  if(scalar(@_) != $nargs_exp) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_exp); exit(1); }
+
+  my ($ins_str, $rm_uapos, $FH_HR) = @_;
+
+  if((! defined $ins_str) || ($ins_str eq "")) {
+    return $ins_str; # no inserts for this sequence, nothing to shrink
+  }
+
+  my @ins_A = split(";", $ins_str);
+  my $found = 0;
+  my $ret_ins_str = "";
+  foreach my $ins_tok (@ins_A) {
+    if($ins_tok =~ /^(\d+)\:(\d+)\:(\d+)/) {
+      my ($mdlpos, $uapos, $inslen) = ($1, $2, $3);
+      if((! $found) && ($rm_uapos >= $uapos) && ($rm_uapos <= ($uapos + $inslen - 1))) {
+        $found = 1;
+        my $new_inslen = $inslen - 1;
+        if($new_inslen == 0) {
+          ; # entire token is consumed, add nothing to $ret_ins_str
+        }
+        elsif($rm_uapos == $uapos) {
+          # removed the first nt of the token
+          $ret_ins_str .= sprintf("%d:%d:%d;", $mdlpos, $uapos+1, $new_inslen);
+        }
+        elsif($rm_uapos == ($uapos + $inslen - 1)) {
+          # removed the last nt of the token
+          $ret_ins_str .= sprintf("%d:%d:%d;", $mdlpos, $uapos, $new_inslen);
+        }
+        else {
+          ofile_FAIL(sprintf("ERROR in $sub_name, position to remove ($rm_uapos) is an interior position of insert token %s (neither first nor last nt), splitting is not supported", $ins_tok), 1, $FH_HR);
+        }
+      }
+      else {
+        $ret_ins_str .= $ins_tok . ";";
+      }
+    }
+    else {
+      ofile_FAIL("ERROR in $sub_name, unable to parse insert string $ins_str at token $ins_tok", 1, $FH_HR);
+    }
+  }
+  # if $found is still 0, $rm_uapos did not belong to any insert token (e.g. a
+  # match-column to match-column swap); $ret_ins_str was built identically to
+  # $ins_str in that case, so it is effectively returned unmodified
 
   return $ret_ins_str;
 }
