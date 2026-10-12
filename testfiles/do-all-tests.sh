@@ -58,6 +58,7 @@ for t in \
     do-xnumali-tests.sh \
     do-noannotn-tests.sh \
     do-vscan-tests.sh \
+    do-nnclass-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do
     sh $VADRSCRIPTSDIR/testfiles/$t
