@@ -24,6 +24,8 @@
   * [additional output files saved with the `--keep` option](#annotate-keep)
 * [`v-scan.pl` output files](#scan)
   * [`.lib` files](#lib)
+  * [`.slb` files](#slb)
+  * [combined output files created with `-m`](#scancombined)
 * [VADR `coords` coordinate string format](#coords)
 * [VADR sequence naming conventions](#seqnames)
 
@@ -881,6 +883,58 @@ key' that has a model library that was scanned against in the
 |   2 | `options key`         | unique key for the specific set of options and associated model directory read from the config file, the first field of a line in the config file |
 |   3 | `model key`           | the model key used for this options key, multiple options keys can use the same model key |
 |   4 | `num seqs`            | the number of sequences in the input fasta file that matched to this options key, the total number in all rows will be lower than the total number of sequences in the file if sampling was performed
+
+---
+
+### Explanation of `.slb`-suffixed output files<a name="slb"></a>
+
+When run with the `-m` option, `v-scan.pl` creates a file with a
+`slb` suffix named `<outdir>.vadr.slb`. It has one data line for
+each sequence in the input fasta file, in the same order as the input
+file, and summarizes which library each sequence was annotated with
+and whether it passed or failed. `.slb` data lines have 9 fields,
+the names of which appear in the first two comment lines in each file.
+
+| idx | field                 | description |
+|-----|-----------------------|-------------|
+|   1 | `seq idx`             | index of sequence in the input file |
+|   2 | `seq name`            | sequence name |
+|   3 | `seq len`             | length of the sequence with name `seq name` |
+|   4 | `library`             | the options key of the library this sequence was annotated with (see [`.lib` files](#lib)), or `-` if the sequence matched no library |
+|   5 | `model`               | name of the best-matching model for this sequence (`best model` in that library's [`.sqa` file](#sqa)), or `-` if none |
+|   6 | `grp`                 | group of model `model`, or `-` if none |
+|   7 | `sub grp`             | subgroup of model `model`, or `-` if none |
+|   8 | `p/f`                 | `PASS` if this sequence passes, `FAIL` if it fails (has >= 1 fatal alerts), `NO-MATCH` if it matched no library and was not annotated |
+|   9 | `fatal alerts`        | fatal alert codes for this sequence (alerts listed as `yes` in the `fail` field of that library's [`.alt` file](#alt)), separated by commas, listed once each, `-` if none; `noannotn` for a sequence that matched no library |
+
+### Combined output files created by `v-scan.pl` with `-m`<a name="scancombined"></a>
+
+When run with the `-m` option, `v-scan.pl` creates the following files
+that combine the `v-annotate.pl` output files for all libraries. Each
+lists sequences in the same order as the input fasta file, and has
+the same format as the `v-annotate.pl` file with the same suffix. A
+sequence that matched no library is treated as failing with a
+`NO_ANNOTATION` alert, the same alert `v-annotate.pl` reports for a
+sequence with no significant similarity to any model. The alert
+detail (inside `[]` at the end of the description) is
+`[no match to any model library]`, or `[only match was to excluded
+model library <key>]` for a sequence that matched only a library
+excluded from annotation by `--only` or `--skip`, where `<key>` is
+that library's options key.
+
+| file | description |
+|------|-------------|
+| `<outdir>.vadr.alt.list`  | fatal alerts in the feature tables, see [here](#altlist); a sequence that matched no library has one `NO_ANNOTATION` line |
+| `<outdir>.vadr.pass.tbl`  | 5 column feature table for passing sequences |
+| `<outdir>.vadr.fail.tbl`  | 5 column feature table for failing sequences; a sequence that matched no library has an entry with a `NO_ANNOTATION` note |
+| `<outdir>.vadr.pass.list` | list of passing sequences |
+| `<outdir>.vadr.fail.list` | list of failing sequences, including those that matched no library |
+| `<outdir>.vadr.pass.fa`   | fasta file of passing sequences |
+| `<outdir>.vadr.fail.fa`   | fasta file of failing sequences, including those that matched no library |
+
+The per-library files `<outdir>.<key>.vadr.<suffix>` and the fasta
+files `<outdir>.<key>.fa` of the sequences annotated with each library
+are also created, as described [here](scan.md#combined).
 
 ---
 

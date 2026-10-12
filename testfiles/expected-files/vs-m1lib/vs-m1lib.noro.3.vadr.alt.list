@@ -1,0 +1,2 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+gi|1339273835|gb|MG746117.1|	NC_039476	CDS	VP1	INDEFINITE_ANNOTATION_START	1..72:+	5085..5085:+	protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint [72>5]

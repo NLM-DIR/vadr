@@ -57,6 +57,7 @@ for t in \
     do-pvcoords-tests.sh \
     do-xnumali-tests.sh \
     do-noannotn-tests.sh \
+    do-vscan-tests.sh \
     do-nnclass-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do

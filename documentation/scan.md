@@ -7,6 +7,7 @@
 * [Walk-throughs of `v-scan.pl` examples](#longwalk)
   * [running `v-scan.pl` when all sequences are expected to match one unknown model library (mode 1)](#mode1)
   * [running `v-scan.pl` when sequences may match multiple models libraries (mode 2)](#mode2)
+    * [combined output files created with `-m`](#combined)
   * [running `v-scan.pl` when all sequences are expected to match one known model library (mode 3)](#mode3)
 * [`v-scan.pl` command-line options](#options)
   * [basic options](#options-basic)
@@ -390,6 +391,7 @@ This will generate:
 # Annotating 2 norovirus sequences                             ... done. [   27.7 seconds]
 # Annotating 1 calici    sequences                             ... done. [   17.3 seconds]
 # Generating tabular output                                    ... done. [    0.0 seconds]
+# Generating combined output files                             ... done. [    0.0 seconds]
 #
 # Summary of sequences matching each library:
 #
@@ -412,6 +414,76 @@ sequence.
 Also, following the summary of sequences matching each library, you
 will see per-library summary statistics for each of the four libraries
 matched, and a list of output sequences for each library.
+
+#### Combined output files created with `-m`<a name="combined"></a>
+
+With `-m`, `v-annotate.pl` is run once per matched library, and its
+output files for each library are named `<outdir>.<key>.vadr.<suffix>`,
+where `<key>` is the options key (e.g. `vs-m5.norovirus.vadr.alt.list`).
+The sequences annotated with each library are in the fasta file
+`<outdir>.<key>.fa`. 
+
+`v-scan.pl` also creates the following files that combine the output
+for all libraries. Each of these lists sequences in the same order as
+the input fasta file:
+
+| file | description |
+|------|-------------|
+| `<outdir>.vadr.slb`    | one line per input sequence, with the library it was annotated with, its best model, group and subgroup, whether it passed or failed and its fatal alert codes, see [here](formats.md#slb) |
+| `<outdir>.vadr.alt.list`  | fatal alerts in the feature tables, same format as `v-annotate.pl` [`.alt.list` files](formats.md#altlist) |
+| `<outdir>.vadr.pass.tbl`  | 5 column feature table for passing sequences |
+| `<outdir>.vadr.fail.tbl`  | 5 column feature table for failing sequences, with notes on the fatal alerts |
+| `<outdir>.vadr.pass.list` | list of passing sequences |
+| `<outdir>.vadr.fail.list` | list of failing sequences |
+| `<outdir>.vadr.pass.fa`   | fasta file of passing sequences |
+| `<outdir>.vadr.fail.fa`   | fasta file of failing sequences |
+
+These files are created by every `v-scan.pl -m` run, including runs in
+which only one library or no library was matched, so that their names
+do not depend on which libraries were matched. 
+
+**Sequences that match no library:** with `-m`, a sequence that
+matches no model library in the classification stage is not annotated
+with any library, and so does not appear in any of the per-library
+output files. Instead, `v-scan.pl` reports it in the combined files:
+it is listed with the status `NO-MATCH` in the `.slb` file, and it
+is treated as a failing sequence in the other combined files, with the
+same `NO_ANNOTATION` alert that `v-annotate.pl` reports for a sequence
+with no significant similarity to any model. That is, it is listed in
+the `.fail.list` and `.fail.fa` files, it has a `NO_ANNOTATION` line in
+the `.alt.list` file, and it has a feature table entry with a
+`NO_ANNOTATION` note in the `.fail.tbl` file. The number of such
+sequences is also reported in the standard output and `.log` file. A
+sequence that only matched a library excluded with `--only` or `--skip`
+(for example a calicivirus that is not a norovirus, when `--only
+norovirus,flavi` is used) is reported the same way, and the `.log`
+file names the excluded library it matched.
+
+The detail at the end of the `NO_ANNOTATION` alert description (inside
+`[]`) says why the sequence was not annotated. For a sequence that
+matched no library:
+
+```
+SHUF1	-	-	*sequence*	NO_ANNOTATION	-	-	no significant similarity detected [no match to any model library]
+```
+
+and for a sequence that only matched an excluded library, which is
+named by its options key (here `calici`):
+
+```
+NC_035675	-	-	*sequence*	NO_ANNOTATION	-	-	no significant similarity detected [only match was to excluded model library calici]
+```
+
+The `.fail.tbl` note for the sequence ends with the same detail.
+These details differ from those that `v-annotate.pl` uses for its own
+`NO_ANNOTATION` alerts, so a `NO_ANNOTATION` line written by
+`v-scan.pl` can be told apart from one written by `v-annotate.pl`.
+
+Without `-m`, the combined files are not created. In that case, if
+only one library is matched by the sampled sequences, all sequences in
+the input file are annotated with that library, and any that do not
+match it are reported by `v-annotate.pl` in that library's output
+files.
 
 ---
 
@@ -475,7 +547,7 @@ integer.
 | ......option.... | explanation | 
 |------------------|-------------|
 | `-f`             | if `<output directory>` already exists, then using this option will cause it to be overwritten, otherwise the progam exits in error |
-| `-m`             | multiple-library mode, allow matches to multiple model libraries, without this option matches to only one library are allowed and the program will exit if matches to multiple libraries are found |
+| `-m`             | multiple-library mode, allow matches to multiple model libraries, without this option matches to only one library are allowed and the program will exit if matches to multiple libraries are found; with `-m`, output files that combine all libraries are also created, see [here](#combined) |
 | `-c <s>`         | use the config file `<s>` instead of the config file in $VADRCONFIGFILE |
 | `-v`             | *verbose* mode: all commands will be output to standard output as they are run | 
 | `--first`        | specify that if a sequence matches to more than one library, use the first one; by default the higher scoring match is used |
