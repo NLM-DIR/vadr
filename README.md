@@ -1,68 +1,89 @@
-# VADR - Viral Annotation DefineR <a name="top"></a>
-#### Version 1.7.3; September 2026
-#### https://github.com/ncbi/vadr.git
+<a name="top"></a>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="documentation/images/vadr-logo-dark.svg">
+    <img src="documentation/images/vadr-logo.svg" alt="VADR - Viral Annotation DefineR" width="480">
+  </picture>
+</p>
+
+<h3 align="center">Viral Annotation DefineR: validate and annotate viral sequences using reference models</h3>
+
+<p align="center">Version 1.7.3; September 2026</p>
+
+<p align="center">
+  <a href="https://github.com/NLM-DIR/vadr/tags"><img src="https://img.shields.io/github/v/tag/NLM-DIR/vadr?label=version" alt="latest version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-public%20domain-blue" alt="license: public domain"></a>
+  <a href="https://doi.org/10.1186/s12859-020-3537-3"><img src="https://img.shields.io/badge/DOI-10.1186%2Fs12859--020--3537--3-informational" alt="DOI"></a>
+</p>
+
+<p align="center">
+  <b><a href="documentation/install.md#top">Install</a></b> &nbsp;·&nbsp;
+  <b><a href="#quickstart">Quick start</a></b> &nbsp;·&nbsp;
+  <b><a href="#documentation">Documentation</a></b> &nbsp;·&nbsp;
+  <b><a href="#models">Models</a></b> &nbsp;·&nbsp;
+  <b><a href="#reference">Cite</a></b>
+</p>
 
 VADR is a suite of tools for classifying and analyzing sequences
 homologous to a set of reference models of viral genomes or gene
 families. It includes models that can be used to validate and annotate
 Norovirus, Dengue virus, SARS-CoV-2 virus as well as other
 flaviviruses, caliciviruses, and coronaviruses, plus influenza virus,
-mpox virus, and respiratory syncitial virus (RSV). Additional models
+mpox virus, and respiratory syncytial virus (RSV). Additional models
 are [available to download](#models) or can be created using the
-`v-build.pl` program.
+`v-build.pl` program. VADR is used by GenBank staff to evaluate
+incoming sequence submissions of some viruses.
+
+## What VADR reports
+
+Give VADR a FASTA file. It picks the best-matching reference model for
+each sequence, maps that model's annotation (e.g. CDS coordinates) onto the
+sequence, and reports anything
+unexpected as *alerts*. A sequence with no fatal alerts **passes**.
+For example, from annotating nine norovirus sequences
+([walk-through](documentation/annotate.md#exampleusage)):
+
+```
+# Summary of classified sequences:
+#
+#                                      num   num   num
+#idx  model      group      subgroup  seqs  pass  fail
+#---  ---------  ---------  --------  ----  ----  ----
+1     NC_008311  Norovirus  GV           2     1     1
+2     NC_029645  Norovirus  GIII         2     2     0
+3     NC_039477  Norovirus  GII          2     2     0
+4     NC_044854  Norovirus  GI           2     2     0
+5     NC_001959  Norovirus  GI           1     1     0
+#---  ---------  ---------  --------  ----  ----  ----
+-     *all*      -          -            9     8     1
+```
+
+Outputs include 5-column feature tables for passing and failing
+sequences and detailed reports of each alert.
 
 ---
-## Quick-start: install VADR and classify and annotate viral sequences using `v-scan.pl`<a name="quickstart"></a>
-
-#### Install VADR:
-
-Download this file:
+## Quick start <a name="quickstart"></a>
 
 ```
-https://raw.githubusercontent.com/ncbi/vadr/master/vadr-install.sh
+curl -o vadr-install.sh https://raw.githubusercontent.com/NLM-DIR/vadr/master/vadr-install.sh
+sh ./vadr-install.sh linux        # or: macosx-silicon, macosx-intel
 ```
 
-possibly with a command like:
-```
-curl -o vadr-install.sh https://raw.githubusercontent.com/ncbi/vadr/master/vadr-install.sh
-```
+Then follow the instructions printed at the end of the installation
+to set the environment variables VADR relies on (details:
+[installation instructions](documentation/install.md#top)).
 
-And execute it, with one of the following commands depending on your
-system type:
-
-```
-sh ./vadr-install.sh linux
-```
-
-OR
+To classify and annotate a FASTA file `my.fa` containing any mix of
+flavivirus, calicivirus, coronavirus, influenza, RSV or mpox
+sequences:
 
 ```
-sh ./vadr-install.sh macosx-silicon
+v-scan.pl -m my.fa out
 ```
 
-OR
-
-```
-sh ./vadr-install.sh macosx-intel
-```
-
-Then follow the instructions output at the end of the installation for
-updating your `.bashrc` or `.cshrc` file and defining important
-environment variables that VADR relies on.
-
-#### Run `v-scan.pl` to annotate viral sequences
-
-Given a fasta sequence file called `my.fa` with any combination of flavivirus,
-calicivirus, coronavirus, influenza, RSV, or Mpox sequences, run:
-
-`v-scan.pl -m in.fa out`
-
-This will list each stage of the processing and
-ultimately create an output directory called `out` and fill it with 
-output files. Short descriptions of the output files will be printed to the
-screen. More detailed explanation of output file types can be found
-[here](documentation/formats.md#annotate). For a more detailed walk-through example
-of `v-scan.pl` see [this page](documentation/scan.md#longwalk).
+This creates an output directory `out` and prints a short description
+of each output file. See the [output file formats](documentation/formats.md#annotate)
+and a [longer `v-scan.pl` walk-through](documentation/scan.md#longwalk).
 
 ---
 ## VADR programs
@@ -117,10 +138,10 @@ with [VADR installation](documentation/install.md#top).
 | *Coronaviridae*      | corona | SARS-CoV-2 only            | 55  | SARS-CoV-2 models used by GenBank |
 | influenza            | flu    | yes                        | 70  | [described in Database article](https://pubmed.ncbi.nlm.nih.gov/39297389/) |
 | Mpox                 | mpxv   | yes                        | 1   | | 
-| respiratory syncitial virus (RSV) | rsv    | yes                        | 2   | | 
+| respiratory syncytial virus (RSV) | rsv    | yes                        | 2   | | 
 
 Additional models are available. See [this
-page](https://github.com/ncbi/vadr/wiki/Available-VADR-model-files)
+page](https://github.com/NLM-DIR/vadr/wiki/Available-VADR-model-files)
 for a list of all available models and additional information.
 
 ---
@@ -160,10 +181,10 @@ for a list of all available models and additional information.
   * [`v-annotate.pl` output files](documentation/formats.md#annotate)
   * [VADR `coords` coordinate string format](documentation/formats.md#coords)
   * [VADR sequence naming conventions](documentation/formats.md#seqnames)
-* [Available VADR model files (github wiki)](https://github.com/ncbi/vadr/wiki/Available-VADR-model-files)
-* [SARS-CoV-2 annotation (github wiki)](https://github.com/ncbi/vadr/wiki/Coronavirus-annotation)
-* [Rfam-based structural annotation of a viral genome sequence for use with VADR (github wiki)](https://github.com/ncbi/vadr/wiki/Rfam-based-structural-annotation-of-a-viral-genome-sequence)
-* [Development notes and instructions (github wiki)](https://github.com/ncbi/vadr/wiki/Development-notes-and-instructions)
+* [Available VADR model files (github wiki)](https://github.com/NLM-DIR/vadr/wiki/Available-VADR-model-files)
+* [SARS-CoV-2 annotation (github wiki)](https://github.com/NLM-DIR/vadr/wiki/Coronavirus-annotation)
+* [Rfam-based structural annotation of a viral genome sequence for use with VADR (github wiki)](https://github.com/NLM-DIR/vadr/wiki/Rfam-based-structural-annotation-of-a-viral-genome-sequence)
+* [Development notes and instructions (github wiki)](https://github.com/NLM-DIR/vadr/wiki/Development-notes-and-instructions)
 
 ---
 ## Contributors <a name="contributors"></a>
