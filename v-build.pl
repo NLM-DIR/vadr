@@ -196,7 +196,7 @@ my $options_okay =
                 'cmere=s'      => \$GetOptions_H{"--cmere"},
                 'cmeset=s'     => \$GetOptions_H{"--cmeset"},
                 'cmemaxseq=s'  => \$GetOptions_H{"--cmemaxseq"},
-                'cmnoh3pr'     => \$GetOptions_H{"--cmnoh3pri"},
+                'cmnoh3pri'    => \$GetOptions_H{"--cmnoh3pri"},
                 'cminfile=s'   => \$GetOptions_H{"--cminfile"},
 # options for skipping stages
                 'skipbuild'    => \$GetOptions_H{"--skipbuild"},
