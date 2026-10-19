@@ -68,7 +68,6 @@ my %GetOptions_H = ();
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
 # basic options
-                'f'            => \$GetOptions_H{"-f"},
                 's=s'          => \$GetOptions_H{"-s"},
                 'ftr'          => \$GetOptions_H{"--ftr"},
 # options for controlling which features or qualifiers are output in attributes field
