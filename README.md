@@ -1,8 +1,8 @@
 <a name="top"></a>
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="documentation/images/vadr-logo-dark.svg">
-    <img src="documentation/images/vadr-logo.svg" alt="VADR - Viral Annotation DefineR" width="480">
+    <source media="(prefers-color-scheme: dark)" srcset="documentation/images/vadr-logo-dark.png">
+    <img src="documentation/images/vadr-logo.png" alt="VADR - Viral Annotation DefineR" width="480">
   </picture>
 </p>
 
