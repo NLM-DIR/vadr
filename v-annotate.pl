@@ -344,6 +344,11 @@ opt_Add("--xnolongest",  "boolean",  0,          $g,     undef,"--pv_skip,--pv_h
 opt_Add("--xnocomp",     "boolean",  0,          $g,     undef,"--pv_skip,--pv_hmmer", "turn off composition-based for blastx statistics with -comp_based_stats 0",        "turn off composition-based for blastx statistics with comp_based_stats 0", \%opt_HH, \@opt_order_A);
 opt_Add("--xwordsize",   "integer",  3,          $g,     undef,"--pv_skip,--pv_hmmer", "set the blastx word size value to <n> (must be in range [2..7])",                   "set the blastx word size value to <n> (must be in range [2..7])", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_dev_H{++$g} = "developer options for blastx protein validation";
+#        option               type   default  group  requires incompat            preamble-output                                                                          help-output    
+opt_Add("--xallprot",    "boolean",  0,          $g,     undef,"--pv_skip,--pv_hmmer", "search each predicted CDS against all proteins, not only its own feature's",       "search each predicted CDS against all proteins, not only its own feature's", \%opt_HH, \@opt_order_A);
+opt_Add("--xftravg",     "real",     2.,         $g,     undef,"--pv_skip,--pv_hmmer,--xallprot", "search each feature's predicted CDS separately if avg proteins per CDS is >= <x>",       "search each feature's predicted CDS separately if blastx db has >= <x> proteins per CDS feature (0: always)", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "options for using hmmer instead of blastx for protein validation";
 #     option          type       default group   requires    incompat   preamble-output                                     help-output    
 opt_Add("--pv_hmmer",    "boolean", 0,        $g,     undef,  "--pv_skip", "use hmmer for protein validation, not blastx",     "use hmmer for protein validation, not blastx", \%opt_HH, \@opt_order_A);
@@ -577,6 +582,9 @@ my $options_okay =
                 'xnolongest'    => \$GetOptions_H{"--xnolongest"},
                 'xnocomp'       => \$GetOptions_H{"--xnocomp"},
                 'xwordsize=s'   => \$GetOptions_H{"--xwordsize"},
+# developer options for blastx protein validation
+                'xallprot'      => \$GetOptions_H{"--xallprot"},
+                'xftravg=s'     => \$GetOptions_H{"--xftravg"},
 # options for using hmmer instead of blastx for protein validation
                 'pv_hmmer'      => \$GetOptions_H{"--pv_hmmer"},
                 'h_max'         => \$GetOptions_H{"--h_max"},
@@ -2244,18 +2252,18 @@ if($do_pv_blastx) {
         # to parse_blastx_results() call below
         my $max_nsgm_cds = vdr_FeatureInfoMaxNumCdsSegments(\@{$ftr_info_HAH{$blastx_db_mdl_name}}, $FH_HR);
 
+        # if --xsub used and we have a substitute db for blastx, use that
+        my $ftr_info_blastx_HR = ((opt_IsUsed("--xsub", \%opt_HH)) && (defined $blastx_sub_H{$mdl_name})) ? 
+            \@{$ftr_info_HAH{$blastx_sub_H{$mdl_name}}} : \@{$ftr_info_HAH{$mdl_name}};
+
         $start_secs = ofile_OutputProgressPrior(sprintf("Validating proteins with blastx ($mdl_name: $nseq seq%s)", ($nseq > 1) ? "s" : ""), $progress_w, $log_FH, *STDOUT);
-        run_blastx_and_summarize_output(\%execs_H, $out_root, \%{$mdl_info_AH[$mdl_idx]}, \@{$ftr_info_HAH{$mdl_name}}, $blastx_db_file, 
+        run_blastx_and_summarize_output(\%execs_H, $out_root, \%{$mdl_info_AH[$mdl_idx]}, \@{$ftr_info_HAH{$mdl_name}}, $ftr_info_blastx_HR, $blastx_db_file, 
                                         $do_separate_cds_fa_files_for_protein_validation, 
                                         \%opt_HH, \%ofile_info_HH);
         push(@to_remove_A, 
              ($ofile_info_HH{"fullpath"}{$mdl_name . ".pv-blastx-fasta"},
               $ofile_info_HH{"fullpath"}{$mdl_name . ".blastx-out"},
               $ofile_info_HH{"fullpath"}{$mdl_name . ".blastx-summary"}));
-
-        # if --xsub used and we have a substitute db for blastx, use that
-        my $ftr_info_blastx_HR = ((opt_IsUsed("--xsub", \%opt_HH)) && (defined $blastx_sub_H{$mdl_name})) ? 
-            \@{$ftr_info_HAH{$blastx_sub_H{$mdl_name}}} : \@{$ftr_info_HAH{$mdl_name}};
         # we call parse_blastx_results up to 3 times, so we can store up to 3 'best' blastx hits per predicted CDS
         # later we will choose the blastx hit that results in the fewest fatal alerts
         # 'p_': keep max scoring hit, not longest
@@ -2533,6 +2541,9 @@ exit 0;
 # make_protein_validation_fasta_file()
 # add_protein_validation_alerts
 # run_blastx_and_summarize_output
+# blastx_db_partition_by_feature
+# blastx_db_read_pin_header
+# blastx_append_file_to_fh
 # parse_blastx_results 
 # run_esl_translate_and_hmmsearch()
 # parse_hmmer_domtblout()
@@ -8351,6 +8362,9 @@ sub add_extrant_alerts_for_one_sequence {
 # Subroutines related to blastx:
 # add_protein_validation_alerts
 # run_blastx_and_summarize_output
+# blastx_db_partition_by_feature
+# blastx_db_read_pin_header
+# blastx_append_file_to_fh
 # parse_blastx_results 
 # helper_protein_validation_breakdown_source
 # helper_blastx_breakdown_max_indel_str
@@ -9036,12 +9050,28 @@ sub add_protein_validation_alerts {
 #             blastx queries against the appropriate target blast DBs
 #             and summarize the output with parse_blast.pl.
 #
+#             parse_blastx_results() ignores hits of a predicted CDS
+#             to proteins of any other feature, so if the blastx DB
+#             has at least --xftravg proteins per CDS feature, the
+#             predicted CDS of each feature are searched (for all
+#             sequences at once) only against that feature's proteins.
+#             Full length sequences are searched against all proteins.
+#             -dbsize is set to the size of the full DB so e-values do
+#             not change. If the DB has fewer proteins per CDS feature
+#             (one search per feature then costs more than it saves),
+#             --xallprot is used, or the DB cannot be split up by
+#             feature (see blastx_db_partition_by_feature()), all
+#             queries are searched against all proteins in a single
+#             blastx search, as before.
+#
 # Arguments: 
 #  $execs_HR:                  REF to a hash with "blastx" and "parse_blastx.pl""
 #                              executable paths
 #  $out_root:                  output root for the file names
 #  $mdl_info_HR:               REF to hash of arrays of model info
 #  $ftr_info_AHR:              REF to hash of arrays with information on the features, PRE-FILLED
+#  $ftr_info_blastx_AHR:       REF to feature info for the model the blastx DB belongs to, PRE-FILLED
+#                              (same as $ftr_info_AHR unless --xsub used)
 #  $blastx_db_file             blastx DB file to use (usually $mdl_info_HR->{"blastdbpath"}, but can be diff if --xsub used)
 #  $do_separate_cds_fa_files:  '1' if we output a separate file for the protein validation stage
 #  $opt_HHR:                   REF to 2D hash of option values, see top of sqp_opts.pm for description
@@ -9054,10 +9084,10 @@ sub add_protein_validation_alerts {
 ################################################################# 
 sub run_blastx_and_summarize_output {
   my $sub_name = "run_blastx_and_summarize_output";
-  my $nargs_exp = 8;
+  my $nargs_exp = 9;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($execs_HR, $out_root, $mdl_info_HR, $ftr_info_AHR, $blastx_db_file,$do_separate_cds_fa_files, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($execs_HR, $out_root, $mdl_info_HR, $ftr_info_AHR, $ftr_info_blastx_AHR, $blastx_db_file, $do_separate_cds_fa_files, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $do_keep = opt_Get("--keep", $opt_HHR);
   my $nftr = scalar(@{$ftr_info_AHR});
@@ -9108,8 +9138,125 @@ sub run_blastx_and_summarize_output {
   }
 
   my $blastx_out_file = $out_root . "." . $mdl_name . ".blastx.out";
-  my $blastx_cmd = $execs_HR->{"blastx"} . " -num_threads $ncpu -num_alignments $xnumali -query $blastx_query_fa_file -db $blastx_db_file -seg no -out $blastx_out_file" . $blastx_options;
-  utl_RunCommand($blastx_cmd, opt_Get("-v", $opt_HHR), 0, $ofile_info_HHR->{"FH"});
+
+  # Determine if we can search each feature's predicted CDS separately.
+  # parse_blastx_results() only uses a hit of a predicted CDS query if the target
+  # protein belongs to the same CDS feature, so each feature's predicted CDS only
+  # need to be searched against that feature's proteins. Full length sequences
+  # are searched against all proteins. -dbsize is set to the size of the full db
+  # so e-values are unchanged. Each search has a fixed cost (makeblastdb and
+  # blastx startup), so we only do this if the db has at least --xftravg
+  # proteins per CDS feature; with about one protein per feature, a search per
+  # feature costs more than it saves. Results do not depend on the order of the
+  # predicted CDS queries of different features (each only affects its own
+  # feature's results), only on full length sequence queries coming first and on
+  # the order of hits within each query, which searching subsets of the db (in
+  # db order) does not change.
+  my @prot_rec_A = (); # [0..$i..$nprot-1]: fasta record of protein $i, in db order
+  my @prot_ftr_A = (); # [0..$i..$nprot-1]: blastx db feature index of protein $i
+  my $db_nletters = 0; # total residues in blastx db, 0 if we can't partition it by feature
+  if(! opt_Get("--xallprot", $opt_HHR)) { 
+    $db_nletters = blastx_db_partition_by_feature($blastx_db_file, $ftr_info_blastx_AHR, \@prot_rec_A, \@prot_ftr_A, $ofile_info_HHR);
+  }
+  my %ftr_nprot_H = (); # key: blastx db feature index, value: number of proteins
+  foreach my $t_ftr_idx (@prot_ftr_A) { $ftr_nprot_H{$t_ftr_idx}++; }
+  if($db_nletters > 0) { 
+    my $ncds_blastx = vdr_FeatureInfoCountType($ftr_info_blastx_AHR, "CDS");
+    if(scalar(@prot_ftr_A) < (opt_Get("--xftravg", $opt_HHR) * $ncds_blastx)) { 
+      $db_nletters = 0;
+    }
+  }
+
+  # determine the predicted CDS query files and which blastx db feature each pertains to
+  my @job_qfa_A   = (); # query fasta file for each feature's predicted CDS
+  my @job_tftr_A  = (); # blastx db feature index for each feature's predicted CDS
+  if($db_nletters > 0) { 
+    my %ftr_type_idx2ftr_idx_blastx_H = ();
+    vdr_FeatureInfoMapFtrTypeIndicesToFtrIndices($ftr_info_blastx_AHR, \%ftr_type_idx2ftr_idx_blastx_H, $ofile_info_HHR->{"FH"});
+    for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
+      if(vdr_FeatureTypeIsCds($ftr_info_AHR, $ftr_idx)) { 
+        my $ofile_info_key = $mdl_name . ".pfa." . $ftr_idx;
+        if($do_separate_cds_fa_files) { 
+          $ofile_info_key .= ".pv";
+        }
+        if((exists $ofile_info_HHR->{"fullpath"}{$ofile_info_key}) && (-s $ofile_info_HHR->{"fullpath"}{$ofile_info_key})) { 
+          # parse_blastx_results() maps the query to a blastx db feature by its feature type and index (e.g. "CDS.4")
+          my $t_ftr_idx = $ftr_type_idx2ftr_idx_blastx_H{vdr_FeatureTypeAndTypeIndexString($ftr_info_AHR, $ftr_idx, ".")};
+          if(! defined $t_ftr_idx) { # can't map this query to a blastx db feature, search all queries against all proteins
+            $db_nletters = 0;
+            last;
+          }
+          push(@job_qfa_A,  $ofile_info_HHR->{"fullpath"}{$ofile_info_key});
+          push(@job_tftr_A, $t_ftr_idx);
+        }
+      }
+    }
+  }
+
+  # one search per feature: [0..$g..$ngroup-1]: query files and db feature for search $g
+  # features with no proteins are not searched: no hit to another feature's protein can be used
+  my @group_qfa_AA  = ();
+  my @group_tftr_AH = ();
+  if($db_nletters > 0) { 
+    for(my $job_idx = 0; $job_idx < scalar(@job_qfa_A); $job_idx++) { 
+      my $t_ftr_idx = $job_tftr_A[$job_idx];
+      if(defined $ftr_nprot_H{$t_ftr_idx}) { 
+        my $g = scalar(@group_qfa_AA);
+        push(@{$group_qfa_AA[$g]}, $job_qfa_A[$job_idx]);
+        $group_tftr_AH[$g]{$t_ftr_idx} = 1;
+      }
+    }
+  }
+
+  my $blastx_cmd_root = $execs_HR->{"blastx"} . " -num_threads $ncpu -num_alignments $xnumali";
+  if($db_nletters == 0) { 
+    # search all queries against all proteins
+    my $blastx_cmd = $blastx_cmd_root . " -query $blastx_query_fa_file -db $blastx_db_file -seg no -out $blastx_out_file" . $blastx_options;
+    utl_RunCommand($blastx_cmd, opt_Get("-v", $opt_HHR), 0, $ofile_info_HHR->{"FH"});
+  }
+  else { 
+    # search full length sequences against all proteins, then each feature's
+    # predicted CDS against its proteins, and concatenate the blastx
+    # output; parse_blast.pl parses the concatenated output the same as a
+    # single blastx output
+    my $ftr_dir = $out_root . "." . $mdl_name . ".pv.blastx.ftr";
+    if(-d $ftr_dir) { utl_RunCommand("rm -rf $ftr_dir", opt_Get("-v", $opt_HHR), 0, $ofile_info_HHR->{"FH"}); }
+    utl_RunCommand("mkdir $ftr_dir", opt_Get("-v", $opt_HHR), 0, $ofile_info_HHR->{"FH"});
+    my $full_fa_file = $ftr_dir . "/full.fa";
+    sqf_FastaFileRemoveDescriptions($ofile_info_HHR->{"fullpath"}{$mdl_name . ".a.fa"}, $full_fa_file, $ofile_info_HHR);
+    my $full_out_file = $ftr_dir . "/full.blastx.out";
+    my $blastx_cmd = $blastx_cmd_root . " -query $full_fa_file -db $blastx_db_file -seg no -out $full_out_file" . $blastx_options;
+    utl_RunCommand($blastx_cmd, opt_Get("-v", $opt_HHR), 0, $ofile_info_HHR->{"FH"});
+    open(my $blastx_out_FH, ">", $blastx_out_file) || ofile_FileOpenFailure($blastx_out_file, $sub_name, $!, "writing", $ofile_info_HHR->{"FH"});
+    blastx_append_file_to_fh($full_out_file, $blastx_out_FH, $ofile_info_HHR->{"FH"});
+    for(my $g = 0; $g < scalar(@group_qfa_AA); $g++) { 
+      # query file: the group's predicted CDS files concatenated
+      my $grp_qfa_file = $ftr_dir . "/g" . $g . ".query.fa";
+      open(my $grp_qfa_FH, ">", $grp_qfa_file) || ofile_FileOpenFailure($grp_qfa_file, $sub_name, $!, "writing", $ofile_info_HHR->{"FH"});
+      foreach my $qfa_file (@{$group_qfa_AA[$g]}) { 
+        blastx_append_file_to_fh($qfa_file, $grp_qfa_FH, $ofile_info_HHR->{"FH"});
+      }
+      close($grp_qfa_FH);
+      # db: the group's features' proteins, in db order
+      my $grp_db_file = $ftr_dir . "/g" . $g . ".prot.fa";
+      open(my $grp_db_FH, ">", $grp_db_file) || ofile_FileOpenFailure($grp_db_file, $sub_name, $!, "writing", $ofile_info_HHR->{"FH"});
+      for(my $i = 0; $i < scalar(@prot_rec_A); $i++) { 
+        if(defined $group_tftr_AH[$g]{$prot_ftr_A[$i]}) { 
+          print $grp_db_FH $prot_rec_A[$i];
+        }
+      }
+      close($grp_db_FH);
+      sqf_BlastDbCreate($execs_HR->{"makeblastdb"}, "prot", $grp_db_file, $opt_HHR, $ofile_info_HHR->{"FH"});
+      my $grp_out_file = $ftr_dir . "/g" . $g . ".blastx.out";
+      $blastx_cmd = $blastx_cmd_root . " -query $grp_qfa_file -db $grp_db_file -dbsize $db_nletters -seg no -out $grp_out_file" . $blastx_options;
+      utl_RunCommand($blastx_cmd, opt_Get("-v", $opt_HHR), 0, $ofile_info_HHR->{"FH"});
+      blastx_append_file_to_fh($grp_out_file, $blastx_out_FH, $ofile_info_HHR->{"FH"});
+    }
+    close($blastx_out_FH);
+    if(! $do_keep) { 
+      utl_RunCommand("rm -rf $ftr_dir", opt_Get("-v", $opt_HHR), 0, $ofile_info_HHR->{"FH"});
+    }
+  }
   ofile_AddClosedFileToOutputInfo($ofile_info_HHR, $mdl_name . ".blastx-out", $blastx_out_file, 0, $do_keep, "blastx output for model $mdl_name");
 
   # now summarize its output
@@ -9165,6 +9312,211 @@ sub blastx_db_num_seqs {
   }
 
   return $nseq;
+}
+
+#################################################################
+# Subroutine:  blastx_db_partition_by_feature()
+# Incept:      EPN, Sun Oct 18 2026 (w/Claude)
+#
+# Purpose:    Split the proteins in a blastx db up by the CDS 
+#             feature they belong to, so that each predicted CDS
+#             can be searched against only its own feature's
+#             proteins. Protein names must follow the convention
+#             <protein-accession>/<coords-str> (see
+#             helper_protein_validation_db_seqname_to_ftr_idx()).
+#
+#             Returns 0, meaning the db should not be split up and
+#             all queries should be searched against all proteins, if:
+#             - there are fewer than 2 CDS features
+#             - the db was built with makeblastdb -parse_seqids
+#               (this can change how protein names are output)
+#             - the db's .pin file can't be read
+#             - the fasta file the db was built from does not match
+#               the db (different number of sequences or residues)
+#             - any protein does not map to exactly one CDS feature
+#             In each of these cases, the result is the same
+#             as if we did not split up the db.
+#
+# Arguments:
+#  $blastx_db_file:  path to the blastx db, which is also the path
+#                    to the protein fasta file it was built from
+#  $ftr_info_AHR:    REF to feature info for the model the db belongs to
+#  $prot_rec_AR:     REF to array, FILLED HERE: [0..$i..$nprot-1]: fasta
+#                    record (header line and sequence lines) of protein $i,
+#                    in db order
+#  $prot_ftr_AR:     REF to array, FILLED HERE: [0..$i..$nprot-1]: index
+#                    of the CDS feature in @{$ftr_info_AHR} protein $i
+#                    belongs to
+#  $ofile_info_HHR:  REF to 2D hash of output file information
+#
+# Returns:    total number of residues in the db (as stored in the
+#             db, to use as blastx -dbsize), or 0 if the db should
+#             not be split up (see above)
+#
+# Dies:       if the fasta file cannot be opened
+#
+#################################################################
+sub blastx_db_partition_by_feature {
+  my $sub_name = "blastx_db_partition_by_feature";
+  my $nargs_exp = 5;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($blastx_db_file, $ftr_info_AHR, $prot_rec_AR, $prot_ftr_AR, $ofile_info_HHR) = @_;
+  my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
+
+  my $nftr = scalar(@{$ftr_info_AHR});
+  # map CDS coords to feature index, if two CDS have the same coords we can't map their proteins
+  my %coords2ftr_idx_H = ();
+  my $ncds = 0;
+  for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
+    if($ftr_info_AHR->[$ftr_idx]{"type"} eq "CDS") { 
+      $ncds++;
+      my $coords = $ftr_info_AHR->[$ftr_idx]{"coords"};
+      $coords2ftr_idx_H{$coords} = (defined $coords2ftr_idx_H{$coords}) ? -1 : $ftr_idx;
+    }
+  }
+  if($ncds < 2) { return 0; }
+
+  # -parse_seqids dbs have these files (v5: .pog, .pos; v4: .psd, .psi)
+  foreach my $sfx (".pog", ".pos", ".psd", ".psi") { 
+    if(-e $blastx_db_file . $sfx) { return 0; }
+  }
+
+  my ($db_nseq, $db_nletters) = blastx_db_read_pin_header($blastx_db_file . ".pin");
+  if((! defined $db_nseq) || (! defined $db_nletters) || ($db_nletters <= 0)) { return 0; }
+
+  @{$prot_rec_AR} = ();
+  @{$prot_ftr_AR} = ();
+  my $nseq     = 0;
+  my $nletters = 0;
+  my $ftr_idx  = undef;
+  open(IN, $blastx_db_file) || ofile_FileOpenFailure($blastx_db_file, $sub_name, $!, "reading", $FH_HR);
+  while(my $line = <IN>) { 
+    if($line =~ /^>(\S*)/) { 
+      my $name = $1;
+      $nseq++;
+      $ftr_idx = undef;
+      if($name =~ /(\S+)\/(\S+)/) { 
+        $ftr_idx = $coords2ftr_idx_H{$2};
+      }
+      if((! defined $ftr_idx) || ($ftr_idx == -1)) { 
+        close(IN);
+        @{$prot_rec_AR} = ();
+        @{$prot_ftr_AR} = ();
+        return 0;
+      }
+      push(@{$prot_rec_AR}, $line);
+      push(@{$prot_ftr_AR}, $ftr_idx);
+    }
+    elsif(defined $ftr_idx) { 
+      $prot_rec_AR->[-1] .= $line;
+      my $seqline = $line;
+      $seqline =~ s/\s//g;
+      $nletters += length($seqline);
+    }
+  }
+  close(IN);
+
+  if(($nseq != $db_nseq) || ($nletters != $db_nletters)) { 
+    @{$prot_rec_AR} = ();
+    @{$prot_ftr_AR} = ();
+    return 0;
+  }
+
+  return $db_nletters;
+}
+
+#################################################################
+# Subroutine:  blastx_append_file_to_fh()
+# Incept:      EPN, Sun Oct 18 2026 (w/Claude)
+#
+# Purpose:    Append the contents of a file to an open file handle.
+#             Used to concatenate per-feature blastx output files
+#             without running a separate 'cat' command for each.
+#
+# Arguments:
+#  $in_file:  file to append
+#  $out_FH:   open output file handle to append to
+#  $FH_HR:    REF to hash of file handles
+#
+# Returns:    void
+#
+# Dies:       if $in_file cannot be opened
+#
+#################################################################
+sub blastx_append_file_to_fh {
+  my $sub_name = "blastx_append_file_to_fh";
+  my $nargs_exp = 3;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($in_file, $out_FH, $FH_HR) = @_;
+
+  my $buf;
+  open(my $in_FH, "<", $in_file) || ofile_FileOpenFailure($in_file, $sub_name, $!, "reading", $FH_HR);
+  while(read($in_FH, $buf, 1048576)) { 
+    print $out_FH $buf;
+  }
+  close($in_FH);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  blastx_db_read_pin_header()
+# Incept:      EPN, Sun Oct 18 2026 (w/Claude)
+#
+# Purpose:    Read the number of sequences and the total number
+#             of residues from the header of a protein blast db
+#             index (.pin) file, format version 4 or 5.
+#
+# Arguments:
+#  $pin_file:  path to the .pin file
+#
+# Returns:    two values: number of sequences and total number of
+#             residues, both undef if the file can't be read or
+#             is not a version 4 or 5 protein db index file
+#
+#################################################################
+sub blastx_db_read_pin_header {
+  my $sub_name = "blastx_db_read_pin_header";
+  my $nargs_exp = 1;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($pin_file) = @_;
+
+  my $buf;
+  open(my $pin_FH, "<", $pin_file) || return (undef, undef);
+  binmode($pin_FH);
+  # read a 4-byte big-endian integer
+  my $read_int = sub { 
+    return (read($pin_FH, $buf, 4) == 4) ? unpack("N", $buf) : undef;
+  };
+  # read a string preceded by its 4-byte big-endian length
+  my $read_str = sub { 
+    my $len = $read_int->();
+    return ((defined $len) && (read($pin_FH, $buf, $len) == $len)) ? 1 : undef;
+  };
+  my $version = $read_int->();
+  my $dbtype  = $read_int->();
+  if((! defined $version) || (! defined $dbtype) || 
+     (($version != 4) && ($version != 5)) || ($dbtype != 1)) { 
+    close($pin_FH); 
+    return (undef, undef);
+  }
+  if(($version == 5) && (! defined $read_int->())) { close($pin_FH); return (undef, undef); } # volume number
+  if(! defined $read_str->())                      { close($pin_FH); return (undef, undef); } # title
+  if(($version == 5) && (! defined $read_str->())) { close($pin_FH); return (undef, undef); } # lmdb file name
+  if(! defined $read_str->())                      { close($pin_FH); return (undef, undef); } # date
+  my $nseq = $read_int->();
+  # total residues is an 8-byte little-endian integer
+  my $nletters = undef;
+  if(read($pin_FH, $buf, 8) == 8) { 
+    my ($lo, $hi) = unpack("VV", $buf);
+    $nletters = $hi * 4294967296 + $lo;
+  }
+  close($pin_FH);
+
+  return ($nseq, $nletters);
 }
 
 #################################################################
