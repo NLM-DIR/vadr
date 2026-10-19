@@ -146,7 +146,12 @@ fraction of nucleotides in `S` that appear to be homologous
 4. Protein validation of CDS features: for each sequence `S` that has
 1 or more predicted CDS features, `blastx` or `hmmsearch` is used to
 compare the predicted CDS and the full sequence `S` against the VADR
-library BLAST or HMM DB.
+library BLAST or HMM DB. With `blastx`, if the model's protein
+database has an average of at least 2 proteins per CDS feature, each
+predicted CDS is compared only against the proteins of its own CDS
+feature (hits to other features' proteins are not used, so the
+results are the same, but this is faster), and the full sequence `S`
+is compared against all proteins.
 
 The output of `v-annotate.pl` lists one or more steps per stage. The
 first two steps are:
@@ -777,7 +782,7 @@ how they control `blastx`, see the NCBI BLAST documentation
 |---------------------|--------------------|
 | `--xmatrix <s>`     | use the substitution matrix `<s>` (sets the `blastx -matrix <s>` option), default is to use the default `blastx` matrix | 
 | `--xdrop <n>`       | set the xdrop options to `<n>` (sets the `blastx` `-xdrop_ungap <n>`, `-xdrop_gap <n>` and `-xdrop_gap_final <n>` with the same `<n>`), default is to use default `blastx` values |
-| `--xnumali <n>`     | specify that the top `<n>` alignments are output by `blastx` (sets the `blastx -num_alignments <n>` option), default `<n>` is the number of sequences in the model's `blastx` protein database, so that no alignment is discarded; setting `<n>` lower than that can cause the protein that best matches a CDS to be omitted from the `blastx` output | 
+| `--xnumali <n>`     | specify that the top `<n>` alignments are output by `blastx` (sets the `blastx -num_alignments <n>` option), default `<n>` is the number of sequences in the model's `blastx` protein database, so that no alignment is discarded; setting `<n>` lower than that can cause the protein that best matches a CDS to be omitted from the `blastx` output; `<n>` applies to each query separately, and when each predicted CDS is searched only against its own feature's proteins (see stage 4, protein validation, above), a predicted CDS's alignments are only discarded if more than `<n>` of that feature's proteins match it | 
 | `--xnolongest`      | do not consider the longest `blastx` alignment of those returned (controlled by `--xnumali <n>`), default is to consider both the longest or the highest scoring alignment, and use the one that results in the fewest alerts | 
 | `--xnocomp`         | do not use composition-based statistics for `blastx` |
 | `--xwordsize <n>`   | set the `blastx` word size value to `<n>` (`<n>` must be in the range `[2..7]`) |
