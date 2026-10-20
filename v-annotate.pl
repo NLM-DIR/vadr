@@ -347,6 +347,7 @@ opt_Add("--xwordsize",   "integer",  3,          $g,     undef,"--pv_skip,--pv_h
 $opt_group_desc_dev_H{++$g} = "developer options for blastx protein validation";
 #        option               type   default  group  requires incompat            preamble-output                                                                          help-output    
 opt_Add("--xallprot",    "boolean",  0,          $g,     undef,"--pv_skip,--pv_hmmer", "search each predicted CDS against all proteins, not only its own feature's",       "search each predicted CDS against all proteins, not only its own feature's", \%opt_HH, \@opt_order_A);
+opt_Add("--xhsfract",    "real",     0.5,        $g,     undef,"--pv_skip,--pv_hmmer", "skip full seq hit for unpredicted CDS if >= <x> of it is in another CDS",          "skip full seq hit for unpredicted CDS if >= <x> of it is in another CDS", \%opt_HH, \@opt_order_A);
 opt_Add("--xftravg",     "real",     2.,         $g,     undef,"--pv_skip,--pv_hmmer,--xallprot", "search each feature's predicted CDS separately if avg proteins per CDS is >= <x>",       "search each feature's predicted CDS separately if blastx db has >= <x> proteins per CDS feature (0: always)", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for using hmmer instead of blastx for protein validation";
@@ -585,6 +586,7 @@ my $options_okay =
 # developer options for blastx protein validation
                 'xallprot'      => \$GetOptions_H{"--xallprot"},
                 'xftravg=s'     => \$GetOptions_H{"--xftravg"},
+                'xhsfract=s'    => \$GetOptions_H{"--xhsfract"},
 # options for using hmmer instead of blastx for protein validation
                 'pv_hmmer'      => \$GetOptions_H{"--pv_hmmer"},
                 'h_max'         => \$GetOptions_H{"--h_max"},
@@ -2247,10 +2249,6 @@ if($do_pv_blastx) {
         if(! defined $blastx_db_file) { 
           ofile_FAIL("ERROR, path to BLAST DB is unknown for model $mdl_name", 1, $FH_HR);
         }
-        # determine if the model has any CDS with > 1 segment, if not we have no need to 
-        # do a second parsing of the results ignoring the full sequence (the ftr_results_prefix="pc_" call
-        # to parse_blastx_results() call below
-        my $max_nsgm_cds = vdr_FeatureInfoMaxNumCdsSegments(\@{$ftr_info_HAH{$blastx_db_mdl_name}}, $FH_HR);
 
         # if --xsub used and we have a substitute db for blastx, use that
         my $ftr_info_blastx_HR = ((opt_IsUsed("--xsub", \%opt_HH)) && (defined $blastx_sub_H{$mdl_name})) ? 
@@ -2264,23 +2262,16 @@ if($do_pv_blastx) {
              ($ofile_info_HH{"fullpath"}{$mdl_name . ".pv-blastx-fasta"},
               $ofile_info_HH{"fullpath"}{$mdl_name . ".blastx-out"},
               $ofile_info_HH{"fullpath"}{$mdl_name . ".blastx-summary"}));
-        # we call parse_blastx_results up to 3 times, so we can store up to 3 'best' blastx hits per predicted CDS
+        # parse the blastx results once, storing up to 4 'best' blastx hits per predicted CDS:
+        # 'p_':   max scoring hit, of the predicted CDS or the full sequence
+        # 'pc_':  max scoring hit, of the predicted CDS only
+        # 'pl_':  longest hit, of the predicted CDS or the full sequence (unless --xnolongest)
+        # 'pcl_': longest hit, of the predicted CDS only (unless --xnolongest)
         # later we will choose the blastx hit that results in the fewest fatal alerts
-        # 'p_': keep max scoring hit, not longest
-        parse_blastx_results($ofile_info_HH{"fullpath"}{($mdl_name . ".blastx-summary")}, "p_", \@{$mdl_seq_name_HA{$mdl_name}}, 
-                             \%seq_len_H, $ftr_info_blastx_HR, \%{$ftr_results_HHAH{$mdl_name}}, \%opt_HH, \%ofile_info_HH);
-        # 'pc_': ignore hits to the full sequence, only nec if we have at least 1 multi-segment CDS
-        if($max_nsgm_cds > 1) { 
-          parse_blastx_results($ofile_info_HH{"fullpath"}{($mdl_name . ".blastx-summary")}, "pc_", \@{$mdl_seq_name_HA{$mdl_name}}, \%seq_len_H, 
-                               $ftr_info_blastx_HR, \%{$ftr_results_HHAH{$mdl_name}}, \%opt_HH, \%ofile_info_HH);
-        }
-        # unless --xnolongest, also store the longest blastx hit, and use it if it results in fewer fatal alerts
-        if(! opt_Get("--xnolongest", \%opt_HH)) { 
-          # 'pl_': keep longest hit, not max scoring
-          parse_blastx_results($ofile_info_HH{"fullpath"}{($mdl_name . ".blastx-summary")}, "pl_", \@{$mdl_seq_name_HA{$mdl_name}}, \%seq_len_H, 
-                             $ftr_info_blastx_HR, \%{$ftr_results_HHAH{$mdl_name}}, \%opt_HH, \%ofile_info_HH);
-
-        }
+        my @ftr_results_prefix_A = ("p_", "pc_");
+        if(! opt_Get("--xnolongest", \%opt_HH)) { push(@ftr_results_prefix_A, "pl_", "pcl_"); }
+        parse_blastx_results($ofile_info_HH{"fullpath"}{($mdl_name . ".blastx-summary")}, \@ftr_results_prefix_A, \@{$mdl_seq_name_HA{$mdl_name}}, 
+                             \%seq_len_H, $ftr_info_blastx_HR, \%{$ftr_results_HHAH{$mdl_name}}, \%stg_results_HHH, \%opt_HH, \%ofile_info_HH);
         add_protein_validation_alerts(\%{$mdl_info_AH[$mdl_idx]}, \@{$mdl_seq_name_HA{$mdl_name}}, \%seq_len_H, \@{$ftr_info_HAH{$mdl_name}}, \%alt_info_HH, 
                                       \%{$ftr_results_HHAH{$mdl_name}}, \%alt_ftr_instances_HHH, 
                                       ($do_replace_ns) ? \%rpn_output_HH : undef, 
@@ -8508,6 +8499,10 @@ sub add_protein_validation_alerts {
   my $xmaxdel  = opt_Get("--xmaxdel",   $opt_HHR); # maximum allowed deletion length in blastx output
   my $minpvlen = opt_Get("--minpvlen", $opt_HHR);
 
+  # stored hits ('prefixes') that are candidates, see parse_blastx_results(); 
+  # hmmer only stores "p_"
+  my @ftr_results_prefix_A = ($do_pv_hmmer) ? ("p_") : ("p_", "pl_", "pc_", "pcl_");
+
   # determine if we are trimming CDS eventually in the ftr table output, if
   # so we'll change the tolerance on endpoints between nucleotide and protein
   # if the CDS has ambiguities at beginning/end
@@ -8568,11 +8563,12 @@ sub add_protein_validation_alerts {
           my $ftr_results_HR = \%{$ftr_results_HAHR->{$seq_name}[$ftr_idx]}; # for convenience
           # printf("in $sub_name, set ftr_results_HR to ftr_results_HAHR->{$seq_name}[$ftr_idx] ");
           my %alt_str_HH = (); # added to as we find alerts below, 
-          # possible 1d keys are: "p_", "pl_", and "pc_"
+          # possible 1d keys are: "p_", "pl_", "pc_" and "pcl_"
           #                       "p_" is for 'max scoring' blastx or hmmer hit, 
           #                       "pl_" is for longest blastx hit, 
-          #                       "pc_" is for max scoring blastx hit to a CDS only
-          #                       we try both and use the one that gives the minimum number of fatal alerts
+          #                       "pc_" is for max scoring blastx hit of the predicted CDS only
+          #                       "pcl_" is for longest blastx hit of the predicted CDS only
+          #                       we try all and use the one that gives the minimum number of fatal alerts
           # possible 2D keys are: "indfantp", "indfantn", "indfstrp", "indf5plg", "indf5pst", 
           #                       "indf3plg", "indf3pst", "insertnp", "deletinp", "cdsstopp"
           
@@ -8626,7 +8622,12 @@ sub add_protein_validation_alerts {
           # only proceed if we have a nucleotide prediction >= min length OR
           # we have no nucleotide prediction
           if(((defined $n_start) && ($n_len >= $minpvlen)) || (! defined $n_start)) { 
-            foreach my $ftr_results_prefix ("p_", "pl_", "pc_") { 
+            foreach my $ftr_results_prefix (@ftr_results_prefix_A) { 
+              # don't carry over the previous prefix's hit if this prefix has none
+              ($p_qstart, $p_qstop, $p_strand, $p_query, $p_hlen, $p_ins, $p_del, $p_trcstop, $p_score, $p_hstart, $p_hstop) = 
+                  (undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef);
+              ($p_qseq_name, $p_qftr_idx, $p_qlen, $p_ftr_scoords, $p_sstart, $p_sstop) = (undef, undef, undef, undef, undef, undef);
+              $p_blastx_feature_flag = 0;
               if((defined $ftr_results_HR->{($ftr_results_prefix . "qstart")}) && 
                  (defined $ftr_results_HR->{($ftr_results_prefix . "qstop")})) { 
                 $p_qstart  = $ftr_results_HR->{($ftr_results_prefix . "qstart")};
@@ -8968,63 +8969,19 @@ sub add_protein_validation_alerts {
                   } # end of 'else' entered if $n_strand eq $p_strand
                 } # end of 'else' entered if $p_qstart is defined
               } # end of 'if(defined $n_start)'
-            } # end of 'foreach my $ftr_results_prefix ("p_", "pl_", "pc_")'
+            } # end of 'foreach my $ftr_results_prefix (@ftr_results_prefix_A)'
 
-            # we may have two alternative sets of alerts,
-            # figure out which one to use actually add the alerts
-            # (if we only have one set of alerts (prefix = "p_", use that one)
-            my $alt_code;
-            my $winning_prefix = "p_";
-            if((defined $alt_str_HH{"pl_"}) || (defined $alt_str_HH{"pc_"})) { 
-              # we have at least two alternatives, pick winner
-              my %nalt_H       = ();
-              my %nalt_fatal_H = ();
-              foreach my $ftr_results_prefix ("p_", "pl_", "pc_") { 
-                $nalt_H{$ftr_results_prefix} = 0;
-                $nalt_fatal_H{$ftr_results_prefix} = 0;
-                if(defined $alt_str_HH{$ftr_results_prefix}) { 
-                  foreach $alt_code (sort keys %{$alt_str_HH{$ftr_results_prefix}}) { 
-                    my @alt_str_A = split(":VADRSEP:", $alt_str_HH{$ftr_results_prefix}{$alt_code});
-                    my $nalt = scalar(@alt_str_A);
-                    $nalt_H{$ftr_results_prefix} += $nalt;
-                    if(vdr_FeatureAlertCausesFailure($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code)) { 
-                      $nalt_fatal_H{$ftr_results_prefix} += $nalt;
-                    }
-                  }
-                }
-              }
-              # preference is p_ > pc_ > pl_ 
-              # pick prefix with fewest fatal alerts, if there's a tie, pick prefix with fewest total alerts
-              $winning_prefix     = "p_";
-              my $winning_nalt       = $nalt_H{$winning_prefix};
-              my $winning_nalt_fatal = $nalt_fatal_H{$winning_prefix};
-              if((defined $ftr_results_HR->{"pc_qstart"}) && 
-                 (defined $ftr_results_HR->{"pc_qstop"}) && 
-                 (defined $nalt_fatal_H{"pc_"})) { 
-                if(($nalt_fatal_H{"pc_"}  <  $winning_nalt_fatal) || 
-                   (($nalt_fatal_H{"pc_"} == $winning_nalt_fatal) && ($nalt_H{"pc_"} < $winning_nalt))) { 
-                  $winning_prefix     = "pc_";
-                  $winning_nalt       = $nalt_H{$winning_prefix};
-                  $winning_nalt_fatal = $nalt_fatal_H{$winning_prefix};
-                }
-              }
-              if((defined $ftr_results_HR->{"pl_qstart"}) && 
-                 (defined $ftr_results_HR->{"pl_qstop"}) && 
-                 (defined $nalt_fatal_H{"pl_"})) { 
-                if(($nalt_fatal_H{"pl_"}  <  $winning_nalt_fatal) || 
-                   (($nalt_fatal_H{"pl_"} == $winning_nalt_fatal) && ($nalt_H{"pl_"} < $winning_nalt))) { 
-                  $winning_prefix     = "pl_";
-                  $winning_nalt       = $nalt_H{$winning_prefix};
-                  $winning_nalt_fatal = $nalt_fatal_H{$winning_prefix};
-                }
-              }
-            }
-            # if pc_ or pl_ was the winner, overwrite p_ values in ftr_results_HR with pc_ or pl_ values, so future subroutines use correct values
+            # pick the stored hit whose alerts we report (the one with the fewest fatal alerts)
+            my $winning_prefix = helper_protein_validation_select_hit($ftr_results_HR, \%alt_str_HH, \@ftr_results_prefix_A, $ftr_info_AHR, $alt_info_HHR, $ftr_idx, $FH_HR);
+            # if a hit other than p_ won, overwrite all p_ values in ftr_results_HR with its values (including ones
+            # it does not have), so future subroutines use correct values
             if($winning_prefix ne "p_") { 
-              foreach my $alt_key ("qstart", "qstop", "strand", "query", "len", "ins", "del", "trcstop", "score", "hstart", "hstop", "score", "q_ftr_idx", "frame") { 
-                my $winning_alt_key = $winning_prefix . $alt_key;
+              foreach my $alt_key ("qstart", "qstop", "strand", "query", "len", "ins", "del", "trcstop", "score", "hstart", "hstop", "q_ftr_idx", "frame") { 
                 if(defined $ftr_results_HR->{($winning_prefix . $alt_key)}) { 
                   $ftr_results_HR->{("p_" . $alt_key)} = $ftr_results_HR->{($winning_prefix . $alt_key)};
+                }
+                else { 
+                  delete $ftr_results_HR->{("p_" . $alt_key)};
                 }
               }
             }
@@ -9529,13 +9486,17 @@ sub blastx_db_read_pin_header {
 #
 # Arguments: 
 #  $blastx_summary_file: path to blastx summary file to parse
-#  $ftr_results_prefix:  prefix to use to store results, either "p_", "pc_", or "pl_";
-#                        if "pl_" we will store longest hit, not max scoring
-#                        if "pc_" we will ignore hits to the full sequence, focusing only on hits to predicted CDS
+#  $ftr_results_prefix_AR: REF to array of prefixes to store results as, each is "p_", "pc_", "pl_" or "pcl_":
+#                          "p_":   max scoring hit, of the predicted CDS or the full sequence
+#                          "pl_":  longest hit, of the predicted CDS or the full sequence
+#                          "pc_":  max scoring hit, of the predicted CDS only
+#                          "pcl_": longest hit, of the predicted CDS only
 #  $seq_name_AR:         REF to array of sequence names
 #  $seq_len_HR:          REF to hash of sequence lengths
 #  $ftr_info_AHR:        REF to array of hashes with feature info 
 #  $ftr_results_HAHR:    REF to feature results HAH, ADDED TO HERE
+#  $stg_results_HHHR:    REF to stage results (coverage-determination hits are used to check the
+#                        location of hits of the full sequence, see helper_protein_validation_fullseq_hit_is_eligible())
 #  $opt_HHR:             REF to 2D hash of option values, see top of sqp_opts.pm for description
 #  $ofile_info_HHR:      REF to 2D hash of output file information, ADDED TO HERE
 #
@@ -9546,23 +9507,25 @@ sub blastx_db_read_pin_header {
 ################################################################# 
 sub parse_blastx_results { 
   my $sub_name = "parse_blastx_results";
-  my $nargs_exp = 8;
+  my $nargs_exp = 9;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($blastx_summary_file, $ftr_results_prefix, $seq_name_AR, $seq_len_HR, $ftr_info_AHR, $ftr_results_HAHR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($blastx_summary_file, $ftr_results_prefix_AR, $seq_name_AR, $seq_len_HR, $ftr_info_AHR, $ftr_results_HAHR, $stg_results_HHHR, $opt_HHR, $ofile_info_HHR) = @_;
+
+  my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
 
   # printf("in $sub_name, blastx_summary_file: $blastx_summary_file\n");
 
-  # deal with input ftr_results_prefix
-  if(($ftr_results_prefix ne "p_") && 
-     ($ftr_results_prefix ne "pc_") && 
-     ($ftr_results_prefix ne "pl_")) { 
-    ofile_FAIL("ERROR in $sub_name, unexpected ftr_results_prefix $ftr_results_prefix", 1, $FH_HR);
+  # deal with input ftr_results_prefix_AR
+  foreach my $ftr_results_prefix (@{$ftr_results_prefix_AR}) { 
+    if(($ftr_results_prefix ne "p_") && 
+       ($ftr_results_prefix ne "pc_") && 
+       ($ftr_results_prefix ne "pl_") && 
+       ($ftr_results_prefix ne "pcl_")) { 
+      ofile_FAIL("ERROR in $sub_name, unexpected ftr_results_prefix $ftr_results_prefix", 1, $FH_HR);
+    }
   }
-  my $do_longest = ($ftr_results_prefix eq "pl_") ? 1 : 0;
-  my $do_ignore_fullseq = ($ftr_results_prefix eq "pc_") ? 1 : 0;
-
-  my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
+  my $xhsfract = opt_Get("--xhsfract", $opt_HHR);
 
   utl_FileValidateExistsAndNonEmpty($blastx_summary_file, "blastx summary file", $sub_name, 1, $FH_HR);
   my $nftr = scalar(@{$ftr_info_AHR});
@@ -9771,12 +9734,10 @@ sub parse_blastx_results {
             my ($blast_qstart, $blast_qstop) = ($1, $2);
             my $blast_strand = ($blast_qstart <= $blast_qstop) ? "+" : "-";
             
-            # should we store this query/target/hit trio?
-            # we do if A, B, C, D are all TRUE and at least one of X or Y or Z is TRUE
-            #  A. this query/target pair is compatible (query is full sequence or correct CDS feature) 
-            #     if $do_ignore_fullseq, then we do not allow query to be the full sequence
-            #  B. if --xlongest not used: this is the highest scoring hit for this feature for this sequence (query/target pair)? 
-            #     if --xlongest is  used: this is the longest hit (query coords) for this feature for this sequence (query/target pair)? 
+            # should we store this query/target/hit trio, and as which stored hit(s)?
+            # the hit is usable for target CDS feature t if A, C and D are all TRUE and at least one of X or Y or Z is TRUE:
+            #  A. the query is the predicted CDS of feature t, or the query is the full sequence and the hit is on the
+            #     strand and in the location of CDS t (see helper_protein_validation_fullseq_hit_is_eligible())
             #  C. query length (full length seq or predicted CDS) is at least <x> nt from --minpvlen
             #  D. --xnoid NOT used OR alignment is not full length and 100% identical (--xnoid is an option used for
             #     testing training sets where we want to ignore self hits)
@@ -9787,31 +9748,19 @@ sub parse_blastx_results {
             #  Y. hit score is above minimum (--xlonescore)
             #  Z. query is the full sequence ($q_ftr_idx == -1) and blast hit overlaps by at least 1 nt 
             #     with a nucleotide prediction for the current target CDS
+            #
+            # a usable hit is stored as each prefix in @{$ftr_results_prefix_AR} that takes hits of its query
+            # ("pc_" and "pcl_" take only hits of the predicted CDS) for which B is TRUE:
+            #  B. for "p_" and "pc_": this is the highest scoring hit so far for this sequence/feature
+            #     for "pl_" and "pcl_": this is the longest hit (query coords) so far for this sequence/feature
 
             my $blast_hit_qlen = abs($blast_qstart - $blast_qstop) + 1;
-            my $a_true = ((($q_ftr_idx == -1) && (! $do_ignore_fullseq)) || ($q_ftr_idx == $t_ftr_idx)) ? 1 : 0; # query is full sequence (and !do_ignore_fullseq) OR query is fetched CDS that pertains to target
-            my $b_true = undef;
-            if(! $do_longest) { 
-              $b_true = ((! defined $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}) ||  # first hit, so must be highest score
-                         ($cur_H{"RAWSCORE"} > $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}) || # highest scoring hit
-                         (($cur_H{"RAWSCORE"} == $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}) && ($ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "q_ftr_idx")} == -1) && ($t_ftr_nsgm > 1))) 
-                  ? 1 : 0; 
-                  # the final possibility in the 3 way if is: 
-                  #  - tied for highest scoring, and 
-                  #  - current highest scoring is to full seq, and 
-                  #  - CDS has multiple segments
-                  # this allows a feature that has a stop codon in multiple segments to match better to the feature seq instead of the full seq (e.g. fluC GM968015 "1..728:+,957..957:+" (which is like NC_006312)
-            }
-            else { 
-              $b_true = ((! defined $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}) ||  # first hit, so must be longest
-                         ($blast_hit_qlen > $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "len")}) || # longest hit
-                         (($blast_hit_qlen == $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "len")}) && ($ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "q_ftr_idx")} == -1) && ($t_ftr_nsgm > 1))) 
-                  ? 1 : 0; # longest hit
-                  # the final possibility in the 3 way if is: 
-                  #  - tied for longest 
-                  #  - current longest is to full seq, and 
-                  #  - CDS has multiple segments
-                  # this allows a feature that has a stop codon in multiple segments to match better to the feature seq instead of the full seq (e.g. fluC GM968015 "1..728:+,957..957:+" (which is like NC_006312)
+            my $is_fullseq = ($q_ftr_idx == -1) ? 1 : 0;
+            my $a_true = (($is_fullseq) || ($q_ftr_idx == $t_ftr_idx)) ? 1 : 0; # query is full sequence OR query is fetched CDS that pertains to target
+            if(($a_true) && ($is_fullseq) && 
+               (! helper_protein_validation_fullseq_hit_is_eligible($ftr_results_HAHR->{$seq_name}, $t_ftr_idx, $ftr_info_AHR, $blast_qstart, $blast_qstop, $blast_strand, $xhsfract, 
+                                                                    ((defined $stg_results_HHHR) && (defined $stg_results_HHHR->{$seq_name}{"std.cdt.bs"})) ? $stg_results_HHHR->{$seq_name}{"std.cdt.bs"} : undef, $FH_HR))) { 
+              $a_true = 0; # hit of full sequence is not on the strand and in the location of the target CDS
             }
 
             my $c_true = ($q_len >= $minpvlen) ? 1 : 0; # length >= --minpvlen
@@ -9825,7 +9774,7 @@ sub parse_blastx_results {
                 $d_true = 1; 
               }
             }
-            if($a_true && $b_true && $c_true && $d_true) { 
+            if($a_true && $c_true && $d_true) { 
               my $x_true = ($q_ftr_idx != -1) ? 1 : 0; # D is true if query is a single CDS as opposed to full sequence
               my $y_true = ($cur_H{"RAWSCORE"} >= $xlonescore) ? 1 : 0; # E is true if raw score exceeds --xlonescore
               my $z_true = 0; 
@@ -9838,94 +9787,124 @@ sub parse_blastx_results {
                 }
               }
               if($x_true || $y_true || $z_true) { 
-                # store the hit
-                $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "qstart")}  = $blast_qstart;
-                $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "qstop")}   = $blast_qstop;
-                $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")}  = $blast_strand;
-                $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "len")}     = $blast_hit_qlen;
-                $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "query")}   = $cur_H{"QACC"};
-                $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}   = $cur_H{"RAWSCORE"};
-                $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "frame")}   = $cur_H{"FRAME"};
-                $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "q_ftr_idx")} = $q_ftr_idx;
-                # p_strand is actually complicated to set:
-                # if q_ftr_idx == -1, query is the full sequence in which case we use blast_strand from output
-                # if q_ftr_idx != -1, query is a single CDS so blast_strand will be + if same strand as target, - if opposite 
-                if($q_ftr_idx == -1) { 
-                  $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = $blast_strand;
-                }
-                else { 
-                  # query is a single CDS, if blast_strand is "+" this means that it agrees with 
-                  # strand of the CDS, if blast_strand is "-" then it disagrees
-                  if(! defined $t_strand) { 
-                    ofile_FAIL("ERROR in $sub_name, reading $blastx_summary_file, unable to set strand of hit because t_strand is undef", 1, $FH_HR);
-                  }
-                  if($blast_strand eq "+") { 
-                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = $t_strand;
-                  } 
-                  elsif($t_strand eq "+") { # blast_strand is "-"
-                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = "-";
-                  }
-                  elsif($t_strand eq "-") { # blast_strand is "-"
-                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = "+";
-                  }
-                  else { # blast_strand is "-", t_strand is not "+" or "-", should be "?"
-                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = "?";
-                  }
-                }
-                if(defined $cur_H{"INS"}) { 
-                  $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "ins")} = $cur_H{"INS"};
-                }
-                else { 
-                  $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "ins")} = undef;
-                }
-                if(defined $cur_H{"DEL"}) { 
-                  $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "del")} = $cur_H{"DEL"};
-                }
-                else { 
-                  $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "del")} = undef;
-                }
-                if((defined $cur_H{"SRANGE"}) && ($cur_H{"SRANGE"} =~ /^(\d+)..(\d+)$/)) { 
-                  ($ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "hstart")}, $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "hstop")}) = 
-                      ($1, $2);
-                }
-                else { 
-                  ofile_FAIL("ERROR in $sub_name, trying to store hit but don't have defined and parseable SRANGE line (seq: $seq_name, line: $line_idx)\n", 1, $FH_HR);
-                }
-                if(defined $cur_H{"QSTOP"}) { 
-                  if(! defined $cur_H{"HSTOP"}) { 
-                    ofile_FAIL("ERROR in $sub_name, read QSTOP but not HSTOP line (seq: $seq_name, line: $line_idx)\n", 1, $FH_HR);
-                  }
-                  # we want to store only the first (5'-most) stop codon
-                  # query is the sequence, subject is the model (protein sequence)
-                  my $first_qstop = $cur_H{"QSTOP"};
-                  $first_qstop =~ s/\;.*$//; # remove first ';' and anything after it
-                  if($q_ftr_idx != -1) { # query is a feature, not the full sequence, so we need to determine coords in full seq
-                    if(defined $q_coords) { # $q_coords should be defined but this is just a sanity check
-                      $first_qstop = vdr_CoordsRelativeToAbsolute($q_coords, $first_qstop, $FH_HR);
-                    }
-                    else { 
-                      $first_qstop = "-"
-                    }
-                  }
-                  my $first_hstop = $cur_H{"HSTOP"};
-                  $first_hstop =~ s/\;.*$//; # remove first ';' and anything after it
-                  # check to see if the stop position exceeds the reference (model) length for the CDS
-                  # this is possible if there are proteins in the blastx library that are longer than the reference (model CDS)
-                  # this was a bug up until v1.6.4; logged as github issue #84
-                  if(vdr_CoordsMax(vdr_CoordsProteinToNucleotide($first_hstop, $FH_HR), $FH_HR) > vdr_CoordsLength($ftr_info_AHR->[$t_ftr_idx]{"coords"}, $FH_HR)) {
-                    $first_hstop = "VADRNULL"; # we can't determine the reference positions, we'll eventually report '-' for mdl_coords
+                foreach my $ftr_results_prefix (@{$ftr_results_prefix_AR}) { 
+                  my $do_longest        = (($ftr_results_prefix eq "pl_") || ($ftr_results_prefix eq "pcl_")) ? 1 : 0;
+                  my $do_ignore_fullseq = (($ftr_results_prefix eq "pc_") || ($ftr_results_prefix eq "pcl_")) ? 1 : 0;
+                  if(($is_fullseq) && ($do_ignore_fullseq)) { next; }
+                  my $b_true = undef;
+                  if(! $do_longest) { 
+                    $b_true = ((! defined $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}) ||  # first hit, so must be highest score
+                               ($cur_H{"RAWSCORE"} > $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}) || # highest scoring hit
+                               (($cur_H{"RAWSCORE"} == $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}) && ($ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "q_ftr_idx")} == -1) && ($t_ftr_nsgm > 1))) 
+                        ? 1 : 0; 
+                        # the final possibility in the 3 way if is: 
+                        #  - tied for highest scoring, and 
+                        #  - current highest scoring is to full seq, and 
+                        #  - CDS has multiple segments
+                        # this allows a feature that has a stop codon in multiple segments to match better to the feature seq instead of the full seq (e.g. fluC GM968015 "1..728:+,957..957:+" (which is like NC_006312)
                   }
                   else { 
-                    $first_hstop = vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$t_ftr_idx]{"coords"}, $first_hstop, $FH_HR);
+                    $b_true = ((! defined $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}) ||  # first hit, so must be longest
+                               ($blast_hit_qlen > $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "len")}) || # longest hit
+                               (($blast_hit_qlen == $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "len")}) && ($ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "q_ftr_idx")} == -1) && ($t_ftr_nsgm > 1))) 
+                        ? 1 : 0; # longest hit
+                        # the final possibility in the 3 way if is: 
+                        #  - tied for longest 
+                        #  - current longest is to full seq, and 
+                        #  - CDS has multiple segments
+                        # this allows a feature that has a stop codon in multiple segments to match better to the feature seq instead of the full seq (e.g. fluC GM968015 "1..728:+,957..957:+" (which is like NC_006312)
                   }
-                  my $hacc_accn = $cur_H{"HACC"};
-                  if($hacc_accn =~ /(\S+)\/\S+/) { 
-                    $hacc_accn = $1;
+                  if($b_true) { 
+                    # store the hit
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "qstart")}  = $blast_qstart;
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "qstop")}   = $blast_qstop;
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")}  = $blast_strand;
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "len")}     = $blast_hit_qlen;
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "query")}   = $cur_H{"QACC"};
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}   = $cur_H{"RAWSCORE"};
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "frame")}   = $cur_H{"FRAME"};
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "q_ftr_idx")} = $q_ftr_idx;
+                    # p_strand is actually complicated to set:
+                    # if q_ftr_idx == -1, query is the full sequence in which case we use blast_strand from output
+                    # if q_ftr_idx != -1, query is a single CDS so blast_strand will be + if same strand as target, - if opposite 
+                    if($q_ftr_idx == -1) { 
+                      $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = $blast_strand;
+                    }
+                    else { 
+                      # query is a single CDS, if blast_strand is "+" this means that it agrees with 
+                      # strand of the CDS, if blast_strand is "-" then it disagrees
+                      if(! defined $t_strand) { 
+                        ofile_FAIL("ERROR in $sub_name, reading $blastx_summary_file, unable to set strand of hit because t_strand is undef", 1, $FH_HR);
+                      }
+                      if($blast_strand eq "+") { 
+                        $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = $t_strand;
+                      } 
+                      elsif($t_strand eq "+") { # blast_strand is "-"
+                        $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = "-";
+                      }
+                      elsif($t_strand eq "-") { # blast_strand is "-"
+                        $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = "+";
+                      }
+                      else { # blast_strand is "-", t_strand is not "+" or "-", should be "?"
+                        $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "strand")} = "?";
+                      }
+                    }
+                    if(defined $cur_H{"INS"}) { 
+                      $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "ins")} = $cur_H{"INS"};
+                    }
+                    else { 
+                      $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "ins")} = undef;
+                    }
+                    if(defined $cur_H{"DEL"}) { 
+                      $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "del")} = $cur_H{"DEL"};
+                    }
+                    else { 
+                      $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "del")} = undef;
+                    }
+                    if((defined $cur_H{"SRANGE"}) && ($cur_H{"SRANGE"} =~ /^(\d+)..(\d+)$/)) { 
+                      ($ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "hstart")}, $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "hstop")}) = 
+                          ($1, $2);
+                    }
+                    else { 
+                      ofile_FAIL("ERROR in $sub_name, trying to store hit but don't have defined and parseable SRANGE line (seq: $seq_name, line: $line_idx)\n", 1, $FH_HR);
+                    }
+                    if(defined $cur_H{"QSTOP"}) { 
+                      if(! defined $cur_H{"HSTOP"}) { 
+                        ofile_FAIL("ERROR in $sub_name, read QSTOP but not HSTOP line (seq: $seq_name, line: $line_idx)\n", 1, $FH_HR);
+                      }
+                      # we want to store only the first (5'-most) stop codon
+                      # query is the sequence, subject is the model (protein sequence)
+                      my $first_qstop = $cur_H{"QSTOP"};
+                      $first_qstop =~ s/\;.*$//; # remove first ';' and anything after it
+                      if($q_ftr_idx != -1) { # query is a feature, not the full sequence, so we need to determine coords in full seq
+                        if(defined $q_coords) { # $q_coords should be defined but this is just a sanity check
+                          $first_qstop = vdr_CoordsRelativeToAbsolute($q_coords, $first_qstop, $FH_HR);
+                        }
+                        else { 
+                          $first_qstop = "-"
+                        }
+                      }
+                      my $first_hstop = $cur_H{"HSTOP"};
+                      $first_hstop =~ s/\;.*$//; # remove first ';' and anything after it
+                      # check to see if the stop position exceeds the reference (model) length for the CDS
+                      # this is possible if there are proteins in the blastx library that are longer than the reference (model CDS)
+                      # this was a bug up until v1.6.4; logged as github issue #84
+                      if(vdr_CoordsMax(vdr_CoordsProteinToNucleotide($first_hstop, $FH_HR), $FH_HR) > vdr_CoordsLength($ftr_info_AHR->[$t_ftr_idx]{"coords"}, $FH_HR)) {
+                        $first_hstop = "VADRNULL"; # we can't determine the reference positions, we'll eventually report '-' for mdl_coords
+                      }
+                      else { 
+                        $first_hstop = vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$t_ftr_idx]{"coords"}, $first_hstop, $FH_HR);
+                      }
+                      my $hacc_accn = $cur_H{"HACC"};
+                      if($hacc_accn =~ /(\S+)\/\S+/) { 
+                        $hacc_accn = $1;
+                      }
+                      $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "trcstop")} = "seq:" . $first_qstop . ";mdl:" . $first_hstop . ";" . $hacc_accn;
+                    }
+                    else { 
+                      $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "trcstop")} = undef;
+                    }
                   }
-                  $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "trcstop")} = "seq:" . $first_qstop . ";mdl:" . $first_hstop . ";" . $hacc_accn;
-                }
-                else { 
-                  $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "trcstop")} = undef;
                 }
               }
             }
@@ -10746,6 +10725,238 @@ sub helper_protein_validation_check_overlap {
   }
 
   return $noverlap;
+}
+
+#################################################################
+# Subroutine:  helper_protein_validation_select_hit()
+# Incept:      EPN, Mon Oct 19 2026 (w/Claude)
+#
+# Purpose:    Choose which stored protein validation hit of a CDS 
+#             gives its protein-based prediction and alerts: the one
+#             that causes the fewest fatal alerts, then the fewest 
+#             alerts, preferring (in case of ties) "p_", then "pc_",
+#             then "pl_", then "pcl_" (see parse_blastx_results()).
+#
+# Arguments:
+#  $ftr_results_HR:  REF to feature results for this sequence and CDS
+#  $alt_str_HHR:     REF to alert strings, 1D key: stored hit prefix, 2D key: alert code
+#  $prefix_AR:       REF to array of stored hit prefixes that are candidates
+#  $ftr_info_AHR:    REF to array of hashes with feature info
+#  $alt_info_HHR:    REF to the alert info hash of arrays
+#  $ftr_idx:         feature index of the CDS
+#  $FH_HR:           REF to hash of file handles
+#
+# Returns:    prefix of the chosen hit; "p_" if there are no hits
+#
+# Dies:       never
+#
+#################################################################
+sub helper_protein_validation_select_hit { 
+  my $sub_name = "helper_protein_validation_select_hit";
+  my $nargs_exp = 7;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_results_HR, $alt_str_HHR, $prefix_AR, $ftr_info_AHR, $alt_info_HHR, $ftr_idx, $FH_HR) = @_;
+
+  my %is_candidate_H = map { $_ => 1 } @{$prefix_AR};
+  my $winner = undef;
+  my ($winner_nalt, $winner_nalt_fatal) = (undef, undef);
+  foreach my $prefix ("p_", "pc_", "pl_", "pcl_") { 
+    if((defined $is_candidate_H{$prefix}) && 
+       (defined $ftr_results_HR->{($prefix . "qstart")}) && (defined $ftr_results_HR->{($prefix . "qstop")})) { 
+      # count total and fatal alerts for this hit
+      my ($nalt, $nalt_fatal) = (0, 0);
+      if(defined $alt_str_HHR->{$prefix}) { 
+        foreach my $alt_code (keys %{$alt_str_HHR->{$prefix}}) { 
+          my @alt_str_A = split(":VADRSEP:", $alt_str_HHR->{$prefix}{$alt_code});
+          $nalt += scalar(@alt_str_A);
+          if(vdr_FeatureAlertCausesFailure($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code)) { 
+            $nalt_fatal += scalar(@alt_str_A);
+          }
+        }
+      }
+      if((! defined $winner) || 
+         ($nalt_fatal < $winner_nalt_fatal) || 
+         (($nalt_fatal == $winner_nalt_fatal) && ($nalt < $winner_nalt))) { 
+        ($winner, $winner_nalt, $winner_nalt_fatal) = ($prefix, $nalt, $nalt_fatal);
+      }
+    }
+  }
+  return (defined $winner) ? $winner : "p_";
+}
+
+#################################################################
+# Subroutine:  helper_protein_validation_fullseq_hit_is_eligible()
+# Incept:      EPN, Mon Oct 19 2026 (w/Claude)
+#
+# Purpose:    Decide if a blastx
+#             hit of a full length sequence (not a predicted CDS) to a
+#             protein of CDS feature <t_ftr_idx> can be used as that
+#             CDS's protein-based prediction.
+#
+#             If the CDS has a nucleotide-based prediction, the hit
+#             must be on the same strand and overlap it by >= 1 nt.
+#             (A hit to the full sequence may extend past either end
+#             of the prediction, so INDEFINITE_ANNOTATION_START/END
+#             (indf5plg/indf3plg) can still be detected.)
+#
+#             If the CDS has no nucleotide-based prediction, the hit
+#             must:
+#             - be on the CDS's strand in the reference model;
+#             - have less than <xhsfract> of its length overlapping
+#               the nucleotide-based prediction of another CDS on the
+#               same strand;
+#             - lie where the CDS would be: not 5' of the start of the
+#               prediction of the closest CDS that is entirely 5' of
+#               this CDS in the model, and not 3' of the end of the
+#               prediction of the closest CDS entirely 3' of it
+#               (considering CDS with nucleotide-based predictions
+#               only).
+#             - if coverage-determination hits of the sequence to the
+#               model (<cov_HR>, stage "std.cdt.bs") overlap the hit,
+#               lie where the one that overlaps it most aligns to the
+#               CDS's model positions, give or take the CDS's length
+#               (positions are interpolated linearly within the
+#               coverage hit). (A short coverage hit can align a
+#               paralog to the CDS; the longest overlap is used.)
+#             A hit failing these is to a duplicated or paralogous
+#             gene elsewhere in the sequence (e.g. a gene copy in an
+#             inverted terminal repeat), not evidence for
+#             INDEFINITE_ANNOTATION (indfantp) of this CDS.
+#
+# Arguments:
+#  $ftr_results_AHR:  REF to feature results for one sequence, PRE-FILLED with
+#                     nucleotide-based predictions ("n_start", "n_stop", "n_strand")
+#  $t_ftr_idx:        feature index of the CDS the hit's protein belongs to
+#  $ftr_info_AHR:     REF to array of hashes with feature info
+#  $qstart:           start of hit in full sequence
+#  $qstop:            stop of hit in full sequence
+#  $strand:           strand of hit in full sequence
+#  $xhsfract:         max fraction of hit allowed to overlap another CDS (unpredicted CDS only)
+#  $cov_HR:           REF to coverage-determination hits of this sequence ("s_coords", "m_coords"), 
+#                     undef if none
+#  $FH_HR:            REF to hash of file handles
+#
+# Returns:    '1' if the hit can be used, '0' if not
+#
+# Dies:       never
+#
+#################################################################
+sub helper_protein_validation_fullseq_hit_is_eligible { 
+  my $sub_name = "helper_protein_validation_fullseq_hit_is_eligible";
+  my $nargs_exp = 9;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_results_AHR, $t_ftr_idx, $ftr_info_AHR, $qstart, $qstop, $strand, $xhsfract, $cov_HR, $FH_HR) = @_;
+
+  my $t_results_HR = $ftr_results_AHR->[$t_ftr_idx];
+  if((defined $t_results_HR) && (defined $t_results_HR->{"n_start"})) { 
+    if($t_results_HR->{"n_strand"} ne $strand) { 
+      return 0;
+    }
+    return (helper_protein_validation_check_overlap($t_results_HR, $qstart, $qstop, $strand, $FH_HR) > 0) ? 1 : 0;
+  }
+
+  # no nucleotide-based prediction
+  if(vdr_FeatureSummaryStrand($ftr_info_AHR->[$t_ftr_idx]{"coords"}, $FH_HR) ne $strand) { 
+    return 0;
+  }
+  my $hit_len = abs($qstop - $qstart) + 1;
+  my ($hit_min, $hit_max) = ($qstart < $qstop) ? ($qstart, $qstop) : ($qstop, $qstart);
+  my ($t_mdl_min, $t_mdl_max) = helper_protein_validation_coords_min_max($ftr_info_AHR->[$t_ftr_idx]{"coords"}, $FH_HR);
+  my $left_mdl_max  = undef; # model end of closest predicted CDS entirely 5' of the target CDS
+  my $left_seq_min  = undef; # start of that CDS's prediction (sequence position)
+  my $right_mdl_min = undef; # model start of closest predicted CDS entirely 3' of the target CDS
+  my $right_seq_max = undef; # end of that CDS's prediction (sequence position)
+  my $nftr = scalar(@{$ftr_info_AHR});
+  for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
+    if(($ftr_idx != $t_ftr_idx) && 
+       (vdr_FeatureTypeIsCds($ftr_info_AHR, $ftr_idx)) && 
+       (defined $ftr_results_AHR->[$ftr_idx]) && 
+       (defined $ftr_results_AHR->[$ftr_idx]{"n_start"})) { 
+      my $results_HR = $ftr_results_AHR->[$ftr_idx];
+      if($results_HR->{"n_strand"} eq $strand) { 
+        my $noverlap = helper_protein_validation_check_overlap($results_HR, $qstart, $qstop, $strand, $FH_HR);
+        if($noverlap >= ($xhsfract * $hit_len)) { 
+          return 0;
+        }
+      }
+      my ($mdl_min, $mdl_max) = helper_protein_validation_coords_min_max($ftr_info_AHR->[$ftr_idx]{"coords"}, $FH_HR);
+      my ($seq_min, $seq_max) = ($results_HR->{"n_start"} < $results_HR->{"n_stop"}) ? 
+          ($results_HR->{"n_start"}, $results_HR->{"n_stop"}) : ($results_HR->{"n_stop"}, $results_HR->{"n_start"});
+      if(($mdl_max < $t_mdl_min) && ((! defined $left_mdl_max) || ($mdl_max > $left_mdl_max))) { 
+        ($left_mdl_max, $left_seq_min) = ($mdl_max, $seq_min);
+      }
+      if(($mdl_min > $t_mdl_max) && ((! defined $right_mdl_min) || ($mdl_min < $right_mdl_min))) { 
+        ($right_mdl_min, $right_seq_max) = ($mdl_min, $seq_max);
+      }
+    }
+  }
+  if((defined $left_seq_min)  && ($hit_min < $left_seq_min))  { return 0; }
+  if((defined $right_seq_max) && ($hit_max > $right_seq_max)) { return 0; }
+
+  # check where coverage-determination hits align the hit's positions in the model
+  if((defined $cov_HR) && (defined $cov_HR->{"s_coords"}) && (defined $cov_HR->{"m_coords"})) { 
+    my @s_sgm_A = split(",", $cov_HR->{"s_coords"});
+    my @m_sgm_A = split(",", $cov_HR->{"m_coords"});
+    if(scalar(@s_sgm_A) == scalar(@m_sgm_A)) { 
+      my $tol = $t_mdl_max - $t_mdl_min + 1;
+      my $best_olen       = 0; # length of largest overlap of a coverage hit with the hit
+      my $best_consistent = 1; # '1' if that coverage hit aligns the hit near the CDS's model positions
+      for(my $i = 0; $i < scalar(@s_sgm_A); $i++) { 
+        my ($s_from, $s_to, $s_strand) = vdr_CoordsSegmentParse($s_sgm_A[$i], $FH_HR);
+        my ($m_from, $m_to, $m_strand) = vdr_CoordsSegmentParse($m_sgm_A[$i], $FH_HR);
+        if(($s_strand ne "+") || ($m_strand ne "+") || ($s_from > $s_to)) { next; }
+        my $o_min = ($hit_min > $s_from) ? $hit_min : $s_from;
+        my $o_max = ($hit_max < $s_to)   ? $hit_max : $s_to;
+        my $olen = $o_max - $o_min + 1;
+        if($olen <= $best_olen) { next; } # no overlap, or not the largest one
+        my $slope = ($s_to > $s_from) ? (($m_to - $m_from) / ($s_to - $s_from)) : 0.;
+        my $mo_min = $m_from + ($o_min - $s_from) * $slope;
+        my $mo_max = $m_from + ($o_max - $s_from) * $slope;
+        $best_olen       = $olen;
+        $best_consistent = (($mo_max >= ($t_mdl_min - $tol)) && ($mo_min <= ($t_mdl_max + $tol))) ? 1 : 0;
+      }
+      if(! $best_consistent) { return 0; }
+    }
+  }
+
+  return 1;
+}
+
+#################################################################
+# Subroutine:  helper_protein_validation_coords_min_max()
+# Incept:      EPN, Mon Oct 19 2026 (w/Claude)
+#
+# Purpose:    Return the minimum and maximum position in a coords
+#             string, regardless of strand.
+#
+# Arguments:
+#  $coords:  coords string, e.g. "1..100:+,200..300:+"
+#  $FH_HR:   REF to hash of file handles
+#
+# Returns:    Two values: minimum and maximum position
+#
+# Dies:       if $coords can't be parsed
+#
+#################################################################
+sub helper_protein_validation_coords_min_max { 
+  my $sub_name = "helper_protein_validation_coords_min_max";
+  my $nargs_exp = 2;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($coords, $FH_HR) = @_;
+
+  my $min = undef;
+  my $max = undef;
+  foreach my $sgm (split(",", $coords)) { 
+    my ($start, $stop, undef) = vdr_CoordsSegmentParse($sgm, $FH_HR);
+    foreach my $pos ($start, $stop) { 
+      if((! defined $min) || ($pos < $min)) { $min = $pos; }
+      if((! defined $max) || ($pos > $max)) { $max = $pos; }
+    }
+  }
+  return ($min, $max);
 }
 
 #################################################################
