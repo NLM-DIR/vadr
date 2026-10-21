@@ -312,7 +312,7 @@ opt_Add("--xmaxins",    "integer",   27,        $g,   undef,"--pv_skip,--pv_hmme
 opt_Add("--xmaxdel",    "integer",   27,        $g,   undef,"--pv_skip,--pv_hmmer", "deletinp/DELETION_OF_NT max allowed nucleotide deletion length in blastx validation is <n>",       "deletinp/DELETION_OF_NT max allowed nucleotide deletion length in blastx validation is <n>",     \%opt_HH, \@opt_order_A);
 opt_Add("--nmaxins",    "integer",   27,        $g,   undef,   undef,            "insertnn/INSERTION_OF_NT max allowed nucleotide (nt) insertion length in CDS nt alignment is <n>", "insertnn/INSERTION_OF_NT max allowed nucleotide (nt) insertion length in CDS nt alignment is <n>",   \%opt_HH, \@opt_order_A);
 opt_Add("--nmaxdel",    "integer",   27,        $g,   undef,   undef,            "deletinn/DELETION_OF_NT max allowed nucleotide (nt) deletion length in CDS nt alignment is <n>",   "deletinn/DELETION_OF_NT max allowed nucleotide (nt) deletion length in CDS nt alignment is <n>",     \%opt_HH, \@opt_order_A);
-opt_Add("--xlonescore", "integer",  80,        $g,   undef,"--pv_skip,--pv_hmmer", "indfantp/INDEFINITE_ANNOTATION min score for a blastx hit not supported by CM analysis is <n>",    "indfantp/INDEFINITE_ANNOTATION min score for a blastx hit not supported by CM analysis is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--xlonescore", "integer",  80,        $g,   undef,"--pv_skip,--pv_hmmer", "indfantp/INDEFINITE_ANNOTATION min raw score for a blastx hit not supported by CM analysis is <n>",    "indfantp/INDEFINITE_ANNOTATION min raw score for a blastx hit not supported by CM analysis is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--hlonescore", "integer",  10,        $g,"--pv_hmmer","--pv_skip",        "indfantp/INDEFINITE_ANNOTATION min score for a hmmer hit not supported by CM analysis is <n>",     "indfantp/INDEFINITE_ANNOTATION min score for a hmmer hit not supported by CM analysis is <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling cmalign alignment stage";
@@ -1600,6 +1600,9 @@ if($do_split) {
     helper_tabular_fill_header_and_justification_arrays("ftr", \@head_AA, \@cljust_A, $FH_HR);
     vdr_MergeOutputConcatenatePreserveSpacing($out_root_no_vadr, ".ftr", "ftr", "per-feature tabular summary file", $do_check_exists, $nlines_preserve_spacing, "  ", 1, \@head_AA, \@cljust_A, \@chunk_outdir_A, \%opt_HH, \%ofile_info_HH);
     
+    helper_tabular_fill_header_and_justification_arrays("fcd", \@head_AA, \@cljust_A, $FH_HR);
+    vdr_MergeOutputConcatenatePreserveSpacing($out_root_no_vadr, ".fcd", "fcd", "per-CDS protein validation hit tabular summary file", $do_check_exists, $nlines_preserve_spacing, "  ", 1, \@head_AA, \@cljust_A, \@chunk_outdir_A, \%opt_HH, \%ofile_info_HH);
+    
     helper_tabular_fill_header_and_justification_arrays("sgm", \@head_AA, \@cljust_A, $FH_HR);
     vdr_MergeOutputConcatenatePreserveSpacing($out_root_no_vadr, ".sgm", "sgm", "per-model-segment tabular summary file", $do_check_exists, $nlines_preserve_spacing, "  ", 1, \@head_AA, \@cljust_A, \@chunk_outdir_A, \%opt_HH, \%ofile_info_HH);
     
@@ -1901,6 +1904,8 @@ my %stk_file_HA       = ();     # hash of arrays of all stk output files created
                                 # 1D key is $mdl_name
 my @overflow_seq_A    = ();     # array of sequences that fail cmalign b/c required matrix was too big
 my @overflow_mxsize_A = ();     # array of required matrix sizes for each sequence in @overflow_seq_A
+my %seq_ua2rf_HA      = ();     # key: sequence name, value: compact sequence position to model position map, see helper_ua2rf_runs_create()
+                               # stored for each aligned sequence only if protein validation is performed, used for .fcd model coordinates
 my %ftr_results_HHAH  = ();     # 1st dim: hash, keys are model names
                                 # 2nd dim: hash, keys are sequence names
                                 # 3rd dim: array, 0..$nsgm-1, one per segment
@@ -2161,6 +2166,7 @@ for($mdl_idx = 0; $mdl_idx < $nmdl; $mdl_idx++) {
                                                                      $$sqfile_for_cds_mp_alerts_R, $$sqfile_for_output_fastas_R, $$sqfile_for_pv_R,
                                                                      $do_separate_cds_fa_files_for_protein_validation, \@to_remove_A,
                                                                      ($do_replace_ns) ? \%rpn_output_HH : undef, 
+                                                                     ($do_pv_blastx || $do_pv_hmmer) ? \%seq_ua2rf_HA : undef, 
                                                                      $out_root, \%opt_HH, \%ofile_info_HH);
       }
       push(@to_remove_A, ($stk_file_HA{$mdl_name}[$a]));
@@ -2276,6 +2282,8 @@ if($do_pv_blastx) {
                                       \%{$ftr_results_HHAH{$mdl_name}}, \%alt_ftr_instances_HHH, 
                                       ($do_replace_ns) ? \%rpn_output_HH : undef, 
                                       \%opt_HH, \%{$ofile_info_HH{"FH"}});        
+        add_protein_validation_mdl_coords(\@{$mdl_seq_name_HA{$mdl_name}}, \@{$ftr_info_HAH{$mdl_name}}, \%{$ftr_results_HHAH{$mdl_name}}, 
+                                          \%seq_ua2rf_HA, \%{$ofile_info_HH{"FH"}});
 
         ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
       }
@@ -2306,6 +2314,8 @@ if($do_pv_hmmer) {
                                       \%{$ftr_results_HHAH{$mdl_name}}, \%alt_ftr_instances_HHH, 
                                       ($do_replace_ns) ? \%rpn_output_HH : undef, 
                                       \%opt_HH, \%{$ofile_info_HH{"FH"}});
+        add_protein_validation_mdl_coords(\@{$mdl_seq_name_HA{$mdl_name}}, \@{$ftr_info_HAH{$mdl_name}}, \%{$ftr_results_HHAH{$mdl_name}}, 
+                                          \%seq_ua2rf_HA, \%{$ofile_info_HH{"FH"}});
         ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
         push(@to_remove_A, 
              ($ofile_info_HH{"fullpath"}{$mdl_name . ".pv.hmmer.esl_translate.aa.fa"}, 
@@ -2317,6 +2327,9 @@ if($do_pv_hmmer) {
     }
   }
 } # end of 'if($do_pv_hmmer)'
+
+# alignment maps of sequences whose models have no CDS were not used
+%seq_ua2rf_HA = ();
 
 ##############################################################
 # Add alerts to children features that have parents with 
@@ -2405,6 +2418,7 @@ ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "mdl",      $out_root . ".mdl"
 if(! $do_clsonly) {
   ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "ant",      $out_root . ".sqa", 1, 1, "per-sequence tabular annotation summary file");
   ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "ftr",      $out_root . ".ftr", 1, 1, "per-feature tabular summary file");
+  ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "fcd",      $out_root . ".fcd", 1, 1, "per-CDS protein validation hit tabular summary file");
   ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "sgm",      $out_root . ".sgm", 1, 1, "per-model-segment tabular summary file");
   ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "alt",      $out_root . ".alt", 1, 1, "per-alert tabular summary file");
   ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "alc",      $out_root . ".alc", 1, 1, "alert count tabular summary file");
@@ -5273,6 +5287,8 @@ sub cmalign_or_glsearch_run {
 #                              and one for the protein validation stage fetched from $sqfile_for_cds_mp_alerts
 #  $to_remove_AR:              REF to array of files to remove before exiting, possibly added to here if $do_separate_cds_fa_files
 #  $rpn_output_HHR:            REF to rpn output data HH, PRE-FILLED, will be undef if -r not used
+#  $seq_ua2rf_HAR:             REF to hash of compact sequence to model position maps, key is sequence 
+#                              name, ADDED TO HERE, can be undef to not store maps
 #  $out_root:                  string for naming output files
 #  $opt_HHR:                   REF to 2D hash of option values
 #  $ofile_info_HHR:            REF to 2D hash of output file information
@@ -5284,7 +5300,7 @@ sub cmalign_or_glsearch_run {
 ################################################################# 
 sub parse_stk_and_add_alignment_cds_and_mp_alerts { 
   my $sub_name = "parse_stk_and_add_alignment_cds_and_mp_alerts()";
-  my $nargs_exp = 26;
+  my $nargs_exp = 27;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
   
   my ($stk_file, $in_sqfile_R, $seq_len_HR, $seq_inserts_HHR, $sgm_info_AHR, 
@@ -5292,7 +5308,7 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
       $alt_seq_instances_HHR, $alt_ftr_instances_HHHR, $dcr_output_HAHR, 
       $mdl_info_AHR, $mdl_idx, $ftr_fileroot_AR, $ftr_outroot_AR, 
       $sqfile_for_cds_mp_alerts, $sqfile_for_output_fastas, $sqfile_for_pv,
-      $do_separate_cds_fa_files, $to_remove_AR, $rpn_output_HHR,
+      $do_separate_cds_fa_files, $to_remove_AR, $rpn_output_HHR, $seq_ua2rf_HAR,
       $out_root, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $FH_HR = \%{$ofile_info_HHR->{"FH"}};
@@ -6050,6 +6066,13 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
                                              \@{$ftr_info_HAH{$mdl_name}}, \%alt_info_HH, 
                                              \%{$sgm_results_HHAH{$mdl_name}}, \%{$ftr_results_HHAH{$mdl_name}}, 
                                              \%alt_ftr_instances_HHH, $mdl_name, $out_root, \%opt_HH, \%ofile_info_HH);
+
+      # keep a compact copy of the @ua2rf_A map, protein validation
+      # uses it later to determine model coordinates of the selected
+      # protein validation hit for the .fcd file (brief 26_0602-035)
+      if(defined $seq_ua2rf_HAR) { 
+        $seq_ua2rf_HAR->{$seq_name} = helper_ua2rf_runs_create(\@ua2rf_A, $FH_HR);
+      }
 
       # fetch features, detect and add cds and mp alerts for this sequence
       # we have to do this here becuase we need @ua2rf_A map of unaligned positions 
@@ -8976,7 +8999,8 @@ sub add_protein_validation_alerts {
             # if a hit other than p_ won, overwrite all p_ values in ftr_results_HR with its values (including ones
             # it does not have), so future subroutines use correct values
             if($winning_prefix ne "p_") { 
-              foreach my $alt_key ("qstart", "qstop", "strand", "query", "len", "ins", "del", "trcstop", "score", "hstart", "hstop", "q_ftr_idx", "frame") { 
+              foreach my $alt_key ("qstart", "qstop", "strand", "query", "len", "ins", "del", "trcstop", "score", "hstart", "hstop", "q_ftr_idx", "frame", 
+                                   "hacc", "slen", "qrange", "tie", "scoords", "pcoords") { 
                 if(defined $ftr_results_HR->{($winning_prefix . $alt_key)}) { 
                   $ftr_results_HR->{("p_" . $alt_key)} = $ftr_results_HR->{($winning_prefix . $alt_key)};
                 }
@@ -9559,6 +9583,7 @@ sub parse_blastx_results {
   my $t_ftr_idx  = undef; # feature index target (subject) pertains to [0..$nftr-1]
   my $t_ftr_nsgm = undef; # number of segmens in the target feature 
   my $t_strand   = undef; # summary strand of feature $t_ftr_idx
+  my $t_slen     = undef; # length of target (subject) protein, parsed from SLEN line
   my %cur_H = (); # values for current hit (HSP)
   
   # 
@@ -9629,6 +9654,7 @@ sub parse_blastx_results {
           ofile_FAIL("ERROR in $sub_name, reading $blastx_summary_file, unable to parse HACC line $line", 1, $FH_HR);
         }
         $t_ftr_nsgm = vdr_FeatureNumSegments($ftr_info_AHR, $t_ftr_idx);
+        $t_slen     = undef; # SLEN line for this target, if any, follows this HACC line
       }
       elsif($key eq "SLEN") { 
         if((! defined $cur_H{"QACC"}) || (! defined $cur_H{"HACC"})) { 
@@ -9638,6 +9664,9 @@ sub parse_blastx_results {
           ofile_FAIL("ERROR in $sub_name, reading $blastx_summary_file, unable to parse blastx summary SLEN line $line", 1, $FH_HR);
         }
         $cur_H{$key} = $value;
+        # %cur_H is reset after each HSP but SLEN is only reported once per target,
+        # so also keep it in $t_slen which persists until the next HACC line
+        $t_slen = $value;
       }
       elsif($key eq "HSP") { 
         if((! defined $cur_H{"QACC"}) || (! defined $cur_H{"HACC"})) { 
@@ -9824,6 +9853,33 @@ sub parse_blastx_results {
                     $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "score")}   = $cur_H{"RAWSCORE"};
                     $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "frame")}   = $cur_H{"FRAME"};
                     $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "q_ftr_idx")} = $q_ftr_idx;
+                    # information on the stored hit that is reported in the .fcd file
+                    # (brief 26_0602-030): the target protein, its length, the query range,
+                    # and the set of other targets tied with this one (reset here because
+                    # this hit replaces any previously stored hit for this prefix)
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "hacc")}   = $cur_H{"HACC"};
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "slen")}   = (defined $t_slen) ? $t_slen : undef;
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "qrange")} = $value;
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "tie")}    = {};
+                    # blastx reports query coordinates relative to the query, which is either
+                    # the full sequence or the predicted CDS; convert to sequence (genome)
+                    # coordinates through the query's own coordinates if the query is a CDS
+                    my $hit_scoords = undef;
+                    if($q_ftr_idx == -1) { 
+                      $hit_scoords = vdr_CoordsSegmentCreate($blast_qstart, $blast_qstop, $blast_strand, $FH_HR);
+                    }
+                    elsif(defined $q_coords) { # $q_coords should be defined, this is just a sanity check
+                      # vdr_CoordsRelativeToAbsolute() requires a plus strand relative segment,
+                      # so build one and reverse complement the result if necessary
+                      my $rel_sgm = ($blast_strand eq "+") ? 
+                          vdr_CoordsSegmentCreate($blast_qstart, $blast_qstop, "+", $FH_HR) : 
+                          vdr_CoordsSegmentCreate($blast_qstop,  $blast_qstart, "+", $FH_HR);
+                      $hit_scoords = vdr_CoordsRelativeToAbsolute($q_coords, $rel_sgm, $FH_HR);
+                      if($blast_strand eq "-") { 
+                        $hit_scoords = vdr_CoordsReverseComplement($hit_scoords, 0, $FH_HR); # 0: don't do carrots
+                      }
+                    }
+                    $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "scoords")} = $hit_scoords;
                     # p_strand is actually complicated to set:
                     # if q_ftr_idx == -1, query is the full sequence in which case we use blast_strand from output
                     # if q_ftr_idx != -1, query is a single CDS so blast_strand will be + if same strand as target, - if opposite 
@@ -9864,6 +9920,10 @@ sub parse_blastx_results {
                     if((defined $cur_H{"SRANGE"}) && ($cur_H{"SRANGE"} =~ /^(\d+)..(\d+)$/)) { 
                       ($ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "hstart")}, $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "hstop")}) = 
                           ($1, $2);
+                      # protein coordinates of the hit, reported in the .fcd file (brief 26_0602-030);
+                      # its model coordinates are determined from the alignment once the winning
+                      # hit is known, in add_protein_validation_mdl_coords() (brief 26_0602-035)
+                      $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "pcoords")} = $1 . ".." . $2;
                     }
                     else { 
                       ofile_FAIL("ERROR in $sub_name, trying to store hit but don't have defined and parseable SRANGE line (seq: $seq_name, line: $line_idx)\n", 1, $FH_HR);
@@ -9905,6 +9965,23 @@ sub parse_blastx_results {
                       $ftr_results_HAHR->{$seq_name}[$t_ftr_idx]{($ftr_results_prefix . "trcstop")} = undef;
                     }
                   }
+                  else { 
+                    # this hit is usable for this prefix but is not the one we are keeping
+                    # because a higher scoring (or longer) hit was already stored; if it has
+                    # the same query, raw score and query range as the stored hit then it is
+                    # tied with it, record its target so we can report the number of tied
+                    # targets in the .fcd file (brief 26_0602-030); hits of the full sequence
+                    # never reach here for "pc_" and "pcl_" (see 'next' above)
+                    my $stored_HR = $ftr_results_HAHR->{$seq_name}[$t_ftr_idx];
+                    if((defined $stored_HR->{($ftr_results_prefix . "hacc")})   && 
+                       (defined $stored_HR->{($ftr_results_prefix . "qrange")}) && 
+                       ($stored_HR->{($ftr_results_prefix . "query")}  eq $cur_H{"QACC"})     && 
+                       ($stored_HR->{($ftr_results_prefix . "score")}  == $cur_H{"RAWSCORE"}) && 
+                       ($stored_HR->{($ftr_results_prefix . "qrange")} eq $value)             && 
+                       ($stored_HR->{($ftr_results_prefix . "hacc")}   ne $cur_H{"HACC"})) { 
+                      $stored_HR->{($ftr_results_prefix . "tie")}{$cur_H{"HACC"}} = 1;
+                    }
+                  }
                 }
               }
             }
@@ -9927,6 +10004,7 @@ sub parse_blastx_results {
       %cur_H = (); 
       $cur_H{"QACC"} = $save_qacc; # save QACC
       $t_ftr_idx = undef;
+      $t_slen    = undef;
     }
   } # end of 'while($my $line = <IN>)'
   close(IN);
@@ -10262,6 +10340,14 @@ sub parse_hmmer_domtblout {
           $ftr_results_HAHR->{$seq_name}[$mdl_ftr_idx]{"p_query"}  = $source_val;
           $ftr_results_HAHR->{$seq_name}[$mdl_ftr_idx]{"p_score"}  = $hit_score;
           $ftr_results_HAHR->{$seq_name}[$mdl_ftr_idx]{"p_frame"}  = convert_esl_translate_to_blastx_frame($frame, $FH_HR);
+          # information on the selected hit reported in the .fcd file (brief 26_0602-030);
+          # with --pv_hmmer the 'protein' is the HMM, so there is no source accession to
+          # report for p_ftr and no set of tied targets
+          $ftr_results_HAHR->{$seq_name}[$mdl_ftr_idx]{"p_q_ftr_idx"} = $seq_ftr_idx;
+          $ftr_results_HAHR->{$seq_name}[$mdl_ftr_idx]{"p_hacc"}    = $mdl_name;
+          $ftr_results_HAHR->{$seq_name}[$mdl_ftr_idx]{"p_slen"}    = $mdl_len;
+          $ftr_results_HAHR->{$seq_name}[$mdl_ftr_idx]{"p_pcoords"} = $hmm_from . ".." . $hmm_to;
+          $ftr_results_HAHR->{$seq_name}[$mdl_ftr_idx]{"p_scoords"} = $hmmer_env_nt_coords;
         } # end of 'if($x_true || $y_true)'
       } # end of 'if($a_true && $b_true && $c_true)'
     } # end of 'if($line !~ m/^\#/)'
@@ -10725,6 +10811,186 @@ sub helper_protein_validation_check_overlap {
   }
 
   return $noverlap;
+}
+
+#################################################################
+# Subroutine:  add_protein_validation_mdl_coords()
+# Incept:      EPN, Tue Oct 20 2026 (w/Claude)
+#
+# Purpose:    For each CDS of each sequence, determine the model
+#             coordinates of the selected protein validation hit
+#             ("p_scoords", in sequence coordinates) by mapping it
+#             through the sequence's alignment to the model, and
+#             store them as "p_mcoords" (reported in the .fcd file).
+#             Each segment of the hit is mapped separately, and each
+#             endpoint is mapped the same way VADR maps sequence
+#             coordinates to model coordinates for alerts: an aligned
+#             position maps to its model position, and an inserted
+#             position maps to the model position the insertion 
+#             follows, or to 0 if it is before model position 1. So
+#             a segment entirely within one insertion maps to a 
+#             single model position. If there is no alignment for 
+#             the sequence, "p_mcoords" is undefined.
+#
+#             Must be called after add_protein_validation_alerts(),
+#             which determines the selected hit. The alignment map of 
+#             each sequence is no longer needed after this and is
+#             deleted from %{$seq_ua2rf_HAR}.
+#
+# Arguments:
+#  $seq_name_AR:      REF to array of sequence names
+#  $ftr_info_AHR:     REF to array of hashes with feature info
+#  $ftr_results_HAHR: REF to feature results HAH, ADDED TO HERE
+#  $seq_ua2rf_HAR:    REF to hash of compact sequence to model position maps,
+#                     from helper_ua2rf_runs_create(), key is sequence name,
+#                     REMOVED FROM HERE
+#  $FH_HR:            REF to hash of file handles
+#
+# Returns:    void
+#
+# Dies:       never
+#
+#################################################################
+sub add_protein_validation_mdl_coords { 
+  my $sub_name = "add_protein_validation_mdl_coords";
+  my $nargs_exp = 5;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($seq_name_AR, $ftr_info_AHR, $ftr_results_HAHR, $seq_ua2rf_HAR, $FH_HR) = @_;
+
+  my $nftr = scalar(@{$ftr_info_AHR});
+  foreach my $seq_name (@{$seq_name_AR}) { 
+    my $runs_AR = $seq_ua2rf_HAR->{$seq_name}; # undef if sequence was not aligned
+    if(defined $ftr_results_HAHR->{$seq_name}) { 
+      for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
+        if(defined $ftr_results_HAHR->{$seq_name}[$ftr_idx]) { 
+          my $ftr_results_HR = $ftr_results_HAHR->{$seq_name}[$ftr_idx];
+          delete $ftr_results_HR->{"p_mcoords"};
+          if((defined $runs_AR) && (defined $ftr_results_HR->{"p_scoords"})) { 
+            my @start_A  = ();
+            my @stop_A   = ();
+            my @strand_A = ();
+            my $nsgm = vdr_FeatureStartStopStrandArrays($ftr_results_HR->{"p_scoords"}, \@start_A, \@stop_A, \@strand_A, $FH_HR);
+            my $mcoords = "";
+            for(my $s = 0; $s < $nsgm; $s++) { 
+              if($s > 0) { $mcoords .= ","; }
+              $mcoords .= vdr_CoordsSegmentCreate(abs(helper_ua2rf_runs_lookup($runs_AR, $start_A[$s], $FH_HR)), 
+                                                  abs(helper_ua2rf_runs_lookup($runs_AR, $stop_A[$s],  $FH_HR)), 
+                                                  $strand_A[$s], $FH_HR);
+            }
+            $ftr_results_HR->{"p_mcoords"} = $mcoords;
+          }
+        }
+      }
+    }
+    delete $seq_ua2rf_HAR->{$seq_name};
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine:  helper_ua2rf_runs_create()
+# Incept:      EPN, Tue Oct 20 2026 (w/Claude)
+#
+# Purpose:    Create a compact copy of a map of unaligned sequence
+#             positions to model (RF) positions, as filled in 
+#             parse_stk_and_add_alignment_cds_and_mp_alerts(). The 
+#             map is stored as runs: maximal stretches of sequence
+#             positions that are either all aligned to consecutive 
+#             model positions, or all inserted after the same model
+#             position. Each run is an array: 
+#             [<first sequence position>, <map value of that position>],
+#             the map value is the model position for an aligned run,
+#             and <= 0 for an inserted run (see $ua2rf_AR below).
+#             Positions in a run are aligned if the map value is > 0.
+#             The number of runs is about twice the number of indels,
+#             so this is much smaller than the full map.
+#
+# Arguments:
+#  $ua2rf_AR:  REF to array that maps unaligned positions to model positions
+#              [1..$uapos..$ualen]: model position that unaligned position $uapos aligns to 
+#              if $ua2rf_A[$uapos] <  0, $uapos inserts *after* model posn (-1 * $ua2rf_A[$uapos])
+#              if $ua2rf_A[$uapos] == 0, $uapos inserts *before* model posn 1
+#              $ua2rf_A[0] is invalid
+#  $FH_HR:     REF to hash of file handles
+#
+# Returns:    REF to array of runs, in order of sequence position
+#
+# Dies:       if any element [1..$ualen] of @{$ua2rf_AR} is undefined
+#
+#################################################################
+sub helper_ua2rf_runs_create { 
+  my $sub_name = "helper_ua2rf_runs_create";
+  my $nargs_exp = 2;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ua2rf_AR, $FH_HR) = @_;
+
+  my @runs_A = ();
+  my $ualen  = scalar(@{$ua2rf_AR}) - 1;
+  my $prv    = undef;
+  for(my $uapos = 1; $uapos <= $ualen; $uapos++) { 
+    my $cur = $ua2rf_AR->[$uapos];
+    if(! defined $cur) { 
+      ofile_FAIL("ERROR in $sub_name, map value undefined for sequence position $uapos", 1, $FH_HR);
+    }
+    if((! defined $prv) || 
+       (($cur >  0) && (($prv <= 0) || ($cur != ($prv + 1)))) || 
+       (($cur <= 0) && (($prv >  0) || ($cur != $prv)))) { 
+      push(@runs_A, [$uapos, $cur]); 
+    }
+    $prv = $cur;
+  }
+  push(@runs_A, [($ualen + 1), 0]); # sentinel: one position past the end of the sequence
+
+  return \@runs_A;
+}
+
+#################################################################
+# Subroutine:  helper_ua2rf_runs_lookup()
+# Incept:      EPN, Tue Oct 20 2026 (w/Claude)
+#
+# Purpose:    Given a compact sequence to model position map from
+#             helper_ua2rf_runs_create(), return the map value of 
+#             sequence position $pos, the same value as element
+#             $pos of the full map it was created from: the model
+#             position $pos aligns to if > 0, else -1 * the model 
+#             position $pos is inserted after (0 if before model
+#             position 1).
+#
+# Arguments:
+#  $runs_AR:   REF to array of runs from helper_ua2rf_runs_create()
+#  $pos:       sequence position
+#  $FH_HR:     REF to hash of file handles
+#
+# Returns:    map value of $pos
+#
+# Dies:       if $pos is not a valid sequence position
+#
+#################################################################
+sub helper_ua2rf_runs_lookup { 
+  my $sub_name = "helper_ua2rf_runs_lookup";
+  my $nargs_exp = 3;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($runs_AR, $pos, $FH_HR) = @_;
+
+  my $nruns = scalar(@{$runs_AR}) - 1; # final run is a sentinel
+  if(($pos < 1) || ($pos >= $runs_AR->[$nruns][0])) { 
+    ofile_FAIL("ERROR in $sub_name, position $pos is outside the sequence", 1, $FH_HR);
+  }
+  # binary search for the run that includes $pos
+  my ($lo, $hi) = (0, $nruns - 1);
+  while($lo < $hi) { 
+    my $mid = int(($lo + $hi + 1) / 2);
+    if($runs_AR->[$mid][0] <= $pos) { $lo = $mid; }
+    else                            { $hi = $mid - 1; }
+  }
+  my ($run_start, $run_val) = @{$runs_AR->[$lo]};
+
+  # aligned runs are consecutive model positions, all positions of an inserted run have the same value
+  return ($run_val > 0) ? ($run_val + ($pos - $run_start)) : $run_val;
 }
 
 #################################################################
@@ -11979,6 +12245,7 @@ sub output_tabular {
 
   # deal with --sidx offset
   my $sidx_offset = opt_Get("--sidx", $opt_HHR) - 1;
+  my $do_pv_skip  = opt_Get("--pv_skip", $opt_HHR) ? 1 : 0;
   my $do_headers  = ($sidx_offset == 0) ? 1 : 0; # if --sidx value is not 1 do not print comment header lines
 
   # validate input and determine maximum counts of things
@@ -12032,11 +12299,15 @@ sub output_tabular {
   my @clj_ftr_A   = ();
   helper_tabular_fill_header_and_justification_arrays("ftr", \@head_ftr_AA, \@clj_ftr_A, $FH_HR);
 
+  my @head_fcd_AA = ();
+  my @data_fcd_AA = ();
+  my @clj_fcd_A   = ();
+  helper_tabular_fill_header_and_justification_arrays("fcd", \@head_fcd_AA, \@clj_fcd_A, $FH_HR);
+
   my @head_sgm_AA = ();
   my @data_sgm_AA = ();
   my @clj_sgm_A   = ();
   helper_tabular_fill_header_and_justification_arrays("sgm", \@head_sgm_AA, \@clj_sgm_A, $FH_HR);
-
   my @head_alt_AA = ();
   my @data_alt_AA = ();
   my @clj_alt_A   = ();
@@ -12185,6 +12456,7 @@ sub output_tabular {
     }
 
     my $ftr_nprinted   = 0; # number of total features printed for this sequence 
+    my $fcd_nprinted   = 0; # number of total CDS protein validation rows printed for this sequence
     my $sgm_nprinted   = 0; # number of total segments printed for this sequence
     my $alt_nprinted   = 0; # number of total alerts printed for this sequence
     my $alt_nftr       = 0; # number of features we've printed at least 1 alert for
@@ -12253,6 +12525,20 @@ sub output_tabular {
             if(($ftr_n_stop_c ne "-") && ($ftr_n_stop_c ne "?") && ($ftr_n_stop_c == $ftr_n_stop)) { $ftr_n_stop_c = "-"; }
             my $ftr_p_qstart  = (defined $ftr_results_HR->{"p_qstart"})  ? $ftr_results_HR->{"p_qstart"}   : "-";
             my $ftr_p_qstop   = (defined $ftr_results_HR->{"p_qstop"})   ? $ftr_results_HR->{"p_qstop"}    : "-";
+            # p_qstart/p_qstop are relative to the protein validation query, which is
+            # either the full sequence or the predicted CDS; p_scoords holds the hit in
+            # sequence (genome) coordinates, which is what we report here so that p_from
+            # and p_to are always in the same coordinate system as the 'seq coords' column
+            if(defined $ftr_results_HR->{"p_scoords"}) { 
+              my @p_start_A = ();
+              my @p_stop_A  = ();
+              my @p_strand_A = ();
+              my $p_nsgm = vdr_FeatureStartStopStrandArrays($ftr_results_HR->{"p_scoords"}, \@p_start_A, \@p_stop_A, \@p_strand_A, $FH_HR);
+              if($p_nsgm > 0) { 
+                $ftr_p_qstart = $p_start_A[0];
+                $ftr_p_qstop  = $p_stop_A[($p_nsgm-1)];
+              }
+            }
             my $ftr_p_qstop_c = (defined $ftr_results_HR->{"p_trcstop"}) ? $ftr_results_HR->{"p_trcstop"} : "-";
             if($ftr_p_qstop_c ne "-") { 
               $ftr_p_qstop_c =~ s/;.*$//; # keep only first early stop position
@@ -12341,6 +12627,36 @@ sub output_tabular {
                                 $ftr_p_qstart, $ftr_p_qstop, $ftr_p_qstop_c, $ftr_p_score, $ftr_nsgm_annot, $ftr_nsgm_noannot, 
                                 $s_coords_str, $m_coords_str, $ftr_alt_str]);
             $ftr_nprinted++;
+
+            # .fcd file: one row per annotated CDS, recording the protein validation
+            # hit that VADR selected for it (brief 26_0602-030)
+            if((! $do_pv_skip) && (vdr_FeatureTypeIsCds($ftr_info_AHR, $ftr_idx))) { 
+              my $fcd_query = "-";
+              if(defined $ftr_results_HR->{"p_q_ftr_idx"}) { 
+                $fcd_query = ($ftr_results_HR->{"p_q_ftr_idx"} == -1) ? "full" : "cds";
+              }
+              my $fcd_protein = "-";
+              my $fcd_p_ftr   = "-";
+              if(defined $ftr_results_HR->{"p_hacc"}) { 
+                $fcd_protein = $ftr_results_HR->{"p_hacc"};
+                if($fcd_protein =~ /^(\S+)\/([^\/]+)$/) { 
+                  ($fcd_protein, $fcd_p_ftr) = ($1, $2);
+                }
+              }
+              my $fcd_p_len   = (defined $ftr_results_HR->{"p_slen"})    ? $ftr_results_HR->{"p_slen"}    : "-";
+              my $fcd_rawsc   = (defined $ftr_results_HR->{"p_score"})   ? $ftr_results_HR->{"p_score"}   : "-";
+              my $fcd_ntie    = (defined $ftr_results_HR->{"p_tie"})     ? scalar(keys %{$ftr_results_HR->{"p_tie"}}) : "-";
+              my $fcd_pcoords = (defined $ftr_results_HR->{"p_pcoords"}) ? $ftr_results_HR->{"p_pcoords"} : "-";
+              my $fcd_scoords = (defined $ftr_results_HR->{"p_scoords"}) ? $ftr_results_HR->{"p_scoords"} : "-";
+              my $fcd_mcoords = (defined $ftr_results_HR->{"p_mcoords"}) ? $ftr_results_HR->{"p_mcoords"} : "-";
+              if(($fcd_nprinted == 0) && ((scalar(@data_fcd_AA) > 0) || (! $do_headers))) { 
+                push(@data_fcd_AA, []); # empty array -> blank line
+                # if (!$do_headers) for --split, we add blank line before first data line to mimic non-split output
+              }
+              push(@data_fcd_AA, [$ftr_idx2print, $seq_name, $ftr_name2print, ($ftr_idx+1), $fcd_query, $fcd_protein, $fcd_p_ftr, 
+                                  $fcd_p_len, $fcd_rawsc, $fcd_ntie, $fcd_pcoords, $fcd_scoords, $fcd_mcoords]);
+              $fcd_nprinted++;
+            }
 
             # print per-feature alerts, if any
             $alt_nseqftr = 0;
@@ -12601,6 +12917,7 @@ sub output_tabular {
     if(! $do_clsonly) { 
       ofile_TableHumanOutput(\@data_ant_AA, \@head_ant_AA, \@clj_ant_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"ant"}, undef, $FH_HR);
       ofile_TableHumanOutput(\@data_ftr_AA, \@head_ftr_AA, \@clj_ftr_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"ftr"}, undef, $FH_HR);
+      ofile_TableHumanOutput(\@data_fcd_AA, \@head_fcd_AA, \@clj_fcd_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"fcd"}, undef, $FH_HR);
       ofile_TableHumanOutput(\@data_sgm_AA, \@head_sgm_AA, \@clj_sgm_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"sgm"}, undef, $FH_HR);
       ofile_TableHumanOutput(\@data_alt_AA, \@head_alt_AA, \@clj_alt_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"alt"}, undef, $FH_HR);
       ofile_TableHumanOutput(\@data_alc_AA, \@head_alc_AA, \@clj_alc_A, undef, undef, "  ", "-", "#", "#", "", 0, $FH_HR->{"alc"}, undef, $FH_HR);
@@ -12623,6 +12940,7 @@ sub output_tabular {
     if(! $do_clsonly) { 
       if(scalar(@data_ant_AA) > 0) { ofile_TableHumanOutput(\@data_ant_AA, undef, \@clj_ant_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"ant"}, undef, $FH_HR); }
       if(scalar(@data_ftr_AA) > 0) { ofile_TableHumanOutput(\@data_ftr_AA, undef, \@clj_ftr_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"ftr"}, undef, $FH_HR); }
+      if(scalar(@data_fcd_AA) > 0) { ofile_TableHumanOutput(\@data_fcd_AA, undef, \@clj_fcd_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"fcd"}, undef, $FH_HR); }
       if(scalar(@data_sgm_AA) > 0) { ofile_TableHumanOutput(\@data_sgm_AA, undef, \@clj_sgm_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"sgm"}, undef, $FH_HR); }
       if(scalar(@data_alt_AA) > 0) { ofile_TableHumanOutput(\@data_alt_AA, undef, \@clj_alt_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"alt"}, undef, $FH_HR); }
       if(scalar(@data_alc_AA) > 0) { ofile_TableHumanOutput(\@data_alc_AA, undef, \@clj_alc_A, undef, undef, "  ", "-", "#", "#", "", 0, $FH_HR->{"alc"}, undef, $FH_HR); }
@@ -16920,6 +17238,11 @@ sub helper_tabular_fill_header_and_justification_arrays {
     @{$head_AAR->[0]} = ("",    "seq",  "seq", "",    "",      "ftr",  "ftr",  "ftr", "ftr", "par", "",    "",       "",     "",        "",    "",     "",     "",       "",     "",        "",     "",    "",    "seq",    "model",  "ftr");
     @{$head_AAR->[1]} = ("idx", "name", "len", "p/f", "model", "type", "name", "len", "idx", "idx", "str", "n_from", "n_to", "n_instp", "trc", "5'N",  "3'N",  "p_from", "p_to", "p_instp", "p_sc", "nsa", "nsn", "coords", "coords", "alerts");
     @{$clj_AR}        = (1,     1,      0,     1,     1,       1,      1,      0,     0,     0,     0,     0,        0,      0,         1,     0,      0,      0,        0,      0,         0,      0,     0,     0,        0,        1);
+  }
+  elsif($ofile_key eq "fcd") {
+    @{$head_AAR->[0]} = ("",    "seq",  "ftr",  "ftr", "",      "",        "",      "",      "",      "",      "protein", "seq",    "mdl");
+    @{$head_AAR->[1]} = ("idx", "name", "name", "idx", "query", "protein", "p_ftr", "p_len", "rawsc", "n_tie", "coords",  "coords", "coords");
+    @{$clj_AR}        = (1,     1,      1,      0,     1,       1,         1,       0,       0,       0,       0,         0,        0);
   }
   elsif($ofile_key eq "sgm") {
     @{$head_AAR->[0]} = ("",    "seq",  "seq", "",    "",      "ftr",  "ftr",  "ftr", "num", "sgm", "seq",  "seq", "mdl",  "mdl", "sgm", "",    "",    "5'", "3'", "5'",  "3'");
