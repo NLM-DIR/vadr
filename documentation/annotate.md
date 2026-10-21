@@ -293,6 +293,7 @@ printed, along with elapsed time:
 # per-sequence tabular annotation summary file saved in:          va-noro.9.vadr.sqa
 # per-sequence tabular classification summary file saved in:      va-noro.9.vadr.sqc
 # per-feature tabular summary file saved in:                      va-noro.9.vadr.ftr
+# per-CDS protein validation hit tabular summary file saved in:   va-noro.9.vadr.fcd
 # per-model-segment tabular summary file saved in:                va-noro.9.vadr.sgm
 # per-model tabular summary file saved in:                        va-noro.9.vadr.mdl
 # per-alert tabular summary file saved in:                        va-noro.9.vadr.alt
@@ -418,13 +419,14 @@ One of these files includes all
 passing sequences (`va-noro.9.vadr.pass.fa`) and the other includes all
 failing sequences (`va-noro.9.vadr.fail.fa`).
 
-After these two FASTA files are eight tabular summary files that end
+After these two FASTA files are nine tabular summary files that end
 with three letter suffixes:
 
 | suffix | description | reference | 
 |--------|-------------|-----------|
 | `.alc` | per-alert code information (counts)     | [description of format](formats.md#alc) |
 | `.alt` | per-alert instance information          | [description of format](formats.md#alt) |
+| `.fcd` | per-CDS protein-validation hit information | [description of format](formats.md#fcd) |
 | `.ftr` | per-feature information                 | [description of format](formats.md#ftr) |
 | `.mdl` | per-model information                   | [description of format](formats.md#mdl) |
 | `.sgm` | per-segment information                 | [description of format](formats.md#sgm) |
