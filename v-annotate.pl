@@ -8773,10 +8773,19 @@ sub add_protein_validation_alerts {
                     # mapped through the alignment
                     my $hit_mcoords = ((defined $runs_AR) && (defined $hit_scoords)) ? helper_ua2rf_runs_coords_to_mdl_coords($runs_AR, $hit_scoords, $FH_HR) : undef;
                     $alt_mcoords = "mdl:";
-                    # otherwise determine them from the protein positions of the hit; 
-                    # model coords to check for exceptions are always determined this way
+                    if(defined $hit_mcoords) { 
+                      # always check for exceptions in + and - strand
+                      my $tmp_rc_hit_mcoords = vdr_CoordsReverseComplement($hit_mcoords, 0, $FH_HR); # 0: don't do carrots
+                      foreach $exc_coords (@indfstrp_exc_A) { 
+                        if((vdr_CoordsCheckIfSpans($exc_coords, $hit_mcoords, $FH_HR)) || 
+                           (vdr_CoordsCheckIfSpans($exc_coords, $tmp_rc_hit_mcoords, $FH_HR))) { 
+                          $exempted_region = 1;
+                        }
+                      }
+                    }
+                    # otherwise determine them from the protein positions of the hit
                     # see github issue #84: skip mdl coords (report VADRNULL) if subject hit exceeds reference CDS frame (over-length library protein)
-                    if((defined $p_hstart) && (defined $p_hstop) &&
+                    elsif((defined $p_hstart) && (defined $p_hstop) &&
                        (! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR))) {
                       # always create in + strand first, vdr_CoordsProteinRelativeToAbsolute requires it
                       my $tmp_pos_alt_mcoords = vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR);
@@ -8788,9 +8797,7 @@ sub add_protein_validation_alerts {
                           $exempted_region = 1;
                         }
                       }
-                      if(! defined $hit_mcoords) { 
-                        $hit_mcoords = ($p_strand eq "+") ? $tmp_pos_alt_mcoords : $tmp_neg_alt_mcoords;
-                      }
+                      $hit_mcoords = ($p_strand eq "+") ? $tmp_pos_alt_mcoords : $tmp_neg_alt_mcoords;
                     }
                     $alt_mcoords .= ((defined $hit_mcoords) ? $hit_mcoords : "VADRNULL") . ";";
                     if(! $exempted_region) { 
@@ -8893,9 +8900,21 @@ sub add_protein_validation_alerts {
                         if(helper_blastx_query_strand($p_strand, $p_blastx_feature_flag, $p_ftr_scoords, $FH_HR) eq "-") { 
                           $ins_aa_mpos--;
                         }
-                        # see github issue #84: subject insert position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_ins_spos undef and use default xmaxins
+                        # determine the alert coords, and the model position after which the insert occurs, 
+                        # $nt_ins_spos, to check for position-specific exceptions: if the sequence was aligned, 
+                        # this is the alert model position, determined from the alignment
+                        my ($ins_alt_scoords, $ins_alt_mcoords) = (undef, undef);
                         my $nt_ins_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR), $FH_HR)) {
+                        if(defined $runs_AR) { 
+                          ($ins_alt_scoords, $ins_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
+                                                                                                                 $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
+                                                                                                                 $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
+                                                                                                                 $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          if($ins_alt_mcoords =~ m/^mdl\:(\d+)\.\./) { $nt_ins_spos = $1; }
+                        }
+                        # otherwise determine it from the protein position
+                        # see github issue #84: subject insert position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_ins_spos undef and use default xmaxins
+                        elsif(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR), $FH_HR)) {
                           $nt_ins_spos = vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
                                                                                                           vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR),
                                                                                                           $FH_HR), $FH_HR);
@@ -8904,12 +8923,14 @@ sub add_protein_validation_alerts {
                         if($p_ins_len_A[$ins_idx] > $local_xmaxins) { 
                           if(defined $alt_str_HH{$ftr_results_prefix}{"insertnp"}) { $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= ":VADRSEP:"; } # we are adding another instance
                           else                               { $alt_str_HH{$ftr_results_prefix}{"insertnp"}  = ""; } # initialize
-                          ($alt_scoords, $alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
-                                                                                                     $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
-                                                                                                     $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
-                                                                                                     $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          if(! defined $ins_alt_scoords) { 
+                            ($ins_alt_scoords, $ins_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
+                                                                                                                   $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
+                                                                                                                   $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
+                                                                                                                   $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          }
                           $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= sprintf("%s%s%d>%d", 
-                                                            $alt_scoords, $alt_mcoords, $p_ins_len_A[$ins_idx], $local_xmaxins);
+                                                            $ins_alt_scoords, $ins_alt_mcoords, $p_ins_len_A[$ins_idx], $local_xmaxins);
                           
                         }
                       }
@@ -8921,9 +8942,21 @@ sub add_protein_validation_alerts {
                       my @p_del_len_A  = ();
                       my $ndel = helper_blastx_breakdown_max_indel_str($p_del, \@p_del_qpos_A, \@p_del_spos_A, \@p_del_len_A, $FH_HR);
                       for(my $del_idx = 0; $del_idx < $ndel; $del_idx++) {
-                        # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos undef and use default xmaxdel
+                        # determine the alert coords, and the first deleted model position, $nt_del_spos, 
+                        # to check for position-specific exceptions: if the sequence was aligned, this 
+                        # is the first alert model position, determined from the alignment
+                        my ($del_alt_scoords, $del_alt_mcoords) = (undef, undef);
                         my $nt_del_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
+                        if(defined $runs_AR) { 
+                          ($del_alt_scoords, $del_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(0, # $is_insert
+                                                                                                                 $p_del_qpos_A[$del_idx], $p_del_spos_A[$del_idx], $p_del_len_A[$del_idx], 
+                                                                                                                 $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
+                                                                                                                 $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          if($del_alt_mcoords =~ m/^mdl\:(\d+)\.\./) { $nt_del_spos = $1; }
+                        }
+                        # otherwise determine it from the protein position
+                        # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos undef and use default xmaxdel
+                        elsif(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
                           $nt_del_spos = vdr_Feature5pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
                                                                                                          vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR),
                                                                                                          $FH_HR), $FH_HR);
@@ -8937,12 +8970,14 @@ sub add_protein_validation_alerts {
                         if($p_del_len_A[$del_idx] > $local_xmaxdel) { 
                           if(defined $alt_str_HH{$ftr_results_prefix}{"deletinp"}) { $alt_str_HH{$ftr_results_prefix}{"deletinp"} .= ":VADRSEP:"; } # we are adding another instance
                           else                                                     { $alt_str_HH{$ftr_results_prefix}{"deletinp"} = ""; }           # initialize
-                          ($alt_scoords, $alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(0, # $is_insert
-                                                                                                     $p_del_qpos_A[$del_idx], $p_del_spos_A[$del_idx], $p_del_len_A[$del_idx], 
-                                                                                                     $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
-                                                                                                     $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          if(! defined $del_alt_scoords) { 
+                            ($del_alt_scoords, $del_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(0, # $is_insert
+                                                                                                                   $p_del_qpos_A[$del_idx], $p_del_spos_A[$del_idx], $p_del_len_A[$del_idx], 
+                                                                                                                   $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
+                                                                                                                   $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          }
                           $alt_str_HH{$ftr_results_prefix}{"deletinp"} .= sprintf("%s%s%d>%d", 
-                                                            $alt_scoords, $alt_mcoords, $p_del_len_A[$del_idx], $local_xmaxdel);
+                                                            $del_alt_scoords, $del_alt_mcoords, $p_del_len_A[$del_idx], $local_xmaxdel);
                         }
                       }
                     }
