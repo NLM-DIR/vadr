@@ -10,6 +10,7 @@
   * [basic output files](#annotate)
   * [`.alc` files](#alc)
   * [`.alt` files](#alt)
+  * [`.fcd` files](#fcd)
   * [`.ftr` files](#ftr)
   * [`.mdl` files](#mdl)
   * [`.sgm` files](#sgm)
@@ -332,7 +333,7 @@ references on the file type/format.
 
 ---
 
-There are also ten types of `v-annotate.pl` tabular output files with fields separated by 
+There are also eleven types of `v-annotate.pl` tabular output files with fields separated by 
 one or more spaces, that are designed to be easily parseable with simple unix tools or scripts.
 These files are listed in the table below
 
@@ -340,6 +341,7 @@ These files are listed in the table below
 |--------|-------------|----------------------|-----------|
 | `.alc` | per-alert code information (counts)     | [va-noro.9.vadr.alc](annotate-files/va-noro.9.vadr.alc) | [description of format in this document](#alc) |
 | `.alt` | per-alert instance information          | [va-noro.9.vadr.alt](annotate-files/va-noro.9.vadr.alt) | [description of format in this document](#alt) |
+| `.fcd` | per-CDS protein-validation hit information | [va-noro.9.vadr.fcd](annotate-files/va-noro.9.vadr.fcd) | [description of format in this document](#fcd) |
 | `.ftr` | per-feature information                 | [va-noro.9.vadr.ftr](annotate-files/va-noro.9.vadr.ftr) | [description of format in this document](#ftr) |
 | `.mdl` | per-model information                   | [va-noro.9.vadr.mdl](annotate-files/va-noro.9.vadr.mdl) | [description of format in this document](#mdl) |
 | `.sgm` | per-segment information                 | [va-noro.9.vadr.sgm](annotate-files/va-noro.9.vadr.sgm) | [description of format in this document](#sgm) |
@@ -349,7 +351,7 @@ These files are listed in the table below
 | `.rpn` | per-sequence N replacement information (only created if `-r` used)  | [va-noro-r.9.vadr.rpn](annotate-files/va-noro-r.9.vadr.rpn) | [description of format in this document](#rpn) |
 | `.rdt` | per-(sequence,template) R2DT figure summary (only created if `--draw_r2dt` used) | example excerpt in [description of format in this document](#rdt) | [description of format in this document](#rdt) |
 
-All ten types of tabular output files share the following
+All eleven types of tabular output files share the following
 characteristics: 
 
 1. fields are separated by whitespace (with the possible exception of
@@ -358,7 +360,7 @@ characteristics:
 3. data lines begin with a non-whitespace character other than `#`
 4. all lines are either comment lines or data lines
 
-Each of these ten tabular formats are explained in more detail below.
+Each of these eleven tabular formats are explained in more detail below.
 All example files linked to below, except where otherwise stated, were created by the `v-annotate.pl` [example command](annotate.md#examplebasic)
 `v-annotate.pl $VADRSCRIPTSDIR/documentation/annotate-files/noro.9.fa va-noro.9`.
 
@@ -412,6 +414,68 @@ For examples using a toy model of different types of alerts, see [here](alerts.m
 | 14 to end | `alert detail`  | detailed description of the alert instance, possibly with sequence position information; *this field, unlike all others, contains whitespace* |
 
 ---
+### Explanation of `.fcd`-suffixed output files<a name="fcd"></a>
+
+`.fcd` data lines have 13 fields, the names of which appear in the
+first two comment lines in each file. There is one data line for each
+**CDS feature** that is annotated for each input sequence that
+`v-annotate.pl` processed, in the same order and with the same `idx`
+value as in the corresponding `.ftr` file. Each line reports the
+single protein-validation hit that `v-annotate.pl` selected for that
+CDS, that is, the hit the `.ftr` fields `p_from`, `p_to`, `p_instp`
+and `p_sc` are derived from. This makes it possible to determine which
+protein in a model's protein BLAST database validated each annotated
+CDS. CDS features for which no hit was selected have `-` in fields
+5 to 13.
+[Example file](annotate-files/va-noro.9.vadr.fcd).
+
+| idx | field                 | description |
+|-----|-----------------------|-------------|
+|   1 | `idx`                 | index of feature in format `<d1>.<d2>`, identical to the `idx` field of the corresponding `.ftr` line |
+|   2 | `seq name`            | sequence name in which this CDS is annotated |
+|   3 | `ftr name`            | name of the CDS feature |
+|   4 | `ftr idx`             | index (in input model info file) of this feature |
+|   5 | `query`               | type of BLASTX query the selected hit came from: `full` if the query was the full input sequence, `cds` if the query was the predicted CDS for this feature, `-` if no hit was selected |
+|   6 | `protein`             | name of the target protein in the protein BLAST database, up to but not including the first `/`; typically the source accession and the coordinates within it, e.g. `KP109500:178..1677:+` |
+|   7 | `p_ftr`               | remainder of the target protein name after the first `/`; the model CDS coordinates that the target protein represents, e.g. `790..2292:+` |
+|   8 | `p_len`               | length of the target protein, in amino acids |
+|   9 | `rawsc`               | raw score of the selected hit; identical to the `.ftr` `p_sc` field for this feature |
+|  10 | `n_tie`               | number of **other** distinct target proteins with an accepted hit for this CDS, from the same query, with exactly the same raw score and exactly the same query range as the selected hit; such ties are broken by `v-annotate.pl` in favor of the first hit encountered in the BLASTX output |
+|  11 | `p_coords`            | range of the selected hit within the target protein, in amino acid positions |
+|  12 | `seq coords`          | coordinates of the selected hit in the input sequence, see [format of coordinate strings](#coords) |
+|  13 | `mdl coords`          | coordinates of the selected hit in the model, see [format of coordinate strings](#coords) |
+
+The `query` field reports which BLASTX query produced the selected
+hit, not how the hit was selected. `v-annotate.pl` keeps up to four
+candidate hits per CDS (the best and the longest hit from any query,
+and the best and the longest hit from a predicted-CDS query) and then
+picks one of them; the query of the picked hit is always either the
+full input sequence (`full`) or the predicted CDS for the feature
+(`cds`).
+
+The `mdl coords` field is computed by mapping `seq coords`, the
+selected hit in the input sequence, onto the model through the
+sequence's alignment to the model, one segment at a time, using the
+same rule as the model coordinates of alerts. Each segment endpoint
+that is aligned to a model position is reported as that model
+position. An endpoint that is an inserted position (not aligned to a
+model position) is reported as the model position the insertion
+follows, or as `0` if the insertion is before model position 1. So a
+segment that lies entirely within one insertion is reported as a
+single model position, such as `100..100:+`. The field is `-` if the
+sequence was not aligned.
+
+With the `--pv_skip` option, protein validation is not performed and
+the `.fcd` file contains only the header lines.
+
+With the `--pv_hmmer` option, protein validation is performed with
+HMMER instead of BLASTX, and the fields are interpreted as follows:
+`protein` and `p_ftr` are the two parts of the name of the profile
+HMM, split at the first `/`, `p_len` is the length of the profile
+HMM, `rawsc` is the HMMER **bit** score (not a raw score), `n_tie` is
+`-`, and `p_coords` is the range of the hit within the profile HMM.
+
+---
 ### Explanation of `.ftr`-suffixed output files<a name="ftr"></a>
 
 `.ftr` data lines have 26 fields, the names of which appear in the first two
@@ -441,10 +505,10 @@ the model info file.
 |  15 | `trc`                 | indicates whether the feature is truncated or not, where one or both ends of the feature are missing due to a premature end to the sequence; possible values are `no` for not truncated; `5'` for truncated on the 5' end; `3'` for truncated on the 3' end; and `5'&3'` for truncated on both the 5' and 3' ends; |
 |  16 | `5'N`                 | number of consecutive N ambiguous nucleotide characters at 5' end, starting at `n_from`, `0` for none |
 |  17 | `3'N`                 | number of consecutive N ambiguous nucleotide characters at 3' end, ending at `n_to`, `0` for none |
-|  18 | `p_from`              | if a CDS feature, the nucleotide start position for this feature based on the blastx protein-validation step, this will always be the first position of a codon in the blastx-predicted translated region| 
-|  19 | `p_to`                | if a CDS feature, nucleotide stop position for this feature based on the blastx protein-validation step, this will always be the final position of a codon in the blastx-predicted translated region, typically the final position of the codon *immediately upstream (prior)* of the stop codon if CDS is not 3' truncated | 
-|  20 | `p_instp`             | nucleotide position of stop codon 5' of `p_to` if an in-frame stop exists before `p_to` |
-|  21 | `p_sc`                | raw score of best blastx alignment |
+|  18 | `p_from`              | if a CDS feature, the nucleotide start position for this feature in the input sequence based on the blastx protein-validation step, this will always be the first position of a codon in the blastx-predicted translated region; always a sequence (genome) coordinate, even when the blastx query was the predicted CDS rather than the full sequence | 
+|  19 | `p_to`                | if a CDS feature, nucleotide stop position for this feature in the input sequence based on the blastx protein-validation step, this will always be the final position of a codon in the blastx-predicted translated region, typically the final position of the codon *immediately upstream (prior)* of the stop codon if CDS is not 3' truncated; always a sequence (genome) coordinate, even when the blastx query was the predicted CDS rather than the full sequence | 
+|  20 | `p_instp`             | nucleotide position of stop codon 5' of `p_to` if an in-frame stop exists before `p_to`, as a sequence (genome) coordinate |
+|  21 | `p_sc`                | *raw* score (not bit score) of best blastx alignment; with `--pv_hmmer`, the HMMER bit score of the best hit |
 |  22 | `nsa`                 | number of segments annotated for this feature |
 |  23 | `nsn`                 | number of segments not annotated for this feature |
 |  24 | `seq coords`          | sequence coordinates of feature, see [format of coordinate strings](#coords) |
