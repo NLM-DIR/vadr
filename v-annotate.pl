@@ -11710,6 +11710,7 @@ sub alert_sequence_instance_update_mdl_coords {
         }
         if($instance_ctr > 0) { $new_alt_instance .= ":VADRSEP:"; }
         $new_alt_instance .= "seq:" . $instance_scoords . ";" . $new_mcoords . $instance_detail;
+        $instance_ctr++;
       }
       # update the alert instance
       $alt_seq_instances_HHR->{$seq_name}{$alt_code} = $new_alt_instance;
