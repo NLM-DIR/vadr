@@ -61,6 +61,7 @@ corresponding `.alt` file output [below](#examples).
 | *mutendns* | *MUTATION_AT_END*  | will be blank (`-`) | will be blank (`-`) | [stop codon alert examples](#example-stop) | 
 | *unexleng* | *UNEXPECTED_LENGTH* | sequence positions of the predicted CDS, the length of which is not a multiple of 3 | model (reference) positions that the predicted CDS align to, some nucleotides may be inserted *before or after* these positions | [stop codon alert examples](#example-stop) |
 | *cdsstopn* | *CDS_HAS_STOP_CODON* | sequence positions of the 5'-most in-frame stop codon in the CDS, this stop will be 5' of expected stop codong position (always length 3) | model (reference) positions that align to stop codon in `sequence coords` | [stop codon alert examples](#example-stop) | 
+| *cdsstopp* | *CDS_HAS_STOP_CODON* | sequence positions of the 5'-most stop codon in the protein-based alignment (always length 3) | model (reference) positions that align to stop codon in `sequence coords` | [stop codon alert examples](#example-stop) | 
 | *indf5gap* | *INDEFINITE_ANNOTATION_START* | sequence position of first nucleotide aligned 3' of gap that aligns to the feature boundary (always length 1) | model (reference) position of the 5' feature boundary (always length 1) | [stop codon alert examples](#example-indf5) | 
 | *indf5lcc* | *INDEFINITE_ANNOTATION_START* | sequence position of nucleotide aligned at the 5' feature boundary (always length 1) | model (reference) position of the 5' feature boundary (always length 1) | [examples of indefinite annotation at start](#example-indf5) | 
 | *indf5pst* | *INDEFINITE_ANNOTATION_START* | sequence positions of the nucleotide alignment of the 5' end of the CDS **not** covered by the protein-based alignment | model (reference) position of the 5' boundary of the CDS (always length 1) | [examples of indefinite annotation at start](#example-indf5) | 
@@ -90,7 +91,28 @@ corresponding `.alt` file output [below](#examples).
 | *dupregin* | *DUPLICATE_REGIONS* | *N* sets of sequence coordinates, in pairs, each pair is two hits that overlap in model coordinates, *N* will be a factor of 2 | *N* model (reference) coordinates, one for each of the hits in the coverage determination stage that correspond to each set of sequence coordinates 1 to *N* | [duplicate regions example](#example-dupregin) | 
 | *discontn* | *DISCONTINUOUS_SIMILARITY* | *N* sets of sequence coordinates, one for each hit in the coverage determination stage | *N* model (reference) coordinates, one for each of the hits in the coverage determination stage that correspond to each set of sequence coordinates 1 to *N* | [discontinuous similarity example](#example-discontn) | 
 | *indfstrn* | *INDEFINITE_STRAND* | sequence coordinates of the best hit on the **opposite** strand from the overall best hit for this sequence in the coverage determination stage | model (reference) coordinates for the hit pertaining to the sequence coordinates in `sequence coords` | [indefinite strand example](#example-indfstrn) | 
+| *indfstrp* | *INDEFINITE_STRAND* | sequence coordinates of the protein-based alignment, which is on the opposite strand from the nucleotide-based prediction of the CDS | model (reference) positions the sequence position(s) in `sequence coords` are aligned to | [indefinite strand example](#example-indfstrn) | 
+| *indfantp* | *INDEFINITE_ANNOTATION* | sequence coordinates of the protein-based alignment for a CDS that has no nucleotide-based prediction | model (reference) positions the sequence position(s) in `sequence coords` are aligned to | - | 
 | *lowcovrg* | *LOW_COVERAGE* | one or more set of sequence coordinates that are **not** covered by any hit to the model on the top-scoring strand in the coverage determination stage | will be blank (`-`) | [low coverage example](#example-lowcovrg) | 
+
+Model coordinates are determined from the alignment of the sequence to
+the model. Each sequence position maps to the model position it is
+aligned to or, if it is inserted relative to the model, to the model
+position that the insertion follows (`0` if it occurs before model
+position 1). This includes the alerts from the protein validation
+stage (`cdsstopp`, `indfantp`, `indfstrp`, `insertnp` and
+`deletinp`), even though they are detected in the protein-based
+alignment, which may place an insertion or deletion slightly
+differently than the nucleotide alignment does. For `insertnp`, the
+model position is the one that the sequence position just before
+the insertion maps to. For `deletinp`, the model positions are the
+ones that follow the model position that the sequence position just
+before the deletion maps to, and their number is the length of the
+deletion in the protein-based alignment. If a sequence was not
+aligned to the model, the model coordinates of these protein
+validation alerts are instead calculated from the positions in the
+protein-based alignment, assuming the CDS has no insertions or
+deletions relative to the model.
 
 --- 
 
