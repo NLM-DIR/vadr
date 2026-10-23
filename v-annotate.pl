@@ -241,6 +241,8 @@ opt_Add("--alt_pass",      "string",  undef,     $g,     undef, undef,         "
 opt_Add("--alt_fail",      "string",  undef,     $g,     undef, undef,         "specify that alert codes in <s> cause FAILure",                                              "specify that alert codes in comma-separated <s> do cause FAILure",     \%opt_HH, \@opt_order_A);
 opt_Add("--alt_mnf_yes",   "string",  undef,     $g,     undef,"--ignore_mnf", "alert codes in <s> for 'misc_not_failure' features cause misc_feature-ization, not failure", "alert codes in <s> for 'misc_not_failure' features cause misc_feature-ization, not failure", \%opt_HH, \@opt_order_A);
 opt_Add("--alt_mnf_no",    "string",  undef,     $g,     undef,"--ignore_mnf", "alert codes in <s> for 'misc_not_failure' features cause failure, not misc_feature-ization", "alert codes in <s> for 'misc_not_failure' features cause failure, not misc-feature-ization", \%opt_HH, \@opt_order_A);
+opt_Add("--ncf",           "string",  "fail",    $g,     undef, undef,         "set policy for ncf type (non-coding) features with fatal alerts to <s>",            "set policy for ncf type (non-coding) features with fatal alerts to <s>: 'fail' (seq fails) or 'drop' (ftr dropped)", \%opt_HH, \@opt_order_A);
+opt_Add("--mnf_legacy",   "boolean",  0,         $g,     undef, undef,         "legacy: allow 'misc_not_failure' on ncf type features with --ncf drop",                     "legacy, for existing models only: allow 'misc_not_failure' on ncf type features with --ncf drop", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for ignoring/forcing specific keys in the input model info (.minfo) file";
 #        option               type        default  group requires incompat  preamble-output                                                                               help-output    
@@ -496,6 +498,8 @@ my $options_okay =
                 "alt_fail=s"       => \$GetOptions_H{"--alt_fail"},
                 "alt_mnf_yes=s"    => \$GetOptions_H{"--alt_mnf_yes"},
                 "alt_mnf_no=s"     => \$GetOptions_H{"--alt_mnf_no"},
+                "ncf=s"            => \$GetOptions_H{"--ncf"},
+                "mnf_legacy"       => \$GetOptions_H{"--mnf_legacy"},
                 "ignore_mnf"       => \$GetOptions_H{"--ignore_mnf"},
                 "ignore_isdel"     => \$GetOptions_H{"--ignore_isdel"},
                 "ignore_afset"     => \$GetOptions_H{"--ignore_afset"},
@@ -835,6 +839,11 @@ if(opt_IsUsed("--split", \%opt_HH)) {
 # if --nmiscftrthr <n> is used, <n> must be >= 2
 if((opt_IsUsed("--nmiscftrthr", \%opt_HH)) && (opt_Get("--nmiscftrthr", \%opt_HH) < 2)) { 
   die "ERROR, with --nmiscftrthr <n>, <n> must be >= 2";
+}
+
+# --ncf <s> value must be one of the ncf policies (see vadr.pm::vdr_NcfPolicies())
+if(! vdr_NcfPolicyIsValid(opt_Get("--ncf", \%opt_HH))) { 
+  die "ERROR, --ncf <s> value must be one of: " . join(", ", vdr_NcfPolicies()) . "; read " . opt_Get("--ncf", \%opt_HH);
 }
 
 # if --lowsim5ftr <n1> or --lowsim5lftr <n2> used, <n1> must be <= <n2>
@@ -1268,11 +1277,13 @@ for(my $mdl_idx = 0; $mdl_idx < $nmdl; $mdl_idx++) {
   vdr_FeatureInfoImputeOutname(\@{$ftr_info_HAH{$mdl_name}});
   vdr_FeatureInfoInitializeMiscNotFailure(\@{$ftr_info_HAH{$mdl_name}}, opt_Get("--ignore_mnf", \%opt_HH), $FH_HR);
   vdr_FeatureInfoInitializeIsDeletable(\@{$ftr_info_HAH{$mdl_name}}, opt_Get("--ignore_isdel", \%opt_HH), $FH_HR);
+  vdr_FeatureInfoInitializeNcfPolicy(\@{$ftr_info_HAH{$mdl_name}}, opt_Get("--ncf", \%opt_HH), opt_Get("--mnf_legacy", \%opt_HH), $FH_HR);
   vdr_FeatureInfoInitializeAlternativeFeatureSet(\@{$ftr_info_HAH{$mdl_name}}, opt_Get("--ignore_afset", \%opt_HH), $FH_HR);
   vdr_FeatureInfoInitializeAlternativeFeatureSetSubstitution(\@{$ftr_info_HAH{$mdl_name}}, (opt_Get("--ignore_afset", \%opt_HH) || opt_Get("--ignore_afsetsubn", \%opt_HH)), $FH_HR);
   vdr_FeatureInfoInitializeCanonSpliceSites(\@{$ftr_info_HAH{$mdl_name}}, opt_Get("--force_canonss", \%opt_HH), opt_Get("--ignore_canonss", \%opt_HH), $FH_HR);
   vdr_FeatureInfoValidateMiscNotFailure(\@{$ftr_info_HAH{$mdl_name}}, $FH_HR);
   vdr_FeatureInfoValidateIsDeletable(\@{$ftr_info_HAH{$mdl_name}}, $FH_HR);
+  vdr_FeatureInfoValidateNcfPolicy(\@{$ftr_info_HAH{$mdl_name}}, $mdl_name, $FH_HR);
   vdr_FeatureInfoValidateAlternativeFeatureSet(\@{$ftr_info_HAH{$mdl_name}}, $FH_HR);
   vdr_FeatureInfoValidateAndConvertAlternativeFeatureSetSubstitution(\@{$ftr_info_HAH{$mdl_name}}, $FH_HR);
   vdr_FeatureInfoValidateCanonSpliceSites(\@{$ftr_info_HAH{$mdl_name}}, $FH_HR);
@@ -2589,6 +2600,7 @@ exit 0;
 # helper_ftable_class_model_for_sequence
 # helper_ftable_process_sequence_alerts
 # helper_ftable_process_feature_alerts
+# helper_ftable_feature_is_dropped
 #
 # Other output-related subroutines:
 # helper_output_sequence_alert_strings()
@@ -6038,8 +6050,10 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
             # annotation for $ftr_idx in this case
             my $alt_scoords = "seq:VADRNULL;"; # feature is deleted, no sequence info available
             my $alt_mcoords = "mdl:" . $ftr_info_AHR->[$ftr_idx]{"coords"} . ";";
-            # determine which code to use depending on is_deletable value from ftr_info
-            my $alt_code    = $ftr_info_AHR->[$ftr_idx]{"is_deletable"} ? "deletina" : "deletins";
+            # determine which code to use depending on is_deletable value from ftr_info,
+            # features whose non-coding feature (ncf) policy action is 'drop' (see 
+            # vadr.pm::vdr_FeatureAlertNcfAction()) are treated as if is_deletable is 1
+            my $alt_code    = ($ftr_info_AHR->[$ftr_idx]{"is_deletable"} || (vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, "deletins") eq "drop")) ? "deletina" : "deletins";
             alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, $alt_code, $seq_name, 
                                         sprintf("%s%s%s feature number %s: %s",
                                                 $alt_scoords, $alt_mcoords,
@@ -8145,52 +8159,30 @@ sub add_low_similarity_alerts_for_one_sequence {
                     $alt_msg = sprintf("%s%s%d nt overlap b/t low similarity region of length %d (%d..%d) and annotated feature (%d..%d)",
                                        $alt_scoords, $alt_mcoords, $noverlap, $length, $start, $stop, $f_start, $f_stop);
                     if(($is_start) && ($length >= $terminal_ftr_5_min_length)) { 
-                      $ftr_overlap_flag = 1;
-                      if($ftr_matches_coding) { 
-                        alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsim5c", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                      }
-                      else { # non-coding
-                        if($length >= $long_terminal_ftr_5_min_length) { 
-                          alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsim5l", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                        }
-                        else { 
-                          alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsim5n", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                        }
-                      }
+                      my $lowsim_alt_code = ($ftr_matches_coding) ? "lowsim5c" : (($length >= $long_terminal_ftr_5_min_length) ? "lowsim5l" : "lowsim5n");
+                      if(vdr_FeatureAbsorbsLowSimilarity($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $lowsim_alt_code, $length, $long_terminal_ftr_5_min_length)) { $ftr_overlap_flag = 1; }
+                      alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, $lowsim_alt_code, $seq_name, $ftr_idx, $alt_msg, $FH_HR);
                     }
                     if(($is_end) && ($length >= $terminal_ftr_3_min_length)) { 
-                      $ftr_overlap_flag = 1;
-                      if($ftr_matches_coding) { 
-                        alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsim3c", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                      }
-                      else { # non-coding
-                        if($length >= $long_terminal_ftr_3_min_length) { 
-                          alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsim3l", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                        }
-                        else { 
-                          alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsim3n", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                        }
-                      }
+                      my $lowsim_alt_code = ($ftr_matches_coding) ? "lowsim3c" : (($length >= $long_terminal_ftr_3_min_length) ? "lowsim3l" : "lowsim3n");
+                      if(vdr_FeatureAbsorbsLowSimilarity($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $lowsim_alt_code, $length, $long_terminal_ftr_3_min_length)) { $ftr_overlap_flag = 1; }
+                      alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, $lowsim_alt_code, $seq_name, $ftr_idx, $alt_msg, $FH_HR);
                     }
                     if((! $is_start) && (! $is_end) && ($length >= $internal_ftr_min_length)) { 
-                      $ftr_overlap_flag = 1;
-                      if($ftr_matches_coding) { 
-                        alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsimic", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                      }
-                      else { # non-coding
-                        if($length >= $long_internal_ftr_min_length) { 
-                          alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsimil", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                        }
-                        else { 
-                          alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, "lowsimin", $seq_name, $ftr_idx, $alt_msg, $FH_HR);
-                        }
-                      }
+                      my $lowsim_alt_code = ($ftr_matches_coding) ? "lowsimic" : (($length >= $long_internal_ftr_min_length) ? "lowsimil" : "lowsimin");
+                      if(vdr_FeatureAbsorbsLowSimilarity($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $lowsim_alt_code, $length, $long_internal_ftr_min_length)) { $ftr_overlap_flag = 1; }
+                      alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, $lowsim_alt_code, $seq_name, $ftr_idx, $alt_msg, $FH_HR);
                     }
                   }
                 }
               }
             } # end of 'for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++)'
-            if(! $ftr_overlap_flag) { # no features overlapped above length threshold, potentially report lowsim5s, lowsim3s, or lowsimis
+            # $ftr_overlap_flag is only set for features that absorb the region, which depends on
+            # the non-coding feature (ncf) policy (see vadr.pm::vdr_FeatureAbsorbsLowSimilarity()):
+            # e.g. with --ncf drop an ncf type feature gets a (non-fatal) feature alert that causes
+            # it to be dropped from the feature table, but the region is otherwise reported as if
+            # the feature did not exist (as a sequence alert if it overlaps no other feature)
+            if(! $ftr_overlap_flag) { # no features absorbed the region, potentially report lowsim5s, lowsim3s, or lowsimis
               $alt_scoords = "seq:" . vdr_CoordsSegmentCreate($start, $stop, "+", $FH_HR) . ";"; 
               if(defined $ua2rf_AR) { 
                 $alt_mcoords = "mdl:" . vdr_CoordsSegmentCreate(abs($ua2rf_AR->[$start]), abs($ua2rf_AR->[$stop]), "+", $FH_HR) . ";"; 
@@ -13126,6 +13118,7 @@ sub helper_tabular_replace_spaces {
 # helper_ftable_add_qualifier_from_ftr_results
 # helper_ftable_class_model_for_sequence
 # helper_ftable_process_feature_alerts
+# helper_ftable_feature_is_dropped
 # helper_ftable_process_sequence_alerts
 #
 #################################################################
@@ -13340,7 +13333,11 @@ sub output_feature_table {
                  helper_ftable_coords_from_nt_prediction($seq_name, $ftr_idx, $ftr_start_non_ab, $ftr_stop_non_ab, 
                                                          $ftr_info_AHR, \%{$sgm_results_HHAHR->{$mdl_name}}, $FH_HR);
           }
-          if(($ftr_ftbl_coords_str ne "") && ((! vdr_FeatureOmitFromTbl($ftr_info_AHR, $ftr_idx)) || (opt_Get("--ignore_oft", $opt_HHR)))) { 
+          # should we drop this feature from the feature table? Only possible for non-coding 
+          # feature (ncf) types (see vadr.pm::vdr_NcfFeatureTypes()) with --ncf drop
+          # that have >= 1 alert that would be fatal for a feature of another type
+          my $do_drop = helper_ftable_feature_is_dropped($seq_name, $ftr_idx, $ftr_info_AHR, $alt_info_HHR, \@ftr_alt_code_A, $alt_ftr_instances_HHHR, $FH_HR);
+          if(($ftr_ftbl_coords_str ne "") && (! $do_drop) && ((! vdr_FeatureOmitFromTbl($ftr_info_AHR, $ftr_idx)) || (opt_Get("--ignore_oft", $opt_HHR)))) { 
             # if $ftr_ftbl_coords_str is "", we won't output the feature because it was entirely ambiguities
             # fill an array and strings with all alerts for this sequence/feature combo
             my $ftr_alt_str = helper_output_feature_alert_strings($seq_name, $ftr_idx, 0, $alt_info_HHR, \@ftr_alt_code_A, $alt_ftr_instances_HHHR, $FH_HR);
@@ -14319,6 +14316,52 @@ sub helper_ftable_process_sequence_alerts {
   }
 
   return $ret_prevents_annot_flag;
+}
+
+#################################################################
+# Subroutine: helper_ftable_feature_is_dropped()
+# Incept:     EPN, Wed Oct 21 2026 (w/Claude)
+#
+# Purpose:    Determine if a feature should be dropped from 
+#             the feature table because it has at least one alert
+#             that causes it to be dropped (see 
+#             vadr.pm::vdr_FeatureAlertCausesDrop()), which depends 
+#             on the non-coding feature (ncf) policy (--ncf).
+#             Such alerts do not cause the sequence to fail.
+#
+# Arguments:
+#   $seq_name:               name of sequence
+#   $ftr_idx:                feature index
+#   $ftr_info_AHR:           REF to array of hashes with information on the features, PRE-FILLED
+#   $alt_info_HHR:           REF to hash of hashes with information on the errors, PRE-FILLED
+#   $ftr_alt_code_AR:        REF to array of per-feature alert codes
+#   $alt_ftr_instances_HHHR: REF to hash of array of hashes with per-feature errors, PRE-FILLED
+#   $FH_HR:                  REF to hash of file handles, including "log" and "cmd"
+# 
+# Returns: '1' if feature should be dropped, '0' if not
+#
+# Dies: Never
+#################################################################
+sub helper_ftable_feature_is_dropped { 
+  my $sub_name = "helper_ftable_feature_is_dropped";
+  my $nargs_expected = 7;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+ 
+  my ($seq_name, $ftr_idx, $ftr_info_AHR, $alt_info_HHR, $ftr_alt_code_AR, $alt_ftr_instances_HHHR, $FH_HR) = (@_);
+
+  if(! vdr_FeatureTypeIsNcf($ftr_info_AHR, $ftr_idx)) { # only ncf type features can be dropped
+    return 0;
+  }
+  my $alt_code_str = helper_output_feature_alert_strings($seq_name, $ftr_idx, 0, $alt_info_HHR, $ftr_alt_code_AR, $alt_ftr_instances_HHHR, $FH_HR);
+  if($alt_code_str ne "") { 
+    foreach my $alt_code (split(",", $alt_code_str)) { 
+      if(vdr_FeatureAlertCausesDrop($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code)) { 
+        return 1;
+      }
+    }
+  }
+
+  return 0;
 }
 
 #################################################################
