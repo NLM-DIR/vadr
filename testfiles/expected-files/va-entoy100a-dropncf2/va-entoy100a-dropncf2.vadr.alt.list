@@ -1,0 +1,3 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+ENTOY100A-Ns	ENTOY100A	-	*sequence*	LOW_SIMILARITY_START	1..6:+	1..6:+	significant similarity not detected at 5' end of the sequence [low similarity region of length 6]
+ENTOY100A-Ns-2	ENTOY100A	-	*sequence*	LOW_SIMILARITY_START	1..6:+	1..6:+	significant similarity not detected at 5' end of the sequence [low similarity region of length 6]

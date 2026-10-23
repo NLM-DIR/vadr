@@ -1,0 +1,2 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+ENTOY100A-3pNs	ENTOY100A	stem_loop	stem_loop.1	LOW_FEATURE_SIMILARITY_END	98..104:+	98..100:+	long region overlapping annotated feature that does not match a CDS at 3' end of sequence lacks significant similarity [3 nt overlap b/t low similarity region of length 7 (98..104) and annotated feature (96..100)]

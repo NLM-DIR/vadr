@@ -1,0 +1,9 @@
+>Feature ENTOY100A-3pNs
+32	47	CDS
+47	64
+66	73
+			product	protein two
+			protein_id	ENTOY100A-3pNs_1
+
+Additional note(s) to submitter:
+ERROR: LOW_SIMILARITY_END: (*sequence*) significant similarity not detected at 3' end of the sequence [low similarity region of length 7]; seq-coords:98..104:+; mdl-coords:98..100:+; mdl:ENTOY100A;

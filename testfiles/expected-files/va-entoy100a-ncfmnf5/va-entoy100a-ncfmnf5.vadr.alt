@@ -1,0 +1,8 @@
+#      seq                        ftr        ftr           ftr  alert           alert                              seq  seq         mdl  mdl  alert 
+#idx   name            model      type       name          idx  code      fail  description                     coords  len      coords  len  detail
+#----  --------------  ---------  ---------  ------------  ---  --------  ----  --------------------------  ----------  ---  ----------  ---  ------
+2.1.1  ENTOY100A-3pNs  ENTOY100A  -          -               -  ambgnt3s  no    AMBIGUITY_AT_END             97..104:+    8   97..100:+    4  final nucleotide of the sequence is an ambiguous nucleotide [-]
+2.1.2  ENTOY100A-3pNs  ENTOY100A  -          -               -  extrant3  no    EXTRA_SEQUENCE_END          101..104:+    4  100..100:+    1  extra sequence detected 3' of expected sequence end [4 extra nucleotides]
+2.2.1  ENTOY100A-3pNs  ENTOY100A  CDS        protein_four    9  ambgnt5c  no    AMBIGUITY_AT_CDS_START        98..97:-    2    98..97:-    2  first nucleotide of CDS is an ambiguous nucleotide [-]
+2.3.1  ENTOY100A-3pNs  ENTOY100A  stem_loop  stem_loop.1    10  ambgnt3f  no    AMBIGUITY_AT_FEATURE_END     97..100:+    4   97..100:+    4  final nucleotide of non-CDS feature is an ambiguous nucleotide [-]
+2.3.2  ENTOY100A-3pNs  ENTOY100A  stem_loop  stem_loop.1    10  lowsim3n  no    LOW_FEATURE_SIMILARITY_END   98..104:+    7   98..100:+    3  region overlapping annotated feature that does not match a CDS at 3' end of sequence lacks significant similarity [3 nt overlap b/t low similarity region of length 7 (98..104) and annotated feature (96..100)]
