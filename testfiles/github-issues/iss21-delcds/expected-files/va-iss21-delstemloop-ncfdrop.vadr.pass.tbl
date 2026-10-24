@@ -1,0 +1,60 @@
+>Feature entoy.delcds
+11	31	CDS
+			product	protein one
+			protein_id	entoy.delcds_1
+42	62	CDS
+			product	protein two
+			protein_id	entoy.delcds_2
+73	78	stem_loop
+80	82
+85	93
+			product	SL1
+>Feature entoy.delcds/cds3-deleted/1-70,96-123
+11	31	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-deleted/1-70,96-123_1
+42	62	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-deleted/1-70,96-123_2
+>Feature entoy.delcds/cds3-sgm1-deleted/1-70,79-123
+11	31	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm1-deleted/1-70,79-123_1
+42	62	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm1-deleted/1-70,79-123_2
+>Feature entoy.delcds/cds3-sgm2-deleted/1-79,84-123
+11	31	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm2-deleted/1-79,84-123_1
+42	62	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm2-deleted/1-79,84-123_2
+>Feature entoy.delcds/cds3-sgm3-deleted/1-83,97-123
+11	31	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm3-deleted/1-83,97-123_1
+42	62	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm3-deleted/1-83,97-123_2
+>Feature entoy.delcds/cds3-sgm1and2-deleted/1-65,87-123
+11	31	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm1and2-deleted/1-65,87-123_1
+42	62	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm1and2-deleted/1-65,87-123_2
+>Feature entoy.delcds/cds3-sgm2and3-deleted/1-79,97-123
+11	31	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm2and3-deleted/1-79,97-123_1
+42	62	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm2and3-deleted/1-79,97-123_2
+>Feature entoy.delcds/cds3-sgm1and3-deleted/1-70,79..84,97-123
+11	31	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm1and3-deleted/1-70,79..84,97-123_1
+42	62	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm1and3-deleted/1-70,79..84,97-123_2

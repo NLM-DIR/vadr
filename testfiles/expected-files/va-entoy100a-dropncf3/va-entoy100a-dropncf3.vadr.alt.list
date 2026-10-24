@@ -1,0 +1,3 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+ENTOY100A-Ns	ENTOY100A	ncRNA	enRNA	LOW_FEATURE_SIMILARITY_START	1..6:+	1..6:+	region overlapping annotated feature that does not match a CDS at 5' end of sequence lacks significant similarity [2 nt overlap b/t low similarity region of length 6 (1..6) and annotated feature (5..22)]
+ENTOY100A-Ns-2	ENTOY100A	ncRNA	enRNA	LOW_FEATURE_SIMILARITY_START	1..6:+	1..6:+	region overlapping annotated feature that does not match a CDS at 5' end of sequence lacks significant similarity [2 nt overlap b/t low similarity region of length 6 (1..6) and annotated feature (5..22)]

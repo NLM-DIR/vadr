@@ -1,0 +1,30 @@
+>Feature ENTOY100A-Ns
+<8	22	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
+10	19	stem_loop
+			note	stem-loop 1
+32	47	CDS
+47	64
+66	73
+			product	protein two
+			protein_id	ENTOY100A-Ns_1
+
+Additional note(s) to submitter:
+ERROR: LOW_FEATURE_SIMILARITY_START: (ncRNA:enRNA) region overlapping annotated feature that does not match a CDS at 5' end of sequence lacks significant similarity [2 nt overlap b/t low similarity region of length 6 (1..6) and annotated feature (5..22)]; seq-coords:1..6:+; mdl-coords:1..6:+; mdl:ENTOY100A;
+>Feature ENTOY100A-Ns-2
+<8	22	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
+10	19	stem_loop
+			note	stem-loop 1
+32	47	CDS
+47	64
+66	73
+			product	protein two
+			protein_id	ENTOY100A-Ns-2_1
+
+Additional note(s) to submitter:
+ERROR: LOW_FEATURE_SIMILARITY_START: (ncRNA:enRNA) region overlapping annotated feature that does not match a CDS at 5' end of sequence lacks significant similarity [2 nt overlap b/t low similarity region of length 6 (1..6) and annotated feature (5..22)]; seq-coords:1..6:+; mdl-coords:1..6:+; mdl:ENTOY100A;

@@ -1,0 +1,181 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+#
+# Tests of the non-coding feature (ncf) policy (--ncf) for ncf type
+# features (ncRNA and stem_loop in entoy100a.minfo).
+# In ENTOY100A-Ns and ENTOY100A-Ns-2, the low similarity region 1..6 
+# overlaps only the ncRNA (5..22). --alt_pass lowcovrg is used so that 
+# the ncRNA is the only possible cause of failure.
+#
+# 1. --ncf drop: ncRNA gets non-fatal lowsim5n and is dropped from the
+#    feature table, region is below --lowsim5seq so no sequence alert,
+#    sequences pass
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop -f --alt_pass lowcovrg --pv_skip --mdir $VADRSCRIPTSDIR/testfiles/models --mkey entoy100a $VADRSCRIPTSDIR/testfiles/entoy100a-lowsim.fa va-entoy100a-dropncf1 > va-entoy100a-dropncf1.out
+desc: annotate-entoy100a-dropncf1
+out: va-entoy100a-dropncf1/va-entoy100a-dropncf1.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf1/va-entoy100a-dropncf1.vadr.alt
+out: va-entoy100a-dropncf1/va-entoy100a-dropncf1.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf1/va-entoy100a-dropncf1.vadr.pass.tbl
+out: va-entoy100a-dropncf1/va-entoy100a-dropncf1.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf1/va-entoy100a-dropncf1.vadr.fail.tbl
+rmdir: va-entoy100a-dropncf1
+#
+# 2. --ncf drop --lowsim5seq 5: region is reported as a fatal lowsim5s 
+#    sequence alert as if the ncRNA did not exist, ncRNA still dropped, 
+#    sequences fail
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop -f --lowsim5seq 5 --alt_pass lowcovrg --pv_skip --mdir $VADRSCRIPTSDIR/testfiles/models --mkey entoy100a $VADRSCRIPTSDIR/testfiles/entoy100a-lowsim.fa va-entoy100a-dropncf2 > va-entoy100a-dropncf2.out
+desc: annotate-entoy100a-dropncf2
+out: va-entoy100a-dropncf2/va-entoy100a-dropncf2.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf2/va-entoy100a-dropncf2.vadr.alt
+out: va-entoy100a-dropncf2/va-entoy100a-dropncf2.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf2/va-entoy100a-dropncf2.vadr.alt.list
+out: va-entoy100a-dropncf2/va-entoy100a-dropncf2.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf2/va-entoy100a-dropncf2.vadr.fail.tbl
+rmdir: va-entoy100a-dropncf2
+#
+# 3. --ncf drop with ncf_always_fail:"1" on the ncRNA and stem_loop: 
+#    default (--ncf fail) behavior, fatal lowsim5n for the ncRNA, which 
+#    stays in the feature table, sequences fail
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop -f --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-naf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-lowsim.fa va-entoy100a-dropncf3 > va-entoy100a-dropncf3.out
+desc: annotate-entoy100a-dropncf3
+out: va-entoy100a-dropncf3/va-entoy100a-dropncf3.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf3/va-entoy100a-dropncf3.vadr.alt
+out: va-entoy100a-dropncf3/va-entoy100a-dropncf3.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf3/va-entoy100a-dropncf3.vadr.alt.list
+out: va-entoy100a-dropncf3/va-entoy100a-dropncf3.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-dropncf3/va-entoy100a-dropncf3.vadr.fail.tbl
+rmdir: va-entoy100a-dropncf3
+#
+# 4. --ncf drop version of the entoy100a-fs1 test (see entoy100a-fs.testin):
+#    ncRNA alerts are not fatal, sequences whose only fatal alerts are for
+#    the ncRNA pass
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --alicheck --alt_fail fsthicft,fsthicfi --fsthighthr 0.300001 --fstminnti 1 --fstminntt 1 --minpvlen 3 --keep -v --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a.minfo -f $VADRSCRIPTSDIR/testfiles/entoy100a-fs1.fa va-entoy100a-ncfdrop-fs1 > va-entoy100a-ncfdrop-fs1.out
+desc: annotate-entoy100a-ncfdrop-fs1
+out: va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.pass.tbl
+out: va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.fail.tbl
+out: va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.sqc
+out: va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.ftr
+out: va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.alt
+out: va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.alc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.ftr
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-fs1/va-entoy100a-ncfdrop-fs1.vadr.alc
+rmdir: va-entoy100a-ncfdrop-fs1
+#
+# 5. --ncf drop --mnf_legacy version of the entoy100a-mnf2-fs1no test (see 
+#    entoy100a-mnf-fs.testin), the ncRNA has misc_not_failure:"1", which 
+#    requires --mnf_legacy with --ncf drop
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --mnf_legacy --alt_mnf_no indf3lcc,indf3lcn --alicheck --alt_fail fsthicft,fsthicfi --fsthighthr 0.300001 --fstminnti 1 --fstminntt 1 --minpvlen 3 --keep -v --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-mnf2.minfo -f $VADRSCRIPTSDIR/testfiles/entoy100a-fs1.fa va-entoy100a-ncfdrop-mnf2-fs1no > va-entoy100a-ncfdrop-mnf2-fs1no.out
+desc: annotate-entoy100a-ncfdrop-mnf2-fs1no
+out: va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.pass.tbl
+out: va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.fail.tbl
+out: va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.alt.list
+out: va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.alt
+out: va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.alc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfdrop-mnf2-fs1no/va-entoy100a-ncfdrop-mnf2-fs1no.vadr.alc
+rmdir: va-entoy100a-ncfdrop-mnf2-fs1no
+#
+# Tests of misc_not_failure:"1" on an ncf type feature (stem_loop 96..100 
+# in entoy100a-ncfmnf.minfo) and --mnf_legacy. In ENTOY100A-3pNs, the 
+# low similarity region 98..104 (7 nt) at the 3' end overlaps only the 
+# stem_loop.
+#
+# 6. default (--ncf fail): stem_loop gets lowsim3n (non-fatal because of 
+#    misc_not_failure), which absorbs the region, sequence passes
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --lowsim3seq 3 --lowsim3ftr 3 --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-ncf3p.fa va-entoy100a-ncfmnf1 > va-entoy100a-ncfmnf1.out
+desc: annotate-entoy100a-ncfmnf1
+out: va-entoy100a-ncfmnf1/va-entoy100a-ncfmnf1.vadr.pass.tbl
+out: va-entoy100a-ncfmnf1/va-entoy100a-ncfmnf1.vadr.fail.tbl
+out: va-entoy100a-ncfmnf1/va-entoy100a-ncfmnf1.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf1/va-entoy100a-ncfmnf1.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf1/va-entoy100a-ncfmnf1.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf1/va-entoy100a-ncfmnf1.vadr.alt
+rmdir: va-entoy100a-ncfmnf1
+#
+# 7. default (--ncf fail) with --lowsim3lftr 7: stem_loop gets fatal 
+#    lowsim3l, sequence fails
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --lowsim3lftr 7 -f --lowsim3seq 3 --lowsim3ftr 3 --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-ncf3p.fa va-entoy100a-ncfmnf2 > va-entoy100a-ncfmnf2.out
+desc: annotate-entoy100a-ncfmnf2
+out: va-entoy100a-ncfmnf2/va-entoy100a-ncfmnf2.vadr.pass.tbl
+out: va-entoy100a-ncfmnf2/va-entoy100a-ncfmnf2.vadr.fail.tbl
+out: va-entoy100a-ncfmnf2/va-entoy100a-ncfmnf2.vadr.alt
+out: va-entoy100a-ncfmnf2/va-entoy100a-ncfmnf2.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf2/va-entoy100a-ncfmnf2.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf2/va-entoy100a-ncfmnf2.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf2/va-entoy100a-ncfmnf2.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf2/va-entoy100a-ncfmnf2.vadr.alt.list
+rmdir: va-entoy100a-ncfmnf2
+#
+# 8. --ncf drop --mnf_legacy: region is shorter than --lowsim3lftr (30), 
+#    so the stem_loop absorbs it, gets non-fatal lowsim3n and is dropped, 
+#    no sequence alert, sequence passes
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --mnf_legacy -f --lowsim3seq 3 --lowsim3ftr 3 --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-ncf3p.fa va-entoy100a-ncfmnf3 > va-entoy100a-ncfmnf3.out
+desc: annotate-entoy100a-ncfmnf3
+out: va-entoy100a-ncfmnf3/va-entoy100a-ncfmnf3.vadr.pass.tbl
+out: va-entoy100a-ncfmnf3/va-entoy100a-ncfmnf3.vadr.fail.tbl
+out: va-entoy100a-ncfmnf3/va-entoy100a-ncfmnf3.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf3/va-entoy100a-ncfmnf3.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf3/va-entoy100a-ncfmnf3.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf3/va-entoy100a-ncfmnf3.vadr.alt
+rmdir: va-entoy100a-ncfmnf3
+#
+# 9. --ncf drop --mnf_legacy --lowsim3lftr 7: region is not shorter than 
+#    --lowsim3lftr, stem_loop gets non-fatal lowsim3l and is dropped, the 
+#    region is reported as a fatal lowsim3s sequence alert, sequence fails
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --mnf_legacy --lowsim3lftr 7 -f --lowsim3seq 3 --lowsim3ftr 3 --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-ncf3p.fa va-entoy100a-ncfmnf4 > va-entoy100a-ncfmnf4.out
+desc: annotate-entoy100a-ncfmnf4
+out: va-entoy100a-ncfmnf4/va-entoy100a-ncfmnf4.vadr.pass.tbl
+out: va-entoy100a-ncfmnf4/va-entoy100a-ncfmnf4.vadr.fail.tbl
+out: va-entoy100a-ncfmnf4/va-entoy100a-ncfmnf4.vadr.alt
+out: va-entoy100a-ncfmnf4/va-entoy100a-ncfmnf4.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf4/va-entoy100a-ncfmnf4.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf4/va-entoy100a-ncfmnf4.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf4/va-entoy100a-ncfmnf4.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf4/va-entoy100a-ncfmnf4.vadr.alt.list
+rmdir: va-entoy100a-ncfmnf4
+#
+# 10. --ncf drop --mnf_legacy --lowsim3lftr 8: region is shorter than 
+#     --lowsim3lftr, same as test 8
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --mnf_legacy --lowsim3lftr 8 -f --lowsim3seq 3 --lowsim3ftr 3 --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-ncf3p.fa va-entoy100a-ncfmnf5 > va-entoy100a-ncfmnf5.out
+desc: annotate-entoy100a-ncfmnf5
+out: va-entoy100a-ncfmnf5/va-entoy100a-ncfmnf5.vadr.pass.tbl
+out: va-entoy100a-ncfmnf5/va-entoy100a-ncfmnf5.vadr.fail.tbl
+out: va-entoy100a-ncfmnf5/va-entoy100a-ncfmnf5.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf5/va-entoy100a-ncfmnf5.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf5/va-entoy100a-ncfmnf5.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf5/va-entoy100a-ncfmnf5.vadr.alt
+rmdir: va-entoy100a-ncfmnf5
+#
+# 11. --ncf drop --ignore_mnf: no legacy behavior, stem_loop gets 
+#     non-fatal lowsim3n and is dropped, region is reported as a fatal 
+#     lowsim3s sequence alert, sequence fails
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --ignore_mnf -f --lowsim3seq 3 --lowsim3ftr 3 --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-ncf3p.fa va-entoy100a-ncfmnf6 > va-entoy100a-ncfmnf6.out
+desc: annotate-entoy100a-ncfmnf6
+out: va-entoy100a-ncfmnf6/va-entoy100a-ncfmnf6.vadr.pass.tbl
+out: va-entoy100a-ncfmnf6/va-entoy100a-ncfmnf6.vadr.fail.tbl
+out: va-entoy100a-ncfmnf6/va-entoy100a-ncfmnf6.vadr.alt
+out: va-entoy100a-ncfmnf6/va-entoy100a-ncfmnf6.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf6/va-entoy100a-ncfmnf6.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf6/va-entoy100a-ncfmnf6.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf6/va-entoy100a-ncfmnf6.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmnf6/va-entoy100a-ncfmnf6.vadr.alt.list
+rmdir: va-entoy100a-ncfmnf6

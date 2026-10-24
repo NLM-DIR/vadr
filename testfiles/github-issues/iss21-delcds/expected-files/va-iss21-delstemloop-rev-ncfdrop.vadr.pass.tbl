@@ -1,0 +1,60 @@
+>Feature entoy.delcds/123-1
+51	46	stem_loop
+44	42
+39	31
+			product	SL1
+82	62	CDS
+			product	protein two
+			protein_id	entoy.delcds/123-1_2
+113	93	CDS
+			product	protein one
+			protein_id	entoy.delcds/123-1_1
+>Feature entoy.delcds/cds3-deleted/1-70,96-123/98-1
+57	37	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-deleted/1-70,96-123/98-1_2
+88	68	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-deleted/1-70,96-123/98-1_1
+>Feature entoy.delcds/cds3-sgm1-deleted/1-70,79-123/115-1
+74	54	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm1-deleted/1-70,79-123/115-1_2
+105	85	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm1-deleted/1-70,79-123/115-1_1
+>Feature entoy.delcds/cds3-sgm2-deleted/1-79,84-123/119-1
+78	58	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm2-deleted/1-79,84-123/119-1_2
+109	89	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm2-deleted/1-79,84-123/119-1_1
+>Feature entoy.delcds/cds3-sgm3-deleted/1-83,97-123/110-1
+69	49	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm3-deleted/1-83,97-123/110-1_2
+100	80	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm3-deleted/1-83,97-123/110-1_1
+>Feature entoy.delcds/cds3-sgm1and2-deleted/1-65,87-123/102-1
+61	41	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm1and2-deleted/1-65,87-123/102-1_2
+92	72	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm1and2-deleted/1-65,87-123/102-1_1
+>Feature entoy.delcds/cds3-sgm2and3-deleted/1-79,97-123/106-1
+65	45	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm2and3-deleted/1-79,97-123/106-1_2
+96	76	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm2and3-deleted/1-79,97-123/106-1_1
+>Feature entoy.delcds/cds3-sgm1and3-deleted/1-70,79..84,97-123/102-1
+61	41	CDS
+			product	protein two
+			protein_id	entoy.delcds/cds3-sgm1and3-deleted/1-70,79..84,97-123/102-1_2
+92	72	CDS
+			product	protein one
+			protein_id	entoy.delcds/cds3-sgm1and3-deleted/1-70,79..84,97-123/102-1_1

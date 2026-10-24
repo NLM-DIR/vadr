@@ -1,0 +1,11 @@
+>Feature ENTOY100A-3pNs
+32	47	CDS
+47	64
+66	73
+			product	protein two
+			protein_id	ENTOY100A-3pNs_1
+96	>96	stem_loop
+			note	stem-loop 2
+
+Additional note(s) to submitter:
+ERROR: LOW_FEATURE_SIMILARITY_END: (stem_loop:stem_loop.1) long region overlapping annotated feature that does not match a CDS at 3' end of sequence lacks significant similarity [3 nt overlap b/t low similarity region of length 7 (98..104) and annotated feature (96..100)]; seq-coords:98..104:+; mdl-coords:98..100:+; mdl:ENTOY100A;

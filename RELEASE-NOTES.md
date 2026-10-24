@@ -1,5 +1,55 @@
 # VADR 1.x release notes 
 
+### Unreleased changes (draft)
+  * `v-annotate.pl`: new `--ncf <s>` option sets the policy for
+    non-coding feature (ncf) type features (`stem_loop`, `ncRNA`,
+    `regulatory`, `primer_bind`, `misc_feature`, `repeat_region` and
+    `misc_structure`) that have alerts that are normally fatal. The
+    default, `--ncf fail`, is unchanged from previous versions: results
+    are the same as with VADR 1.7.3.
+  * `--ncf drop`: an ncf type feature never affects whether a sequence
+    passes or fails, which then passes or fails exactly as it would if
+    its model had no ncf type features. GenBank uses `misc_feature` only
+    for CDS with errors and drops features of these types that have
+    errors, instead of converting them to `misc_feature`s or annotating
+    them with notes; GenBank runs `v-annotate.pl` with `--ncf drop`.
+    (`misc_structure` is not an INSDC feature type; it is written to the
+    feature tables unchanged.) With `--ncf drop`:
+    - alerts for ncf type features are non-fatal (reported in `.alt`
+      and `.ftr` but not in `.alt.list` or `.fail.tbl` notes);
+    - an alert that would be fatal for another feature type causes the
+      feature to be dropped from both `.pass.tbl` and `.fail.tbl`;
+    - a completely deleted ncf type feature gets the non-fatal
+      `deletina` alert instead of the fatal `deletins` alert;
+    - a low similarity region that overlaps an ncf type feature is
+      reported as `lowsim5s`/`lowsim3s`/`lowsimis` (using the
+      sequence-level thresholds) unless it also overlaps another
+      feature; the ncf type feature gets its (non-fatal) feature-level
+      low similarity alert and is dropped.
+    For model libraries with ncf type features (e.g. `sarscov2`,
+    `corona`, `flavi`, `zika`, `hav`, `hrv`, `ev`), some sequences that
+    fail only because of alerts in such features pass with `--ncf drop`,
+    and sequences with a low similarity region inside such a feature may
+    fail with a sequence-level `lowsim*s` alert if the region reaches the
+    sequence-level length threshold.
+  * new `.minfo` FEATURE key `ncf_always_fail:"1"` opts an ncf type
+    feature out of `--ncf drop`: its alerts cause failure as with
+    `--ncf fail`. It has no effect with `--ncf fail`. It is an error for
+    any other feature type, or together with `misc_not_failure:"1"` on
+    the same feature.
+  * with `--ncf drop`, `misc_not_failure:"1"` on an ncf type feature is
+    an error unless the new legacy option `--mnf_legacy` is also used
+    (or `--ignore_mnf`). With `--mnf_legacy`, such a feature is still
+    dropped if it has an alert that would otherwise be fatal, but it
+    absorbs an overlapping low similarity region shorter than
+    `--lowsim5lftr`, `--lowsim3lftr` or `--lowsimilftr` (default 30), so
+    that no sequence-level alert is reported for it, as with
+    `--ncf fail`. The `sarscov2` and `corona` models have
+    `misc_not_failure:"1"` on the `s2m` `stem_loop` and need
+    `--mnf_legacy` with `--ncf drop`. `misc_not_failure` on ncf type
+    features is not recommended for new models.
+
+---
 ### VADR 1.7.3 release (September 2026)
   * `v-annotate.pl` behaviour is unchanged in this release; annotation
     results are identical to 1.7.2 (only the version string in output
@@ -93,6 +143,9 @@
     sequence/template pair), diagrams in `<out_root>.r2dt-svg/`, and a
     `r2dt_status` column with values `pass` / `skipped` / `fail-nocov` /
     `fail-noaln` / `fail-r2dt`; there is no `.r2dt.warn` file
+  * `v-annotate.pl`: only `CDS` features can now become `misc_feature`s;
+    previously any feature type except `gene`, `5'UTR`, `3'UTR` and
+    `operon` could. GenBank uses `misc_feature` only for CDS with errors.
 
 ---
 ### VADR 1.7 release (September 2025): Major update

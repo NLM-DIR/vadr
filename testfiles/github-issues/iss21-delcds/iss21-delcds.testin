@@ -46,6 +46,38 @@ exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss
 exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop.vadr.alt
 exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop.vadr.alt.list
 rmdir: va-iss21-delstemloop
+# deleted stem_loop, fwd strand, with --ncf drop (stem_loop deletion is not fatal, deletina)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --noseqnamemax --minpvlen  3 --alicheck --pv_skip --keep -m $VADRSCRIPTSDIR/testfiles/models/entoy.delcds.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy.delstemloop.minfo -f $VADRSCRIPTSDIR/testfiles/github-issues/iss21-delcds/iss21-delcds.fa va-iss21-delstemloop-ncfdrop > va-iss21-delstemloop-ncfdrop.out
+desc: annotate-entoy.delstemloop-ncfdrop
+out: va-iss21-delstemloop-ncfdrop/va-iss21-delstemloop-ncfdrop.vadr.pass.tbl 
+out: va-iss21-delstemloop-ncfdrop/va-iss21-delstemloop-ncfdrop.vadr.fail.tbl
+out: va-iss21-delstemloop-ncfdrop/va-iss21-delstemloop-ncfdrop.vadr.ftr
+out: va-iss21-delstemloop-ncfdrop/va-iss21-delstemloop-ncfdrop.vadr.sgm
+out: va-iss21-delstemloop-ncfdrop/va-iss21-delstemloop-ncfdrop.vadr.alt
+out: va-iss21-delstemloop-ncfdrop/va-iss21-delstemloop-ncfdrop.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop.vadr.ftr
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop.vadr.sgm
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop.vadr.alt.list
+rmdir: va-iss21-delstemloop-ncfdrop
+# deleted stem_loop, fwd strand, with --ncf drop and ncf_always_fail:"1" (stem_loop deletion is fatal, as by default)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --noseqnamemax --minpvlen  3 --alicheck --pv_skip --keep -m $VADRSCRIPTSDIR/testfiles/models/entoy.delcds.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy.delstemloop-naf.minfo -f $VADRSCRIPTSDIR/testfiles/github-issues/iss21-delcds/iss21-delcds.fa va-iss21-delstemloop-ncfdrop-naf > va-iss21-delstemloop-ncfdrop-naf.out
+desc: annotate-entoy.delstemloop-ncfdrop-naf
+out: va-iss21-delstemloop-ncfdrop-naf/va-iss21-delstemloop-ncfdrop-naf.vadr.pass.tbl 
+out: va-iss21-delstemloop-ncfdrop-naf/va-iss21-delstemloop-ncfdrop-naf.vadr.fail.tbl
+out: va-iss21-delstemloop-ncfdrop-naf/va-iss21-delstemloop-ncfdrop-naf.vadr.ftr
+out: va-iss21-delstemloop-ncfdrop-naf/va-iss21-delstemloop-ncfdrop-naf.vadr.sgm
+out: va-iss21-delstemloop-ncfdrop-naf/va-iss21-delstemloop-ncfdrop-naf.vadr.alt
+out: va-iss21-delstemloop-ncfdrop-naf/va-iss21-delstemloop-ncfdrop-naf.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop-naf.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop-naf.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop-naf.vadr.ftr
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop-naf.vadr.sgm
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop-naf.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-ncfdrop-naf.vadr.alt.list
+rmdir: va-iss21-delstemloop-ncfdrop-naf
 #
 ##################################################
 # 
@@ -82,3 +114,35 @@ exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss
 exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev.vadr.alt
 exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev.vadr.alt.list
 rmdir: va-iss21-delstemloop-rev
+# deleted stem_loop, rev strand, with --ncf drop (stem_loop deletion is not fatal, deletina)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --noseqnamemax --minpvlen 3 --alicheck --pv_skip --keep -m $VADRSCRIPTSDIR/testfiles/models/entoy.delcds-rev.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy.delstemloop-rev.minfo -f $VADRSCRIPTSDIR/testfiles/github-issues/iss21-delcds/iss21-delcds-rev.fa va-iss21-delstemloop-rev-ncfdrop > va-iss21-delstemloop-rev-ncfdrop.out
+desc: annotate-entoy.delstemloop-rev-ncfdrop
+out: va-iss21-delstemloop-rev-ncfdrop/va-iss21-delstemloop-rev-ncfdrop.vadr.pass.tbl 
+out: va-iss21-delstemloop-rev-ncfdrop/va-iss21-delstemloop-rev-ncfdrop.vadr.fail.tbl
+out: va-iss21-delstemloop-rev-ncfdrop/va-iss21-delstemloop-rev-ncfdrop.vadr.ftr
+out: va-iss21-delstemloop-rev-ncfdrop/va-iss21-delstemloop-rev-ncfdrop.vadr.sgm
+out: va-iss21-delstemloop-rev-ncfdrop/va-iss21-delstemloop-rev-ncfdrop.vadr.alt
+out: va-iss21-delstemloop-rev-ncfdrop/va-iss21-delstemloop-rev-ncfdrop.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop.vadr.ftr
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop.vadr.sgm
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop.vadr.alt.list
+rmdir: va-iss21-delstemloop-rev-ncfdrop
+# deleted stem_loop, rev strand, with --ncf drop and ncf_always_fail:"1" (stem_loop deletion is fatal, as by default)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf drop --noseqnamemax --minpvlen 3 --alicheck --pv_skip --keep -m $VADRSCRIPTSDIR/testfiles/models/entoy.delcds-rev.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy.delstemloop-rev-naf.minfo -f $VADRSCRIPTSDIR/testfiles/github-issues/iss21-delcds/iss21-delcds-rev.fa va-iss21-delstemloop-rev-ncfdrop-naf > va-iss21-delstemloop-rev-ncfdrop-naf.out
+desc: annotate-entoy.delstemloop-rev-ncfdrop-naf
+out: va-iss21-delstemloop-rev-ncfdrop-naf/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.pass.tbl 
+out: va-iss21-delstemloop-rev-ncfdrop-naf/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.fail.tbl
+out: va-iss21-delstemloop-rev-ncfdrop-naf/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.ftr
+out: va-iss21-delstemloop-rev-ncfdrop-naf/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.sgm
+out: va-iss21-delstemloop-rev-ncfdrop-naf/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.alt
+out: va-iss21-delstemloop-rev-ncfdrop-naf/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.ftr
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.sgm
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/github-issues/iss21-delcds/expected-files/va-iss21-delstemloop-rev-ncfdrop-naf.vadr.alt.list
+rmdir: va-iss21-delstemloop-rev-ncfdrop-naf
