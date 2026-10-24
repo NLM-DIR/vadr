@@ -2291,7 +2291,7 @@ if($do_pv_blastx) {
                              \%seq_len_H, $ftr_info_blastx_HR, \%{$ftr_results_HHAH{$mdl_name}}, \%stg_results_HHH, \%opt_HH, \%ofile_info_HH);
         add_protein_validation_alerts(\%{$mdl_info_AH[$mdl_idx]}, \@{$mdl_seq_name_HA{$mdl_name}}, \%seq_len_H, \@{$ftr_info_HAH{$mdl_name}}, \%alt_info_HH, 
                                       \%{$ftr_results_HHAH{$mdl_name}}, \%alt_ftr_instances_HHH, 
-                                      ($do_replace_ns) ? \%rpn_output_HH : undef, 
+                                      ($do_replace_ns) ? \%rpn_output_HH : undef, \%seq_ua2rf_HA, 
                                       \%opt_HH, \%{$ofile_info_HH{"FH"}});        
         add_protein_validation_mdl_coords(\@{$mdl_seq_name_HA{$mdl_name}}, \@{$ftr_info_HAH{$mdl_name}}, \%{$ftr_results_HHAH{$mdl_name}}, 
                                           \%seq_ua2rf_HA, \%{$ofile_info_HH{"FH"}});
@@ -2323,7 +2323,7 @@ if($do_pv_hmmer) {
                                   \@{$ftr_info_HAH{$mdl_name}}, \%{$ftr_results_HHAH{$mdl_name}}, \%opt_HH, \%ofile_info_HH);
         add_protein_validation_alerts(\%{$mdl_info_AH[$mdl_idx]}, \@{$mdl_seq_name_HA{$mdl_name}}, \%seq_len_H, \@{$ftr_info_HAH{$mdl_name}}, \%alt_info_HH, 
                                       \%{$ftr_results_HHAH{$mdl_name}}, \%alt_ftr_instances_HHH, 
-                                      ($do_replace_ns) ? \%rpn_output_HH : undef, 
+                                      ($do_replace_ns) ? \%rpn_output_HH : undef, \%seq_ua2rf_HA, 
                                       \%opt_HH, \%{$ofile_info_HH{"FH"}});
         add_protein_validation_mdl_coords(\@{$mdl_seq_name_HA{$mdl_name}}, \@{$ftr_info_HAH{$mdl_name}}, \%{$ftr_results_HHAH{$mdl_name}}, 
                                           \%seq_ua2rf_HA, \%{$ofile_info_HH{"FH"}});
@@ -8486,6 +8486,10 @@ sub make_protein_validation_fasta_file {
 #  $ftr_results_HAHR:       REF to feature results HAH, PRE-FILLED
 #  $alt_ftr_instances_HHHR: REF to alert instances HAH, ADDED TO HERE
 #  $rpn_output_HHR:         REF to rpn output data HH, PRE-FILLED, will be undef if -r not used
+#  $seq_ua2rf_HAR:          REF to hash of compact sequence to model position maps, from 
+#                           helper_ua2rf_runs_create(), key is sequence name, used to determine
+#                           model coords of alerts; if undef, or a sequence has no map (it was 
+#                           not aligned), model coords are determined from protein positions
 #  $opt_HHR:                REF to 2D hash of option values, see top of sqp_opts.pm for description
 #  $FH_HR:                  REF to hash of file handles
 #
@@ -8494,11 +8498,11 @@ sub make_protein_validation_fasta_file {
 ################################################################# 
 sub add_protein_validation_alerts { 
   my $sub_name = "add_protein_validation_alerts";
-  my $nargs_expected = 10;
+  my $nargs_expected = 11;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
   
   my ($mdl_info_HR, $seq_name_AR, $seq_len_HR, $ftr_info_AHR, $alt_info_HHR, $ftr_results_HAHR, $alt_ftr_instances_HHHR, 
-      $rpn_output_HHR, $opt_HHR, $FH_HR) = @_;
+      $rpn_output_HHR, $seq_ua2rf_HAR, $opt_HHR, $FH_HR) = @_;
   
   my $do_pv_hmmer = opt_Get("--pv_hmmer", $opt_HHR) ? 1 : 0;
 
@@ -8571,6 +8575,8 @@ sub add_protein_validation_alerts {
     my $rpn_ncoords = undef; # only defined if we need to report a cdsstopp for this sequence
     my @rpn_seq_sgm_A  = ();  # only filled if we need to report a cdsstopp for this sequence
     my @rpn_replaced_A = ();  # only filled if we need to report a cdsstopp for this sequence
+    # alignment map of this sequence, to determine model coords of alerts; undef if sequence was not aligned
+    my $runs_AR = (defined $seq_ua2rf_HAR) ? $seq_ua2rf_HAR->{$seq_name} : undef;
     if($seq_len_HR->{$seq_name} >= $minpvlen) { 
       for($ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
         if(vdr_FeatureTypeIsCds($ftr_info_AHR, $ftr_idx)) { 
@@ -8674,10 +8680,17 @@ sub add_protein_validation_alerts {
                 if($p_hlen >= $minpvlen) { 
                   if(! $p_blastx_feature_flag) { # this should always be true because if n_start is not defined then there was no 
                     # nucleotide feature to blastx against, but this is a rare alert so to be safe we require it here
-                    $alt_scoords = "seq:" . vdr_CoordsSegmentCreate($p_qstart, $p_qstop, $p_strand, $FH_HR) . ";";
+                    my $hit_scoords = vdr_CoordsSegmentCreate($p_qstart, $p_qstop, $p_strand, $FH_HR);
+                    $alt_scoords = "seq:" . $hit_scoords . ";";
                     $alt_mcoords = "mdl:";
+                    # if the sequence was aligned, model coords are the hit's sequence coords mapped through the alignment
+                    my $hit_mcoords = (defined $runs_AR) ? helper_ua2rf_runs_coords_to_mdl_coords($runs_AR, $hit_scoords, $FH_HR) : undef;
+                    if(defined $hit_mcoords) { 
+                      $alt_mcoords .= $hit_mcoords . ";";
+                    }
+                    # otherwise determine them from the protein positions of the hit
                     # see github issue #84: skip mdl coords (report VADRNULL) if subject hit exceeds reference CDS frame (over-length library protein)
-                    if((defined $p_hstart) && (defined $p_hstop) &&
+                    elsif((defined $p_hstart) && (defined $p_hstop) &&
                        (! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR))) {
                       # get subject nucleotide coords
                       # always create in + strand first, vdr_CoordsProteinRelativeToAbsolute requires it
@@ -8734,10 +8747,37 @@ sub add_protein_validation_alerts {
                   if($n_strand ne $p_strand) { 
                     my $exempted_region = 0; # set to '1' if an exception exempts the indfstrp alert
                     my $exc_coords = undef;
-                    # first calculate model coords, this is calc'ed same way regardless of value of $p_blastx_feature_flag
+                    # first calculate seq coords, this is calc'ed differently depending on value of $p_blastx_feature_flag
+                    my $hit_scoords = undef; # remains undef if we can't determine seq coords
+                    if($p_blastx_feature_flag) { 
+                      if(defined $n_scoords) { 
+                        # query is the feature fetched in its own orientation, so use strand relative to query
+                        # (prior to this $p_strand was used, which gave incorrect coords for negative strand features)
+                        $hit_scoords = vdr_CoordsRelativeToAbsolute($n_scoords, vdr_CoordsSegmentCreate($p_qstart, $p_qstop, helper_blastx_query_strand($p_strand, 1, $n_scoords, $FH_HR), $FH_HR), $FH_HR);
+                      }
+                    }
+                    else { # $p_blastx_feature_flag is 0
+                      $hit_scoords = vdr_CoordsSegmentCreate($p_qstart, $p_qstop, $p_strand, $FH_HR);
+                    }
+                    $alt_scoords = "seq:" . ((defined $hit_scoords) ? $hit_scoords : "VADRNULL") . ";";
+
+                    # calculate model coords: if the sequence was aligned, these are the hit's sequence coords 
+                    # mapped through the alignment
+                    my $hit_mcoords = ((defined $runs_AR) && (defined $hit_scoords)) ? helper_ua2rf_runs_coords_to_mdl_coords($runs_AR, $hit_scoords, $FH_HR) : undef;
                     $alt_mcoords = "mdl:";
+                    if(defined $hit_mcoords) { 
+                      # always check for exceptions in + and - strand
+                      my $tmp_rc_hit_mcoords = vdr_CoordsReverseComplement($hit_mcoords, 0, $FH_HR); # 0: don't do carrots
+                      foreach $exc_coords (@indfstrp_exc_A) { 
+                        if((vdr_CoordsCheckIfSpans($exc_coords, $hit_mcoords, $FH_HR)) || 
+                           (vdr_CoordsCheckIfSpans($exc_coords, $tmp_rc_hit_mcoords, $FH_HR))) { 
+                          $exempted_region = 1;
+                        }
+                      }
+                    }
+                    # otherwise determine them from the protein positions of the hit
                     # see github issue #84: skip mdl coords (report VADRNULL) if subject hit exceeds reference CDS frame (over-length library protein)
-                    if((defined $p_hstart) && (defined $p_hstop) &&
+                    elsif((defined $p_hstart) && (defined $p_hstop) &&
                        (! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR))) {
                       # always create in + strand first, vdr_CoordsProteinRelativeToAbsolute requires it
                       my $tmp_pos_alt_mcoords = vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR);
@@ -8749,26 +8789,9 @@ sub add_protein_validation_alerts {
                           $exempted_region = 1;
                         }
                       }
-                      $alt_mcoords .= (($p_strand eq "+") ? $tmp_pos_alt_mcoords : $tmp_neg_alt_mcoords) . ";";
+                      $hit_mcoords = ($p_strand eq "+") ? $tmp_pos_alt_mcoords : $tmp_neg_alt_mcoords;
                     }
-                    else { 
-                      $alt_mcoords .= "VADRNULL;";
-                    }
-                    # calculate seq coords, this is calc'ed differently depending on value of $p_blastx_feature_flag
-                    $alt_scoords = "seq:";
-                    if($p_blastx_feature_flag) { 
-                      if(defined $n_scoords) { 
-                        # query is the feature fetched in its own orientation, so use strand relative to query
-                        # (prior to this $p_strand was used, which gave incorrect coords for negative strand features)
-                        $alt_scoords .= vdr_CoordsRelativeToAbsolute($n_scoords, vdr_CoordsSegmentCreate($p_qstart, $p_qstop, helper_blastx_query_strand($p_strand, 1, $n_scoords, $FH_HR), $FH_HR), $FH_HR) . ";";
-                      }
-                      else { 
-                        $alt_scoords .= "VADRNULL;";
-                      }
-                    }
-                    else { # $p_blastx_feature_flag is 0
-                      $alt_scoords .= vdr_CoordsSegmentCreate($p_qstart, $p_qstop, $p_strand, $FH_HR) . ";";
-                    }
+                    $alt_mcoords .= ((defined $hit_mcoords) ? $hit_mcoords : "VADRNULL") . ";";
                     if(! $exempted_region) { 
                       $alt_str_HH{$ftr_results_prefix}{"indfstrp"} = $alt_scoords . $alt_mcoords . "VADRNULL";
                     }
@@ -8869,9 +8892,21 @@ sub add_protein_validation_alerts {
                         if(helper_blastx_query_strand($p_strand, $p_blastx_feature_flag, $p_ftr_scoords, $FH_HR) eq "-") { 
                           $ins_aa_mpos--;
                         }
-                        # see github issue #84: subject insert position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_ins_spos undef and use default xmaxins
+                        # determine the alert coords, and the model position after which the insert occurs, 
+                        # $nt_ins_spos, to check for position-specific exceptions: if the sequence was aligned, 
+                        # this is the alert model position, determined from the alignment
+                        my ($ins_alt_scoords, $ins_alt_mcoords) = (undef, undef);
                         my $nt_ins_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR), $FH_HR)) {
+                        if(defined $runs_AR) { 
+                          ($ins_alt_scoords, $ins_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
+                                                                                                                 $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
+                                                                                                                 $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
+                                                                                                                 $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          if($ins_alt_mcoords =~ m/^mdl\:(\d+)\.\./) { $nt_ins_spos = $1; }
+                        }
+                        # otherwise determine it from the protein position
+                        # see github issue #84: subject insert position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_ins_spos undef and use default xmaxins
+                        elsif(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR), $FH_HR)) {
                           $nt_ins_spos = vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
                                                                                                           vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR),
                                                                                                           $FH_HR), $FH_HR);
@@ -8880,12 +8915,14 @@ sub add_protein_validation_alerts {
                         if($p_ins_len_A[$ins_idx] > $local_xmaxins) { 
                           if(defined $alt_str_HH{$ftr_results_prefix}{"insertnp"}) { $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= ":VADRSEP:"; } # we are adding another instance
                           else                               { $alt_str_HH{$ftr_results_prefix}{"insertnp"}  = ""; } # initialize
-                          ($alt_scoords, $alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
-                                                                                                     $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
-                                                                                                     $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
-                                                                                                     $seq_len_HR->{$seq_name}, $FH_HR);
+                          if(! defined $ins_alt_scoords) { 
+                            ($ins_alt_scoords, $ins_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
+                                                                                                                   $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
+                                                                                                                   $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
+                                                                                                                   $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          }
                           $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= sprintf("%s%s%d>%d", 
-                                                            $alt_scoords, $alt_mcoords, $p_ins_len_A[$ins_idx], $local_xmaxins);
+                                                            $ins_alt_scoords, $ins_alt_mcoords, $p_ins_len_A[$ins_idx], $local_xmaxins);
                           
                         }
                       }
@@ -8897,9 +8934,21 @@ sub add_protein_validation_alerts {
                       my @p_del_len_A  = ();
                       my $ndel = helper_blastx_breakdown_max_indel_str($p_del, \@p_del_qpos_A, \@p_del_spos_A, \@p_del_len_A, $FH_HR);
                       for(my $del_idx = 0; $del_idx < $ndel; $del_idx++) {
-                        # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos undef and use default xmaxdel
+                        # determine the alert coords, and the first deleted model position, $nt_del_spos, 
+                        # to check for position-specific exceptions: if the sequence was aligned, this 
+                        # is the first alert model position, determined from the alignment
+                        my ($del_alt_scoords, $del_alt_mcoords) = (undef, undef);
                         my $nt_del_spos = undef;
-                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
+                        if(defined $runs_AR) { 
+                          ($del_alt_scoords, $del_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(0, # $is_insert
+                                                                                                                 $p_del_qpos_A[$del_idx], $p_del_spos_A[$del_idx], $p_del_len_A[$del_idx], 
+                                                                                                                 $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
+                                                                                                                 $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          if($del_alt_mcoords =~ m/^mdl\:(\d+)\.\./) { $nt_del_spos = $1; }
+                        }
+                        # otherwise determine it from the protein position
+                        # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos undef and use default xmaxdel
+                        elsif(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
                           $nt_del_spos = vdr_Feature5pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
                                                                                                          vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR),
                                                                                                          $FH_HR), $FH_HR);
@@ -8913,12 +8962,14 @@ sub add_protein_validation_alerts {
                         if($p_del_len_A[$del_idx] > $local_xmaxdel) { 
                           if(defined $alt_str_HH{$ftr_results_prefix}{"deletinp"}) { $alt_str_HH{$ftr_results_prefix}{"deletinp"} .= ":VADRSEP:"; } # we are adding another instance
                           else                                                     { $alt_str_HH{$ftr_results_prefix}{"deletinp"} = ""; }           # initialize
-                          ($alt_scoords, $alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(0, # $is_insert
-                                                                                                     $p_del_qpos_A[$del_idx], $p_del_spos_A[$del_idx], $p_del_len_A[$del_idx], 
-                                                                                                     $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
-                                                                                                     $seq_len_HR->{$seq_name}, $FH_HR);
+                          if(! defined $del_alt_scoords) { 
+                            ($del_alt_scoords, $del_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(0, # $is_insert
+                                                                                                                   $p_del_qpos_A[$del_idx], $p_del_spos_A[$del_idx], $p_del_len_A[$del_idx], 
+                                                                                                                   $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
+                                                                                                                   $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
+                          }
                           $alt_str_HH{$ftr_results_prefix}{"deletinp"} .= sprintf("%s%s%d>%d", 
-                                                            $alt_scoords, $alt_mcoords, $p_del_len_A[$del_idx], $local_xmaxdel);
+                                                            $del_alt_scoords, $del_alt_mcoords, $p_del_len_A[$del_idx], $local_xmaxdel);
                         }
                       }
                     }
@@ -8929,6 +8980,12 @@ sub add_protein_validation_alerts {
                       # is redundant and could needlessly confuse user, but for models built from multiple sequences (e.g. cox1)
                       # we want to keep it in there because model coords pertain to the specific blastx query
                       my ($cdsstopp_scoords, $cdsstopp_mcoords, $cdsstopp_detail) = alert_instance_parse($cdsstopp_alt_str);
+                      # if the sequence was aligned, model coords are the stop codon's sequence coords mapped
+                      # through the alignment, instead of the model coords determined from its protein position
+                      if((defined $runs_AR) && ($cdsstopp_scoords =~ m/^\d+\.\.\d+\:[\+\-]/)) { 
+                        my $stop_mcoords = helper_ua2rf_runs_coords_to_mdl_coords($runs_AR, $cdsstopp_scoords, $FH_HR);
+                        if(defined $stop_mcoords) { $cdsstopp_mcoords = $stop_mcoords; }
+                      }
                       my $beginning_of_detail = ($cdsstopp_detail eq "VADRNULL") ? "VADRNULL" : substr($cdsstopp_detail, 0, length($mdl_name));
                       if($beginning_of_detail eq $mdl_name) { 
                         $cdsstopp_detail = "VADRNULL"; 
@@ -10608,19 +10665,30 @@ sub helper_blastx_query_strand {
 #   $ftr_strand:    feature summary strand
 #   $blastx_strand: strand of blastx query 
 #   $seq_len:       total length of sequence
+#   $mdl_len:       total length of model
+#   $runs_AR:       REF to compact sequence to model position map for the sequence, from
+#                   helper_ua2rf_runs_create(), undef if sequence was not aligned, in which
+#                   case model coords are determined from $aa_mpos
 #   $FH_HR:         ref to hash of file handles, including 'log'
 #             
 # Returns:  2 values:
 #           $alt_scoords: alert sequence coords string
 #           $alt_mcoords: alert model    coords string
 #
+#           If $runs_AR is defined, model coords are determined from the alignment: 
+#           for an insert, the model position that the sequence position just before 
+#           the insert (in the direction of the feature) maps to (the same way all
+#           alert model coords are determined: an inserted position maps to the model
+#           position it follows); for a delete, the $len model positions after the 
+#           model position the sequence position just before the deletion maps to.
+#
 #################################################################
 sub helper_blastx_max_indel_token_to_alt_coords {
   my $sub_name  = "helper_blastx_max_indel_token_to_alt_coords";
-  my $nargs_expected = 11;
+  my $nargs_expected = 13;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
   
-  my ($is_insert, $spos, $aa_mpos, $len, $is_feature, $ftr_scoords, $ftr_mcoords, $ftr_strand, $blastx_strand, $seq_len, $FH_HR) = (@_);
+  my ($is_insert, $spos, $aa_mpos, $len, $is_feature, $ftr_scoords, $ftr_mcoords, $ftr_strand, $blastx_strand, $seq_len, $mdl_len, $runs_AR, $FH_HR) = (@_);
 
   # printf("in $sub_name\n\tspos: $spos\n\taa_mpos: $aa_mpos\n\tlen: $len\n\tis_feature: $is_feature\n\tftr_scoords: $ftr_scoords\n\tftr_mcoords: $ftr_mcoords\n\tblastx_strand: $blastx_strand\n\tseq_len: $seq_len\n\n");
 
@@ -10654,11 +10722,28 @@ sub helper_blastx_max_indel_token_to_alt_coords {
     }
     $absolute_scoords = ($is_feature) ? 
         $ftr_scoords : vdr_CoordsSegmentCreate(1, $seq_len, "+", $FH_HR); # the full sequence
-    $alt_scoords = sprintf("seq:%s;", vdr_CoordsRelativeToAbsolute($absolute_scoords, $relative_scoords, $FH_HR));
+    my $ins_scoords = vdr_CoordsRelativeToAbsolute($absolute_scoords, $relative_scoords, $FH_HR);
+    $alt_scoords = sprintf("seq:%s;", $ins_scoords);
     
     # determine model coordinates
+    # if the sequence was aligned: the model position that the sequence position 
+    # just before the first inserted position (in the direction of the feature) maps to
+    my $ins_mpos = undef;
+    my @ins_sstart_A  = ();
+    my @ins_sstrand_A = ();
+    if(defined $runs_AR) { 
+      vdr_FeatureStartStopStrandArrays($ins_scoords, \@ins_sstart_A, undef, \@ins_sstrand_A, $FH_HR);
+      my $prv_spos = ($ins_sstrand_A[0] eq "-") ? ($ins_sstart_A[0] + 1) : ($ins_sstart_A[0] - 1);
+      if(($prv_spos >= 1) && ($prv_spos <= $seq_len)) { 
+        $ins_mpos = abs(helper_ua2rf_runs_lookup($runs_AR, $prv_spos, $FH_HR));
+      }
+    }
+    if(defined $ins_mpos) { 
+      $alt_mcoords = sprintf("mdl:%s;", vdr_CoordsSegmentCreate($ins_mpos, $ins_mpos, $ins_sstrand_A[0], $FH_HR));
+    }
+    # otherwise determine model coordinates from the protein position
     # see github issue #84: report VADRNULL mdl coords if subject insert position exceeds reference CDS frame (over-length library protein)
-    if(vdr_CoordsProteinRelativeExceedsAbsolute($ftr_mcoords, vdr_CoordsSegmentCreate($aa_mpos, $aa_mpos, "+", $FH_HR), $FH_HR)) {
+    elsif(vdr_CoordsProteinRelativeExceedsAbsolute($ftr_mcoords, vdr_CoordsSegmentCreate($aa_mpos, $aa_mpos, "+", $FH_HR), $FH_HR)) {
       $alt_mcoords = "mdl:VADRNULL;";
     }
     else {
@@ -10681,12 +10766,37 @@ sub helper_blastx_max_indel_token_to_alt_coords {
     $relative_scoords = vdr_CoordsSegmentCreate($spos, $spos, $query_blastx_strand, $FH_HR);
     $absolute_scoords = ($is_feature) ? 
         $ftr_scoords : vdr_CoordsSegmentCreate(1, $seq_len, "+", $FH_HR); # the full sequence
-    $alt_scoords = sprintf("seq:%s;", vdr_CoordsRelativeToAbsolute($absolute_scoords, $relative_scoords, $FH_HR));
+    my $del_scoords = vdr_CoordsRelativeToAbsolute($absolute_scoords, $relative_scoords, $FH_HR);
+    $alt_scoords = sprintf("seq:%s;", $del_scoords);
     
     # determine model coordinates
+    # if the sequence was aligned: the $len model positions after (in the direction of 
+    # the feature) the model position that the sequence position just before the 
+    # deletion maps to, limited to the model
+    my $del_mcoords = undef;
+    if(defined $runs_AR) { 
+      my @del_sstart_A  = ();
+      my @del_sstrand_A = ();
+      vdr_FeatureStartStopStrandArrays($del_scoords, \@del_sstart_A, undef, \@del_sstrand_A, $FH_HR);
+      if(($del_sstart_A[0] >= 1) && ($del_sstart_A[0] <= $seq_len)) { 
+        my $prv_mpos = abs(helper_ua2rf_runs_lookup($runs_AR, $del_sstart_A[0], $FH_HR));
+        if($del_sstrand_A[0] eq "-") { 
+          if($prv_mpos > 1) { 
+            $del_mcoords = vdr_CoordsSegmentCreate($prv_mpos - 1, (($prv_mpos - $len) >= 1) ? ($prv_mpos - $len) : 1, "-", $FH_HR);
+          }
+        }
+        elsif($prv_mpos < $mdl_len) { 
+          $del_mcoords = vdr_CoordsSegmentCreate($prv_mpos + 1, (($prv_mpos + $len) <= $mdl_len) ? ($prv_mpos + $len) : $mdl_len, "+", $FH_HR);
+        }
+      }
+    }
     my $aa_len = $len / 3;
+    if(defined $del_mcoords) { 
+      $alt_mcoords = sprintf("mdl:%s;", $del_mcoords);
+    }
+    # otherwise determine model coordinates from the protein positions
     # see github issue #84: report VADRNULL mdl coords if subject deletion position exceeds reference CDS frame (over-length library protein)
-    if(vdr_CoordsProteinRelativeExceedsAbsolute($ftr_mcoords, vdr_CoordsSegmentCreate($aa_mpos+1, $aa_mpos+$aa_len, "+", $FH_HR), $FH_HR)) {
+    elsif(vdr_CoordsProteinRelativeExceedsAbsolute($ftr_mcoords, vdr_CoordsSegmentCreate($aa_mpos+1, $aa_mpos+$aa_len, "+", $FH_HR), $FH_HR)) {
       $alt_mcoords = "mdl:VADRNULL;";
     }
     else {
@@ -10859,18 +10969,10 @@ sub add_protein_validation_mdl_coords {
           my $ftr_results_HR = $ftr_results_HAHR->{$seq_name}[$ftr_idx];
           delete $ftr_results_HR->{"p_mcoords"};
           if((defined $runs_AR) && (defined $ftr_results_HR->{"p_scoords"})) { 
-            my @start_A  = ();
-            my @stop_A   = ();
-            my @strand_A = ();
-            my $nsgm = vdr_FeatureStartStopStrandArrays($ftr_results_HR->{"p_scoords"}, \@start_A, \@stop_A, \@strand_A, $FH_HR);
-            my $mcoords = "";
-            for(my $s = 0; $s < $nsgm; $s++) { 
-              if($s > 0) { $mcoords .= ","; }
-              $mcoords .= vdr_CoordsSegmentCreate(abs(helper_ua2rf_runs_lookup($runs_AR, $start_A[$s], $FH_HR)), 
-                                                  abs(helper_ua2rf_runs_lookup($runs_AR, $stop_A[$s],  $FH_HR)), 
-                                                  $strand_A[$s], $FH_HR);
+            my $mcoords = helper_ua2rf_runs_coords_to_mdl_coords($runs_AR, $ftr_results_HR->{"p_scoords"}, $FH_HR);
+            if(defined $mcoords) { 
+              $ftr_results_HR->{"p_mcoords"} = $mcoords;
             }
-            $ftr_results_HR->{"p_mcoords"} = $mcoords;
           }
         }
       }
@@ -10983,6 +11085,58 @@ sub helper_ua2rf_runs_lookup {
 
   # aligned runs are consecutive model positions, all positions of an inserted run have the same value
   return ($run_val > 0) ? ($run_val + ($pos - $run_start)) : $run_val;
+}
+
+#################################################################
+# Subroutine:  helper_ua2rf_runs_coords_to_mdl_coords()
+# Incept:      EPN, Wed Oct 21 2026 (w/Claude)
+#
+# Purpose:    Given a compact sequence to model position map from
+#             helper_ua2rf_runs_create() and a sequence coordinates
+#             string, return the corresponding model coordinates 
+#             string, by mapping each segment endpoint separately the
+#             same way VADR maps sequence coordinates to model 
+#             coordinates for alerts: an aligned position maps to its
+#             model position, and an inserted position maps to the 
+#             model position the insertion follows, or to 0 if it is
+#             before model position 1. Each segment keeps its strand.
+#
+# Arguments:
+#  $runs_AR:   REF to array of runs from helper_ua2rf_runs_create()
+#  $scoords:   sequence coordinates string
+#  $FH_HR:     REF to hash of file handles
+#
+# Returns:    model coordinates string, or undef if any endpoint 
+#             of $scoords is not a position of the sequence
+#
+# Dies:       never
+#
+#################################################################
+sub helper_ua2rf_runs_coords_to_mdl_coords { 
+  my $sub_name = "helper_ua2rf_runs_coords_to_mdl_coords";
+  my $nargs_exp = 3;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($runs_AR, $scoords, $FH_HR) = @_;
+
+  my $seq_len = $runs_AR->[(scalar(@{$runs_AR}) - 1)][0] - 1; # final run is a sentinel one position past the end of the sequence
+  my @start_A  = ();
+  my @stop_A   = ();
+  my @strand_A = ();
+  my $nsgm = vdr_FeatureStartStopStrandArrays($scoords, \@start_A, \@stop_A, \@strand_A, $FH_HR);
+  my $mcoords = "";
+  for(my $s = 0; $s < $nsgm; $s++) { 
+    if(($start_A[$s] < 1) || ($start_A[$s] > $seq_len) || 
+       ($stop_A[$s]  < 1) || ($stop_A[$s]  > $seq_len)) { 
+      return undef;
+    }
+    if($s > 0) { $mcoords .= ","; }
+    $mcoords .= vdr_CoordsSegmentCreate(abs(helper_ua2rf_runs_lookup($runs_AR, $start_A[$s], $FH_HR)), 
+                                        abs(helper_ua2rf_runs_lookup($runs_AR, $stop_A[$s],  $FH_HR)), 
+                                        $strand_A[$s], $FH_HR);
+  }
+
+  return $mcoords;
 }
 
 #################################################################
