@@ -4221,6 +4221,13 @@ sub add_classification_alerts {
          (defined $mdl_info_AHR->[$mdl_idx]{$alt_info_HHR->{"indfstrn"}{"exc_key"}})) { 
         vdr_CoordsToSegments($mdl_info_AHR->[$mdl_idx]{$alt_info_HHR->{"indfstrn"}{"exc_key"}}, \@{$indfstrn_exc_AA[$mdl_idx]}, $FH_HR);
       }
+      # indfstr_mdl_exc (exc_key2): indfstrn always matches on the exact model position, same
+      # as indfstr_exc above, so these feed the same array; a model never has both keys
+      # defined (validated by vdr_ModelInfoValidateExceptionKeys()) (brief 26_0602-046)
+      if((defined $alt_info_HHR->{"indfstrn"}{"exc_key2"}) && 
+         (defined $mdl_info_AHR->[$mdl_idx]{$alt_info_HHR->{"indfstrn"}{"exc_key2"}})) { 
+        vdr_CoordsToSegments($mdl_info_AHR->[$mdl_idx]{$alt_info_HHR->{"indfstrn"}{"exc_key2"}}, \@{$indfstrn_exc_AA[$mdl_idx]}, $FH_HR);
+      }
     }
   }
 
@@ -6225,9 +6232,22 @@ sub add_frameshift_alerts_for_one_sequence {
         vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"insertnn"}{"exc_key"}}, undef, \%{$insertn_sgm_exc_AH[$ftr_idx]}, $FH_HR);
         vdr_ExceptionSegmentsAndValuesToPositionsAndValues(\%{$insertn_sgm_exc_AH[$ftr_idx]}, 0, \%{$insertn_posn_exc_AH[$ftr_idx]}, $FH_HR);
       }
+      # insertn_mdl_exc (exc_key2): insertnn always matches on the exact model position, same
+      # as insertn_exc above, so these feed the same hash; a feature never has both keys
+      # defined (validated by vdr_FeatureInfoValidateExceptionKeys()) (brief 26_0602-046)
+      if((defined $alt_info_HHR->{"insertnn"}{"exc_key2"}) && 
+         (defined $ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"insertnn"}{"exc_key2"}})) { 
+        vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"insertnn"}{"exc_key2"}}, undef, \%{$insertn_sgm_exc_AH[$ftr_idx]}, $FH_HR);
+        vdr_ExceptionSegmentsAndValuesToPositionsAndValues(\%{$insertn_sgm_exc_AH[$ftr_idx]}, 0, \%{$insertn_posn_exc_AH[$ftr_idx]}, $FH_HR);
+      }
       if((defined $alt_info_HHR->{"deletinn"}{"exc_key"}) && 
          (defined $ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"deletinn"}{"exc_key"}})) { 
         vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"deletinn"}{"exc_key"}}, undef, \%{$deletin_sgm_exc_AH[$ftr_idx]}, $FH_HR);
+        vdr_ExceptionSegmentsAndValuesToPositionsAndValues(\%{$deletin_sgm_exc_AH[$ftr_idx]}, 0, \%{$deletin_posn_exc_AH[$ftr_idx]}, $FH_HR);
+      }
+      if((defined $alt_info_HHR->{"deletinn"}{"exc_key2"}) && 
+         (defined $ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"deletinn"}{"exc_key2"}})) { 
+        vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"deletinn"}{"exc_key2"}}, undef, \%{$deletin_sgm_exc_AH[$ftr_idx]}, $FH_HR);
         vdr_ExceptionSegmentsAndValuesToPositionsAndValues(\%{$deletin_sgm_exc_AH[$ftr_idx]}, 0, \%{$deletin_posn_exc_AH[$ftr_idx]}, $FH_HR);
       }
       if((defined $alt_info_HHR->{"fstukcft"}{"exc_key"}) && 
@@ -8536,33 +8556,66 @@ sub add_protein_validation_alerts {
   # get info on position-specific insert and delete maximum exceptions if there are any
   # skip this if we are using hmmer instead of blastx b/c we don't check for inserts/deletes
   # with hmmer
-  my @indfstrp_exc_A      = (); # 1D array: indfstrp exception coord segments
-  my @insertn_sgm_exc_AH  = (); # 1D array: per feature, 2D hash: key is coords segment, value is maximum allowed insert for that segment
-  my @deletin_sgm_exc_AH  = (); # 1D array: per feature, 2D hash: key is coords segment, value is maximum allowed delete for that segment
-  my @insertn_posn_exc_AH = (); # 1D array: per feature, 2D hash: key is model position, value is maximum allowed insert for that position
-  my @deletin_posn_exc_AH = (); # 1D array: per feature, 2D hash: key is model position, value is maximum allowed delete for that position
+  #
+  # two parallel sets of exception data structures are built here (brief 26_0602-046):
+  # - the "_exc" set (exc_key), from the legacy insertn_exc/deletin_exc/indfstr_exc keys,
+  #   matched against the APPROXIMATE (protein-position-derived) model position for
+  #   insertnp/deletinp/indfstrp, preserving pre-VADR-1.8 (pre-#125) behavior for existing models
+  # - the "_mdl_exc" set (exc_key2), from the recommended insertn_mdl_exc/deletin_mdl_exc/
+  #   indfstr_mdl_exc keys, matched against the EXACT (alignment-derived) model position, per #125
+  # a feature/model is validated (vdr_FeatureInfoValidateExceptionKeys()/
+  # vdr_ModelInfoValidateExceptionKeys()) to never define both keys of a pair, so at most one
+  # of each pair of data structures below is ever non-empty for a given feature/model
+  my @indfstrp_exc_A          = (); # 1D array: indfstrp legacy (indfstr_exc) exception coord segments
+  my @indfstrp_mdl_exc_A      = (); # 1D array: indfstrp recommended (indfstr_mdl_exc) exception coord segments
+  my @insertn_sgm_exc_AH      = (); # 1D array: per feature, 2D hash: key is coords segment, value is maximum allowed insert for that segment, from insertn_exc
+  my @deletin_sgm_exc_AH      = (); # 1D array: per feature, 2D hash: key is coords segment, value is maximum allowed delete for that segment, from deletin_exc
+  my @insertn_posn_exc_AH     = (); # 1D array: per feature, 2D hash: key is approximate model position, value is maximum allowed insert for that position, from insertn_exc
+  my @deletin_posn_exc_AH     = (); # 1D array: per feature, 2D hash: key is approximate model position, value is maximum allowed delete for that position, from deletin_exc
+  my @insertn_mdl_sgm_exc_AH  = (); # 1D array: per feature, 2D hash: key is coords segment, value is maximum allowed insert for that segment, from insertn_mdl_exc
+  my @deletin_mdl_sgm_exc_AH  = (); # 1D array: per feature, 2D hash: key is coords segment, value is maximum allowed delete for that segment, from deletin_mdl_exc
+  my @insertn_mdl_posn_exc_AH = (); # 1D array: per feature, 2D hash: key is exact model position, value is maximum allowed insert for that position, from insertn_mdl_exc
+  my @deletin_mdl_posn_exc_AH = (); # 1D array: per feature, 2D hash: key is exact model position, value is maximum allowed delete for that position, from deletin_mdl_exc
   if(! opt_Get("--ignore_exc", $opt_HHR)) { 
     if((defined $alt_info_HHR->{"indfstrp"}{"exc_key"}) && 
        (defined $mdl_info_HR->{$alt_info_HHR->{"indfstrp"}{"exc_key"}})) { 
       vdr_CoordsToSegments($mdl_info_HR->{$alt_info_HHR->{"indfstrp"}{"exc_key"}}, \@indfstrp_exc_A, $FH_HR);
     }
+    if((defined $alt_info_HHR->{"indfstrp"}{"exc_key2"}) && 
+       (defined $mdl_info_HR->{$alt_info_HHR->{"indfstrp"}{"exc_key2"}})) { 
+      vdr_CoordsToSegments($mdl_info_HR->{$alt_info_HHR->{"indfstrp"}{"exc_key2"}}, \@indfstrp_mdl_exc_A, $FH_HR);
+    }
   }
   if(! $do_pv_hmmer) { 
     for($ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
-      %{$insertn_sgm_exc_AH[$ftr_idx]}  = ();
-      %{$deletin_sgm_exc_AH[$ftr_idx]}  = ();
-      %{$insertn_posn_exc_AH[$ftr_idx]} = ();
-      %{$deletin_posn_exc_AH[$ftr_idx]} = ();
+      %{$insertn_sgm_exc_AH[$ftr_idx]}      = ();
+      %{$deletin_sgm_exc_AH[$ftr_idx]}      = ();
+      %{$insertn_posn_exc_AH[$ftr_idx]}     = ();
+      %{$deletin_posn_exc_AH[$ftr_idx]}     = ();
+      %{$insertn_mdl_sgm_exc_AH[$ftr_idx]}  = ();
+      %{$deletin_mdl_sgm_exc_AH[$ftr_idx]}  = ();
+      %{$insertn_mdl_posn_exc_AH[$ftr_idx]} = ();
+      %{$deletin_mdl_posn_exc_AH[$ftr_idx]} = ();
       if(! opt_Get("--ignore_exc", $opt_HHR)) { 
         if((defined $alt_info_HHR->{"insertnp"}{"exc_key"}) && 
            (defined $ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"insertnp"}{"exc_key"}})) { 
           vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"insertnp"}{"exc_key"}}, undef, \%{$insertn_sgm_exc_AH[$ftr_idx]}, $FH_HR);
           vdr_ExceptionSegmentsAndValuesToPositionsAndValues(\%{$insertn_sgm_exc_AH[$ftr_idx]}, 0, \%{$insertn_posn_exc_AH[$ftr_idx]}, $FH_HR);
         }
+        if((defined $alt_info_HHR->{"insertnp"}{"exc_key2"}) && 
+           (defined $ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"insertnp"}{"exc_key2"}})) { 
+          vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"insertnp"}{"exc_key2"}}, undef, \%{$insertn_mdl_sgm_exc_AH[$ftr_idx]}, $FH_HR);
+          vdr_ExceptionSegmentsAndValuesToPositionsAndValues(\%{$insertn_mdl_sgm_exc_AH[$ftr_idx]}, 0, \%{$insertn_mdl_posn_exc_AH[$ftr_idx]}, $FH_HR);
+        }
         if((defined $alt_info_HHR->{"deletinp"}{"exc_key"}) && 
            (defined $ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"deletinp"}{"exc_key"}})) { 
           vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"deletinp"}{"exc_key"}}, undef, \%{$deletin_sgm_exc_AH[$ftr_idx]}, $FH_HR);
           vdr_ExceptionSegmentsAndValuesToPositionsAndValues(\%{$deletin_sgm_exc_AH[$ftr_idx]}, 0, \%{$deletin_posn_exc_AH[$ftr_idx]}, $FH_HR);
+        }
+        if((defined $alt_info_HHR->{"deletinp"}{"exc_key2"}) && 
+           (defined $ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"deletinp"}{"exc_key2"}})) { 
+          vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$alt_info_HHR->{"deletinp"}{"exc_key2"}}, undef, \%{$deletin_mdl_sgm_exc_AH[$ftr_idx]}, $FH_HR);
+          vdr_ExceptionSegmentsAndValuesToPositionsAndValues(\%{$deletin_mdl_sgm_exc_AH[$ftr_idx]}, 0, \%{$deletin_mdl_posn_exc_AH[$ftr_idx]}, $FH_HR);
         }
       }
     }
@@ -8765,23 +8818,38 @@ sub add_protein_validation_alerts {
                     # mapped through the alignment
                     my $hit_mcoords = ((defined $runs_AR) && (defined $hit_scoords)) ? helper_ua2rf_runs_coords_to_mdl_coords($runs_AR, $hit_scoords, $FH_HR) : undef;
                     $alt_mcoords = "mdl:";
-                    if(defined $hit_mcoords) { 
+                    # always compute the approximate (protein-position-derived) model coords too,
+                    # regardless of whether $hit_mcoords (exact) is defined: the legacy indfstr_exc
+                    # key always matches on these, and they are also the fallback for unaligned
+                    # sequences when the recommended indfstr_mdl_exc key is used; restored from
+                    # VADR 1.7.3 (brief 26_0602-046)
+                    # see github issue #84: skip mdl coords (report VADRNULL) if subject hit exceeds reference CDS frame (over-length library protein)
+                    my ($tmp_pos_alt_mcoords, $tmp_neg_alt_mcoords) = (undef, undef);
+                    if((defined $p_hstart) && (defined $p_hstop) &&
+                       (! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR))) {
+                      # always create in + strand first, vdr_CoordsProteinRelativeToAbsolute requires it
+                      $tmp_pos_alt_mcoords = vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR);
+                      $tmp_neg_alt_mcoords = vdr_CoordsReverseComplement($tmp_pos_alt_mcoords, 0, $FH_HR); # 0: don't do carrots
+                      if(! defined $hit_mcoords) { 
+                        $hit_mcoords = ($p_strand eq "+") ? $tmp_pos_alt_mcoords : $tmp_neg_alt_mcoords;
+                      }
+                    }
+                    # indfstr_mdl_exc (recommended): matches on the exact model coords ($hit_mcoords),
+                    # falling back to the approximate ones if the sequence was not aligned
+                    my $hit_mcoords_for_mdl_exc = (defined $hit_mcoords) ? $hit_mcoords :
+                        ((defined $tmp_pos_alt_mcoords) ? (($p_strand eq "+") ? $tmp_pos_alt_mcoords : $tmp_neg_alt_mcoords) : undef);
+                    if(defined $hit_mcoords_for_mdl_exc) { 
                       # always check for exceptions in + and - strand
-                      my $tmp_rc_hit_mcoords = vdr_CoordsReverseComplement($hit_mcoords, 0, $FH_HR); # 0: don't do carrots
-                      foreach $exc_coords (@indfstrp_exc_A) { 
-                        if((vdr_CoordsCheckIfSpans($exc_coords, $hit_mcoords, $FH_HR)) || 
-                           (vdr_CoordsCheckIfSpans($exc_coords, $tmp_rc_hit_mcoords, $FH_HR))) { 
+                      my $tmp_rc_hit_mcoords_for_mdl_exc = vdr_CoordsReverseComplement($hit_mcoords_for_mdl_exc, 0, $FH_HR); # 0: don't do carrots
+                      foreach $exc_coords (@indfstrp_mdl_exc_A) { 
+                        if((vdr_CoordsCheckIfSpans($exc_coords, $hit_mcoords_for_mdl_exc, $FH_HR)) || 
+                           (vdr_CoordsCheckIfSpans($exc_coords, $tmp_rc_hit_mcoords_for_mdl_exc, $FH_HR))) { 
                           $exempted_region = 1;
                         }
                       }
                     }
-                    # otherwise determine them from the protein positions of the hit
-                    # see github issue #84: skip mdl coords (report VADRNULL) if subject hit exceeds reference CDS frame (over-length library protein)
-                    elsif((defined $p_hstart) && (defined $p_hstop) &&
-                       (! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR))) {
-                      # always create in + strand first, vdr_CoordsProteinRelativeToAbsolute requires it
-                      my $tmp_pos_alt_mcoords = vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSegmentCreate($p_hstart, $p_hstop, "+", $FH_HR), $FH_HR);
-                      my $tmp_neg_alt_mcoords = vdr_CoordsReverseComplement($tmp_pos_alt_mcoords, 0, $FH_HR); # 0: don't do carrots
+                    # indfstr_exc (legacy): always matches on the approximate model coords
+                    if(defined $tmp_pos_alt_mcoords) { 
                       # always check for exceptions in + and - strand
                       foreach $exc_coords (@indfstrp_exc_A) { 
                         if((vdr_CoordsCheckIfSpans($exc_coords, $tmp_pos_alt_mcoords, $FH_HR)) || 
@@ -8789,7 +8857,6 @@ sub add_protein_validation_alerts {
                           $exempted_region = 1;
                         }
                       }
-                      $hit_mcoords = ($p_strand eq "+") ? $tmp_pos_alt_mcoords : $tmp_neg_alt_mcoords;
                     }
                     $alt_mcoords .= ((defined $hit_mcoords) ? $hit_mcoords : "VADRNULL") . ";";
                     if(! $exempted_region) { 
@@ -8892,26 +8959,40 @@ sub add_protein_validation_alerts {
                         if(helper_blastx_query_strand($p_strand, $p_blastx_feature_flag, $p_ftr_scoords, $FH_HR) eq "-") { 
                           $ins_aa_mpos--;
                         }
-                        # determine the alert coords, and the model position after which the insert occurs, 
-                        # $nt_ins_spos, to check for position-specific exceptions: if the sequence was aligned, 
-                        # this is the alert model position, determined from the alignment
+                        # determine the alert coords, and two candidate model positions to check
+                        # for position-specific exceptions: $nt_ins_spos_exact (alignment-derived,
+                        # used by the recommended insertn_mdl_exc key) if the sequence was aligned,
+                        # and $nt_ins_spos_approx (protein-position-derived, used by the legacy
+                        # insertn_exc key, and as the fallback for unaligned sequences, see github
+                        # issue #84); both are always computed, restored from VADR 1.7.3
+                        # (brief 26_0602-046)
                         my ($ins_alt_scoords, $ins_alt_mcoords) = (undef, undef);
-                        my $nt_ins_spos = undef;
+                        my $nt_ins_spos_exact  = undef;
+                        my $nt_ins_spos_approx = undef;
                         if(defined $runs_AR) { 
                           ($ins_alt_scoords, $ins_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(1, # $is_insert
                                                                                                                  $p_ins_qpos_A[$ins_idx], $ins_aa_mpos, $p_ins_len_A[$ins_idx], 
                                                                                                                  $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
                                                                                                                  $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
-                          if($ins_alt_mcoords =~ m/^mdl\:(\d+)\.\./) { $nt_ins_spos = $1; }
+                          if($ins_alt_mcoords =~ m/^mdl\:(\d+)\.\./) { $nt_ins_spos_exact = $1; }
                         }
-                        # otherwise determine it from the protein position
-                        # see github issue #84: subject insert position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_ins_spos undef and use default xmaxins
-                        elsif(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR), $FH_HR)) {
-                          $nt_ins_spos = vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
+                        # see github issue #84: subject insert position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_ins_spos_approx undef and use default xmaxins
+                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR), $FH_HR)) {
+                          $nt_ins_spos_approx = vdr_Feature3pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
                                                                                                           vdr_CoordsSinglePositionSegmentCreate($ins_aa_mpos, "+", $FH_HR),
                                                                                                           $FH_HR), $FH_HR);
                         }
-                        my $local_xmaxins = ((defined $nt_ins_spos) && (defined $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos})) ? $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos} : $xmaxins;
+                        # insertn_mdl_exc (recommended) matches on the exact position, falling back
+                        # to the approximate position if the sequence was not aligned; insertn_exc
+                        # (legacy) always matches on the approximate position
+                        my $nt_ins_spos_for_mdl_exc = (defined $nt_ins_spos_exact) ? $nt_ins_spos_exact : $nt_ins_spos_approx;
+                        my $local_xmaxins = $xmaxins;
+                        if((defined $nt_ins_spos_for_mdl_exc) && (defined $insertn_mdl_posn_exc_AH[$ftr_idx]{$nt_ins_spos_for_mdl_exc})) { 
+                          $local_xmaxins = $insertn_mdl_posn_exc_AH[$ftr_idx]{$nt_ins_spos_for_mdl_exc};
+                        }
+                        elsif((defined $nt_ins_spos_approx) && (defined $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos_approx})) { 
+                          $local_xmaxins = $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos_approx};
+                        }
                         if($p_ins_len_A[$ins_idx] > $local_xmaxins) { 
                           if(defined $alt_str_HH{$ftr_results_prefix}{"insertnp"}) { $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= ":VADRSEP:"; } # we are adding another instance
                           else                               { $alt_str_HH{$ftr_results_prefix}{"insertnp"}  = ""; } # initialize
@@ -8934,22 +9015,26 @@ sub add_protein_validation_alerts {
                       my @p_del_len_A  = ();
                       my $ndel = helper_blastx_breakdown_max_indel_str($p_del, \@p_del_qpos_A, \@p_del_spos_A, \@p_del_len_A, $FH_HR);
                       for(my $del_idx = 0; $del_idx < $ndel; $del_idx++) {
-                        # determine the alert coords, and the first deleted model position, $nt_del_spos, 
-                        # to check for position-specific exceptions: if the sequence was aligned, this 
-                        # is the first alert model position, determined from the alignment
+                        # determine the alert coords, and two candidate first-deleted model
+                        # positions to check for position-specific exceptions: $nt_del_spos_exact
+                        # (alignment-derived, used by the recommended deletin_mdl_exc key) if the
+                        # sequence was aligned, and $nt_del_spos_approx (protein-position-derived,
+                        # used by the legacy deletin_exc key, and as the fallback for unaligned
+                        # sequences, see github issue #84); both are always computed, restored
+                        # from VADR 1.7.3 (brief 26_0602-046)
                         my ($del_alt_scoords, $del_alt_mcoords) = (undef, undef);
-                        my $nt_del_spos = undef;
+                        my $nt_del_spos_exact  = undef;
+                        my $nt_del_spos_approx = undef;
                         if(defined $runs_AR) { 
                           ($del_alt_scoords, $del_alt_mcoords) = helper_blastx_max_indel_token_to_alt_coords(0, # $is_insert
                                                                                                                  $p_del_qpos_A[$del_idx], $p_del_spos_A[$del_idx], $p_del_len_A[$del_idx], 
                                                                                                                  $p_blastx_feature_flag, $p_ftr_scoords, $ftr_info_AHR->[$ftr_idx]{"coords"}, $ftr_strand, $p_strand, 
                                                                                                                  $seq_len_HR->{$seq_name}, $mdl_info_HR->{"length"}, $runs_AR, $FH_HR);
-                          if($del_alt_mcoords =~ m/^mdl\:(\d+)\.\./) { $nt_del_spos = $1; }
+                          if($del_alt_mcoords =~ m/^mdl\:(\d+)\.\./) { $nt_del_spos_exact = $1; }
                         }
-                        # otherwise determine it from the protein position
-                        # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos undef and use default xmaxdel
-                        elsif(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
-                          $nt_del_spos = vdr_Feature5pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
+                        # see github issue #84: subject deletion position can exceed reference CDS frame (over-length library protein); no position-specific exception applies, so leave $nt_del_spos_approx undef and use default xmaxdel
+                        if(! vdr_CoordsProteinRelativeExceedsAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"}, vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR), $FH_HR)) {
+                          $nt_del_spos_approx = vdr_Feature5pMostPosition(vdr_CoordsProteinRelativeToAbsolute($ftr_info_AHR->[$ftr_idx]{"coords"},
                                                                                                          vdr_CoordsSinglePositionSegmentCreate($p_del_spos_A[$del_idx] + 1, "+", $FH_HR),
                                                                                                          $FH_HR), $FH_HR);
                         }
@@ -8958,7 +9043,17 @@ sub add_protein_validation_alerts {
                         # position of the deletinp model coords); this is not simply 1 more than the 3'-most position
                         # of the AA before the deletion for negative strand CDSs or if that AA ends a CDS segment
 
-                        my $local_xmaxdel = ((defined $nt_del_spos) && (defined $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos})) ? $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos} : $xmaxdel;
+                        # deletin_mdl_exc (recommended) matches on the exact position, falling back
+                        # to the approximate position if the sequence was not aligned; deletin_exc
+                        # (legacy) always matches on the approximate position
+                        my $nt_del_spos_for_mdl_exc = (defined $nt_del_spos_exact) ? $nt_del_spos_exact : $nt_del_spos_approx;
+                        my $local_xmaxdel = $xmaxdel;
+                        if((defined $nt_del_spos_for_mdl_exc) && (defined $deletin_mdl_posn_exc_AH[$ftr_idx]{$nt_del_spos_for_mdl_exc})) { 
+                          $local_xmaxdel = $deletin_mdl_posn_exc_AH[$ftr_idx]{$nt_del_spos_for_mdl_exc};
+                        }
+                        elsif((defined $nt_del_spos_approx) && (defined $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos_approx})) { 
+                          $local_xmaxdel = $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos_approx};
+                        }
                         if($p_del_len_A[$del_idx] > $local_xmaxdel) { 
                           if(defined $alt_str_HH{$ftr_results_prefix}{"deletinp"}) { $alt_str_HH{$ftr_results_prefix}{"deletinp"} .= ":VADRSEP:"; } # we are adding another instance
                           else                                                     { $alt_str_HH{$ftr_results_prefix}{"deletinp"} = ""; }           # initialize
@@ -11441,7 +11536,7 @@ sub alert_list_option {
                       "never",
                       helper_tabular_replace_spaces($alt_info_HHR->{$code}{"sdesc"}), 
                       $alt_info_HHR->{$code}{"ldesc"},
-                      ((defined $alt_info_HHR->{$code}{"exc_key"})  ? $alt_info_HHR->{$code}{"exc_key"}  : "-"), 
+                      ((defined $alt_info_HHR->{$code}{"exc_key"})  ? ($alt_info_HHR->{$code}{"exc_key"} . ((defined $alt_info_HHR->{$code}{"exc_key2"}) ? ("/" . $alt_info_HHR->{$code}{"exc_key2"}) : "")) : "-"), 
                       ((defined $alt_info_HHR->{$code}{"exc_type"}) ? $alt_info_HHR->{$code}{"exc_type"} : "-")]);
     }
   }
@@ -11469,7 +11564,7 @@ sub alert_list_option {
                       $misc_not_fail_str,
                       helper_tabular_replace_spaces($alt_info_HHR->{$code}{"sdesc"}), 
                       $alt_info_HHR->{$code}{"ldesc"},
-                      ((defined $alt_info_HHR->{$code}{"exc_key"})  ? $alt_info_HHR->{$code}{"exc_key"}  : "-"), 
+                      ((defined $alt_info_HHR->{$code}{"exc_key"})  ? ($alt_info_HHR->{$code}{"exc_key"} . ((defined $alt_info_HHR->{$code}{"exc_key2"}) ? ("/" . $alt_info_HHR->{$code}{"exc_key2"}) : "")) : "-"), 
                       ((defined $alt_info_HHR->{$code}{"exc_type"}) ? $alt_info_HHR->{$code}{"exc_type"} : "-")]);
     }
   }
@@ -11497,7 +11592,7 @@ sub alert_list_option {
                       $misc_not_fail_str,
                       helper_tabular_replace_spaces($alt_info_HHR->{$code}{"sdesc"}), 
                       $alt_info_HHR->{$code}{"ldesc"},
-                      ((defined $alt_info_HHR->{$code}{"exc_key"})  ? $alt_info_HHR->{$code}{"exc_key"}  : "-"), 
+                      ((defined $alt_info_HHR->{$code}{"exc_key"})  ? ($alt_info_HHR->{$code}{"exc_key"} . ((defined $alt_info_HHR->{$code}{"exc_key2"}) ? ("/" . $alt_info_HHR->{$code}{"exc_key2"}) : "")) : "-"), 
                       ((defined $alt_info_HHR->{$code}{"exc_type"}) ? $alt_info_HHR->{$code}{"exc_type"} : "-")]); 
     }
   }
