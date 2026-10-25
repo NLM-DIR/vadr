@@ -81,3 +81,24 @@ out: va-noro.vp2rev.pvcoords.6/va-noro.vp2rev.pvcoords.6.vadr.alt.list
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.6.vadr.alt
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.6.vadr.alt.list
 rmdir: va-noro.vp2rev.pvcoords.6
+#
+# 7: as 5, but using the recommended insertn_mdl_exc/deletin_mdl_exc keys (exact model
+# positions) instead of the legacy insertn_exc/deletin_exc keys (approximate positions); same
+# values, and in this fixture the approximate and exact positions coincide, so the output is
+# identical to command 5 (brief 26_0602-046)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.mdlexc.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.1.fa va-noro.vp2rev.pvcoords.7 > va-noro.vp2rev.pvcoords.7.out
+desc: annotate-noro-vp2rev-pvcoords-7-mdl-exc
+out: va-noro.vp2rev.pvcoords.7/va-noro.vp2rev.pvcoords.7.vadr.alt
+out: va-noro.vp2rev.pvcoords.7/va-noro.vp2rev.pvcoords.7.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.5.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.5.vadr.alt.list
+rmdir: va-noro.vp2rev.pvcoords.7
+#
+# 8: as 6, but using insertn_mdl_exc/deletin_mdl_exc (brief 26_0602-046)
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2only.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959.pvcoords.mdlexc.vp2only.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2only.pvcoords.4.fa va-noro.vp2rev.pvcoords.8 > va-noro.vp2rev.pvcoords.8.out
+desc: annotate-noro-vp2only-pvcoords-8-mdl-exc
+out: va-noro.vp2rev.pvcoords.8/va-noro.vp2rev.pvcoords.8.vadr.alt
+out: va-noro.vp2rev.pvcoords.8/va-noro.vp2rev.pvcoords.8.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.6.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.pvcoords/va-noro.vp2rev.pvcoords.6.vadr.alt.list
+rmdir: va-noro.vp2rev.pvcoords.8
