@@ -48,6 +48,28 @@
     `misc_not_failure:"1"` on the `s2m` `stem_loop` and need
     `--mnf_legacy` with `--ncf drop`. `misc_not_failure` on ncf type
     features is not recommended for new models.
+  * `v-annotate.pl` now reports exact, alignment-derived model
+    coordinates for the `indfantp`, `indfstrp`, `cdsstopp`, `insertnp`
+    and `deletinp` protein-validation alerts, instead of an approximate,
+    protein-position-derived coordinate; the `mdl coords` field of an
+    alert of one of these types in the `.alt` output file can now always
+    be read directly as a model position.
+  * new `.minfo` exception keys `insertn_mdl_exc`, `deletin_mdl_exc` and
+    `indfstr_mdl_exc`: the recommended alternatives to the existing
+    `insertn_exc`, `deletin_exc` and `indfstr_exc` keys, for the
+    `insertnp`/`insertnn`, `deletinp`/`deletinn` and `indfstrp`/
+    `indfstrn` alerts respectively. The new keys' values are exact model
+    positions, matched on the exact position described above. The
+    existing keys are retained for models built before this release and,
+    for the protein-validation alerts `insertnp`/`deletinp`/`indfstrp`
+    only, still match on the pre-1.8 approximate position (the
+    nucleotide-based alerts `insertnn`/`deletinn`/`indfstrn` always
+    matched, and still match, on the exact position, under either key
+    name). A feature (or `MODEL` line, for `indfstr_exc`/
+    `indfstr_mdl_exc`) that defines both the existing and the new key for
+    the same alert is a `v-annotate.pl` error. See the
+    [exceptions section of `annotate.md`](documentation/annotate.md#exceptionsmdl)
+    for when to use which key.
 
 ---
 ### VADR 1.7.3 release (September 2026)
