@@ -60,6 +60,7 @@ for t in \
     do-noannotn-tests.sh \
     do-vscan-tests.sh \
     do-nnclass-tests.sh \
+    do-mdlexc-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do
     sh $VADRSCRIPTSDIR/testfiles/$t

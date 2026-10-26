@@ -1060,7 +1060,7 @@ exception ranges are not allowed.
 | [*lowcovrg*](#lowcovrg2)  | sequence | never | LOW_COVERAGE                    | <a name="lowcovrg1"></a> low sequence fraction with significant similarity to homology model | - | - |
 | [*dupregin*](#dupregin2)  | sequence | never | DUPLICATE_REGIONS               | <a name="dupregin1"></a> similarity to a model region occurs more than once | `dupregin_exc` | coords-only |
 | [*discontn*](#discontn2)  | sequence | never | DISCONTINUOUS_SIMILARITY        | <a name="discontn1"></a> not all hits are in the same order in the sequence and the homology model | - | - |
-| [*indfstrn*](#indfstrn2)  | sequence | never | INDEFINITE_STRAND               | <a name="indfstrn1"></a> significant similarity detected on both strands | `indfstr_exc` | coords-only |
+| [*indfstrn*](#indfstrn2)  | sequence | never | INDEFINITE_STRAND               | <a name="indfstrn1"></a> significant similarity detected on both strands | `indfstr_exc`/`indfstr_mdl_exc`<sup>&dagger;</sup> | coords-only |
 | [*lowsim5s*](#lowsim5s2)  | sequence | never | LOW_SIMILARITY_START            | <a name="lowsim5s1"></a> significant similarity not detected at 5' end of the sequence | `lowsim_exc` | coords-only |
 | [*lowsim3s*](#lowsim3s2)  | sequence | never | LOW_SIMILARITY_END              | <a name="lowsim3s1"></a> significant similarity not detected at 3' end of the sequence | `lowsim_exc` | coords-only |
 | [*lowsimis*](#lowsimis2)  | sequence | never | LOW_SIMILARITY                  | <a name="lowsimis1"></a> internal region without significant similarity | `lowsim_exc` | coords-only |
@@ -1091,9 +1091,9 @@ exception ranges are not allowed.
 | [*indf3lcn*](#indf3lcn2)  | feature  | yes   | INDEFINITE_ANNOTATION_END       | <a name="indf3lcn1"></a> alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS |  - | - |
 | [*indf3plg*](#indf3plg2)  | feature  | yes   | INDEFINITE_ANNOTATION_END       | <a name="indf3plg1"></a> protein-based alignment extends past nucleotide-based alignment at 3' end |  - | - |
 | [*indf3pst*](#indf3pst2)  | feature  | yes   | INDEFINITE_ANNOTATION_END       | <a name="indf3pst1"></a> protein-based alignment does not extend close enough to nucleotide-based alignment 3' endpoint |  - | - |
-| [*indfstrp*](#indfstrp2)  | feature  | no    | INDEFINITE_STRAND               | <a name="indfstrp1"></a> strand mismatch between protein-based and nucleotide-based predictions | `indfstr_exc` | coords-only |
-| [*insertnp*](#insertnp2)  | feature  | no    | INSERTION_OF_NT                 | <a name="insertnp1"></a> too large of an insertion in protein-based alignment | `insertn_exc` | coords-value |
-| [*deletinp*](#deletinp2)  | feature  | yes   | DELETION_OF_NT                  | <a name="deletinp1"></a> too large of a deletion in protein-based alignment |   `deletin_exc` | coords-value |
+| [*indfstrp*](#indfstrp2)  | feature  | no    | INDEFINITE_STRAND               | <a name="indfstrp1"></a> strand mismatch between protein-based and nucleotide-based predictions | `indfstr_exc`/`indfstr_mdl_exc`<sup>&dagger;</sup> | coords-only |
+| [*insertnp*](#insertnp2)  | feature  | no    | INSERTION_OF_NT                 | <a name="insertnp1"></a> too large of an insertion in protein-based alignment | `insertn_exc`/`insertn_mdl_exc`<sup>&dagger;</sup> | coords-value |
+| [*deletinp*](#deletinp2)  | feature  | yes   | DELETION_OF_NT                  | <a name="deletinp1"></a> too large of a deletion in protein-based alignment |   `deletin_exc`/`deletin_mdl_exc`<sup>&dagger;</sup> | coords-value |
 | [*deletinf*](#deletinf2)  | feature  | no    | DELETION_OF_FEATURE_SECTION     | <a name="deletinf1"></a> internal deletion of a complete section in a multi-section feature with other section(s) annotated | - | - |
 | [*lowsim5n*](#lowsim5n2)  | feature  | yes   | LOW_FEATURE_SIMILARITY_START    | <a name="lowsim5n1"></a> region overlapping annotated feature that does not match a CDS at 5' end of sequence lacks significant similarity | `lowsim_exc` | coords-only |
 | [*lowsim5l*](#lowsim5l2)  | feature  | no    | LOW_FEATURE_SIMILARITY_START    | <a name="lowsim5l1"></a> long region overlapping annotated feature that does not match a CDS at 5' end of sequence lacks significant similarity | `lowsim_exc` | coords-only |
@@ -1101,6 +1101,12 @@ exception ranges are not allowed.
 | [*lowsim3l*](#lowsim3l2)  | feature  | no    | LOW_FEATURE_SIMILARITY_END      | <a name="lowsim3l1"></a> long region overlapping annotated feature that does not match a CDS at 3' end of sequence lacks significant similarity | `lowsim_exc` | coords-only |
 | [*lowsimin*](#lowsimin2)  | feature  | yes   | LOW_FEATURE_SIMILARITY          | <a name="lowsimin1"></a> region overlapping annotated feature that does not match a CDS lacks significant similarity  | `lowsim_exc` | coords-only |
 | [*lowsimil*](#lowsimil2)  | feature  | no    | LOW_FEATURE_SIMILARITY          | <a name="lowsimil1"></a> long region overlapping annotated feature that does not match a CDS lacks significant similarity  | `lowsim_exc` | coords-only |
+
+<sup>&dagger;</sup> see [Legacy (`*_exc`) vs recommended (`*_mdl_exc`) exception
+keys](#exceptionsmdl) below: these three alert pairs each have a legacy key
+(matching on an approximate model position for the protein-based alert) and
+a recommended key (matching on the exact model position shown in `mdl
+coords`); only one of the pair may be used per feature (or `MODEL` line).
 
 #### Description of alerts that are *non-fatal* by default <a name="nonfatal1"></a>
 | alert code | type  | causes `misc_feature`, not failure (if in modelinfo file) |short description/error name | .........long_description......... | exception key (in modelinfo file) | exception value type |
@@ -1121,8 +1127,8 @@ exception ranges are not allowed.
 | [*fstlocfi*](#fstlocfi2)  | feature  | yes   | POSSIBLE_FRAMESHIFT_LOW_CONF    | <a name="fstlocfi1"></a> low confidence possible frameshift in CDS (frame restored before end) (not reported if `--glsearch`)| `fst_exc` | coords-only |
 | [*indf5lcc*](#indf5lcc2)  | feature  | yes   | INDEFINITE_ANNOTATION_START     | <a name="indf5lcc1"></a> alignment to homology model has low confidence at 5' boundary for feature that is or matches a CDS | - | - |
 | [*indf3lcc*](#indf3lcc2)  | feature  | yes   | INDEFINITE_ANNOTATION_END       | <a name="indf3lcc1"></a> alignment to homology model has low confidence at 3' boundary for feature that is or matches a CDS |  - | - |
-| [*insertnn*](#insertnn2)  | feature  | no    | INSERTION_OF_NT                 | <a name="insertnn1"></a> too large of an insertion in nucleotide-based alignment of CDS feature | `insertn_exc` | coords-value |
-| [*deletinn*](#deletinn2)  | feature  | yes   | DELETION_OF_NT                  | <a name="deletinn1"></a> too large of a deletion in nucleotide-based alignment of CDS feature | `deletin_exc` | coords-value |
+| [*insertnn*](#insertnn2)  | feature  | no    | INSERTION_OF_NT                 | <a name="insertnn1"></a> too large of an insertion in nucleotide-based alignment of CDS feature | `insertn_exc`/`insertn_mdl_exc`<sup>&dagger;</sup> | coords-value |
+| [*deletinn*](#deletinn2)  | feature  | yes   | DELETION_OF_NT                  | <a name="deletinn1"></a> too large of a deletion in nucleotide-based alignment of CDS feature | `deletin_exc`/`deletin_mdl_exc`<sup>&dagger;</sup> | coords-value |
 | [*lowsim5c*](#lowsim5c2)  | feature  | no    | LOW_FEATURE_SIMILARITY_START    | <a name="lowsim5c1"></a> region overlapping annotated feature that is or matches a CDS at 5' end of sequence lacks significant similarity | `lowsim_exc` | coords-only |
 | [*lowsim3c*](#lowsim3c2)  | feature  | no    | LOW_FEATURE_SIMILARITY_END      | <a name="lowsim3c1"></a> region overlapping annotated feature that is or matches a CDS at 3' end of sequence lacks significant similarity | `lowsim_exc` | coords-only |
 | [*lowsimic*](#lowsimic2)  | feature  | no    | LOW_FEATURE_SIMILARITY          | <a name="lowsimic1"></a> region overlapping annotated feature that is or matches a CDS lacks significant similarity  |  `lowsim_exc` | coords-only |
@@ -1137,6 +1143,9 @@ exception ranges are not allowed.
 | [*nnalrgcl*](#nnalrgcl2)  | sequence | never | ALT_REGION_CLASSIFICATION_NN    | <a name="nnalrgcl1"></a> alternative alignment region used to find nearest neighbor b/c sequence does not include specified region | - | - |
 | [*nnptrgcl*](#nnptrgcl2)  | sequence | never | PARTIAL_REGION_CLASSIFICATION_NN| <a name="nnptrgcl1"></a> only part of the specified alignment region used to find nearest neighbor b/c sequence doesn't span full region | - | - |
 | [*recombin*](#recombin2)  | sequence | never | POSSIBLE_RECOMBINATION          | <a name="recombin1"></a> possible recombination detected: nearest-neighbor switches subgroup at some breakpoint position (only reported with `--do_rc`) | - | - |
+
+<sup>&dagger;</sup> see [Legacy (`*_exc`) vs recommended (`*_mdl_exc`) exception
+keys](#exceptionsmdl) below.
 
 ### Additional information on `v-annotate.pl` alerts <a name="alerts2"></a> 
 
@@ -1495,6 +1504,46 @@ sequence, you can check the `mdl coords` field of the [`.alt` output file](forma
 to determine the relevant model coordinates to use for
 the exception value. 
 
+### <a name="exceptionsmdl"></a>Legacy (`*_exc`) vs recommended (`*_mdl_exc`) exception keys for `insertnp`/`insertnn`, `deletinp`/`deletinn`, and `indfstrp`/`indfstrn`
+
+For `insertnp`/`insertnn`, `deletinp`/`deletinn` and `indfstrp`/`indfstrn`
+there are *two* exception keys for each alert pair:
+`insertn_exc`/`insertn_mdl_exc`, `deletin_exc`/`deletin_mdl_exc`, and
+`indfstr_exc`/`indfstr_mdl_exc`. The name tells you which model-position
+convention the value uses:
+
+- **`insertn_mdl_exc`, `deletin_mdl_exc`, `indfstr_mdl_exc` (recommended for
+  new models).** The value is the *exact* model position, exactly as
+  displayed in the `mdl coords` field of the [`.alt` output
+  file](formats.md#alt) for `insertnp`, `deletinp` and `indfstrp` (as well
+  as for the nucleotide-based `insertnn`, `deletinn` and `indfstrn`, which
+  have always matched on this exact position). If you have `v-annotate.pl`
+  output an alert you want to except, you can always read the exception
+  value straight off that alert's `mdl coords` field when using these keys.
+
+- **`insertn_exc`, `deletin_exc`, `indfstr_exc` (legacy, kept for models
+  built before VADR 1.8).** For the nucleotide-based alerts `insertnn`,
+  `deletinn` and `indfstrn`, this key matches on the same exact model
+  position as `*_mdl_exc` above. But for the protein-based alerts
+  `insertnp`, `deletinp` and `indfstrp`, it matches on an *approximate*,
+  protein-position-derived model position instead (VADR releases before
+  1.8 reported this same approximate position in `mdl coords` for these
+  three alerts, which is why existing models' values are tuned to it). The
+  approximate and exact positions are usually close but can differ by many
+  nucleotides when the nucleotide alignment and the protein (`blastx`)
+  alignment place the same insertion or deletion differently. **Do not
+  just rename an existing `insertn_exc`/`deletin_exc`/`indfstr_exc` key to
+  `insertn_mdl_exc`/`deletin_mdl_exc`/`indfstr_mdl_exc` without checking
+  the value**: the old value may sit at the wrong position under exact
+  matching, and will need to be re-derived from an actual `mdl coords`
+  output rather than simply relabeled.
+
+A single feature (or `MODEL` line, for `indfstr_exc`/`indfstr_mdl_exc`)
+may define **only one** of each pair, never both: `v-annotate.pl` reports
+an error if, for example, both `insertn_exc` and `insertn_mdl_exc` are
+present on the same `FEATURE` line, since mixing the two coordinate
+systems for the same alert is ambiguous.
+
 The table below lists all alert codes for which exceptions are allowed
 along with their specific exception keys and value types, and whether
 they pertain to a specific feature and should be added to the
@@ -1505,12 +1554,18 @@ should be added to the model line (line starting with `MODEL`):
 | alert code   | short description              | exception key   | exception value type | model info file line type |
 |--------------|--------------------------------|-----------------|----------------------|---------------------------
 | *dupregin*   | DUPLICATE_REGIONS              | `dupregin_exc`  | coords-only          | model |
-| *indfstrn*   | INDEFINITE_STRAND              | `indfstr_exc`   | coords-only          | model | 
-| *indfstrp*   | INDEFINITE_STRAND              | `indfstr_exc`   | coords-only          | model | 
-| *insertnp*   | INSERTION_OF_NT                | `insertn_exc`   | coords-value         | feature (CDS)| 
-| *insertnn*   | INSERTION_OF_NT                | `insertn_exc`   | coords-value         | feature (CDS)| 
-| *deletinn*   | DELETION_OF_NT                 | `deletin_exc`   | coords-value         | feature (CDS)| 
-| *deletinp*   | DELETION_OF_NT                 | `deletin_exc`   | coords-value         | feature (CDS)| 
+| *indfstrn*   | INDEFINITE_STRAND              | `indfstr_exc` (legacy, approximate for *indfstrp*) | coords-only          | model | 
+| *indfstrp*   | INDEFINITE_STRAND              | `indfstr_exc` (legacy, approximate) | coords-only          | model | 
+| *indfstrn*   | INDEFINITE_STRAND              | `indfstr_mdl_exc` (recommended, exact) | coords-only          | model | 
+| *indfstrp*   | INDEFINITE_STRAND              | `indfstr_mdl_exc` (recommended, exact) | coords-only          | model | 
+| *insertnp*   | INSERTION_OF_NT                | `insertn_exc` (legacy, approximate) | coords-value         | feature (CDS)| 
+| *insertnn*   | INSERTION_OF_NT                | `insertn_exc` (legacy, approximate for *insertnp*) | coords-value         | feature (CDS)| 
+| *insertnp*   | INSERTION_OF_NT                | `insertn_mdl_exc` (recommended, exact) | coords-value         | feature (CDS)| 
+| *insertnn*   | INSERTION_OF_NT                | `insertn_mdl_exc` (recommended, exact) | coords-value         | feature (CDS)| 
+| *deletinn*   | DELETION_OF_NT                 | `deletin_exc` (legacy, approximate for *deletinp*) | coords-value         | feature (CDS)| 
+| *deletinp*   | DELETION_OF_NT                 | `deletin_exc` (legacy, approximate) | coords-value         | feature (CDS)| 
+| *deletinn*   | DELETION_OF_NT                 | `deletin_mdl_exc` (recommended, exact) | coords-value         | feature (CDS)| 
+| *deletinp*   | DELETION_OF_NT                 | `deletin_mdl_exc` (recommended, exact) | coords-value         | feature (CDS)| 
 | *lowsim5s*   | LOW_SIMILARITY_START           | `lowsim_exc`    | coords-only          | model | 
 | *lowsim3s*   | LOW_SIMILARITY_END             | `lowsim_exc`    | coords-only          | model |
 | *lowsimis*   | LOW_SIMILARITY                 | `lowsim_exc`    | coords-only          | model |
@@ -1540,7 +1595,8 @@ If you specify a given exception key and value in the model info file,
 it will mean that all alerts with that specific key will have
 exceptions in that region. For example, a `indfstr_exc` 
 exception will prevent reporting of both *indfstrn* and *indfstrp* in
-the region specified.
+the region specified (the same is true of `indfstr_mdl_exc`; see
+[above](#exceptionsmdl) for when to use which of the two).
 
 There are two types of alert 'exception value types', differentiated by the required format
 of the value string in the model info file:
@@ -1561,7 +1617,9 @@ increase the maximum allowed insertion length without a `insertnn` or
 `367` or `368` for a CDS feature encoded on the top (`+`) strand from
 the default value of `27` to `36`, add the following string to the
 `FEATURE` line for that CDS feature in the model info file:
-`insertn_exc:"367..368:+:36"`. As with `coords-only` keys, to add
+`insertn_mdl_exc:"367..368:+:36"` (or, for a model built before VADR 1.8,
+`insertn_exc:"367..368:+:36"` with `367`/`368` the *approximate* position;
+see [above](#exceptionsmdl)). As with `coords-only` keys, to add
 multiple position ranges and values, separate with commas.
 
 The alert codes which allow exception ranges can also be viewed by

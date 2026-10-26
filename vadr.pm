@@ -1197,11 +1197,20 @@ sub vdr_FeatureInfoValidateExceptionKeys {
   
   my ($ftr_info_AHR, $alt_info_HHR, $FH_HR) = @_;
   
-  # small optimization, make temporary hash of all $alt_code_HH{<code>}{"exc_key"}
-  my %tmp_key_H = ();
+  # small optimization, make temporary hash of all $alt_code_HH{<code>}{"exc_key"} and {"exc_key2"}
+  # (exc_key2 is the recommended, exact-model-position alternative to a legacy exc_key that
+  # matches on an approximate position, e.g. insertn_mdl_exc alongside insertn_exc; brief 26_0602-046)
+  my %tmp_key_H  = ();
+  my %tmp_pair_H = (); # key: a code's exc_key, value: that same code's exc_key2, if both are defined
   foreach my $code (sort keys %{$alt_info_HHR}) { 
     if(defined $alt_info_HHR->{$code}{"exc_key"}) { 
       $tmp_key_H{$alt_info_HHR->{$code}{"exc_key"}} = $alt_info_HHR->{$code}{"exc_type"};
+    }
+    if(defined $alt_info_HHR->{$code}{"exc_key2"}) { 
+      $tmp_key_H{$alt_info_HHR->{$code}{"exc_key2"}} = $alt_info_HHR->{$code}{"exc_type2"};
+    }
+    if((defined $alt_info_HHR->{$code}{"exc_key"}) && (defined $alt_info_HHR->{$code}{"exc_key2"})) { 
+      $tmp_pair_H{$alt_info_HHR->{$code}{"exc_key"}} = $alt_info_HHR->{$code}{"exc_key2"};
     }
   }
   
@@ -1224,6 +1233,15 @@ sub vdr_FeatureInfoValidateExceptionKeys {
           my $errmsg = sprintf("ERROR, in $sub_name, invalid format for exception key: $exc_key, type 'coords-value', read %s.\nBut expected coords-value string, with span separated by commas, e.g. \"11..15:+:23\" or \"11..15:+:23,18..18:+:36\".", $ftr_info_AHR->[$ftr_idx]{$exc_key});
           vdr_ExceptionCoordsAndValuesToSegmentsAndValues($ftr_info_AHR->[$ftr_idx]{$exc_key}, $errmsg, \%sgm_value_H, $FH_HR);
         }
+      }
+    }
+    # a feature must not define both the legacy and recommended exception key for the same
+    # alert family (e.g. insertn_exc and insertn_mdl_exc): the two use different coordinate
+    # systems for protein-validation alerts, so having both is ambiguous (brief 26_0602-046)
+    foreach my $exc_key1 (sort keys %tmp_pair_H) { 
+      my $exc_key2 = $tmp_pair_H{$exc_key1};
+      if((defined $ftr_info_AHR->[$ftr_idx]{$exc_key1}) && (defined $ftr_info_AHR->[$ftr_idx]{$exc_key2})) { 
+        ofile_FAIL("ERROR, in $sub_name, feature defines both exception keys $exc_key1 and $exc_key2, these mix two different coordinate systems for the same alert(s), use only one", 1, $FH_HR);
       }
     }
   }
@@ -3091,6 +3109,13 @@ sub vdr_AlertInfoInitialize {
                    "significant similarity detected on both strands", # long description
                    0, 1, 0, 0, "indfstr_exc", "coords-only", # always_fails, causes_failure, prevents_annot, misc_not_failure, exc_key, exc_type
                    $FH_HR);
+  # indfstr_mdl_exc: recommended key, values are exact (alignment-derived) model positions, as
+  # displayed in an indfstrp alert's 'mdl coords'. indfstr_exc (above) is retained for models
+  # built before VADR 1.8 and, for indfstrp, matches on the pre-1.8 approximate (protein-derived)
+  # position instead; indfstrn always matches on the exact position under either key.
+  # (brief 26_0602-046)
+  $alt_info_HHR->{"indfstrn"}{"exc_key2"}  = "indfstr_mdl_exc";
+  $alt_info_HHR->{"indfstrn"}{"exc_type2"} = "coords-only";
 
   vdr_AlertInfoAdd($alt_info_HHR, "lowsim5s", "sequence",
                    "LOW_SIMILARITY_START", # short description
@@ -3343,30 +3368,48 @@ sub vdr_AlertInfoInitialize {
                    "strand mismatch between protein-based and nucleotide-based predictions", # long description
                    0, 1, 0, 0, "indfstr_exc", "coords-only", # always_fails, causes_failure, prevents_annot, misc_not_failure, exc_key, exc_type
                    $FH_HR);
+  # indfstr_mdl_exc: see comment above the indfstrn vdr_AlertInfoAdd() call (brief 26_0602-046).
+  # For indfstrp specifically: indfstr_exc matches on the pre-1.8 approximate protein-derived
+  # position; indfstr_mdl_exc matches on the exact position shown in the alert's 'mdl coords'.
+  $alt_info_HHR->{"indfstrp"}{"exc_key2"}  = "indfstr_mdl_exc";
+  $alt_info_HHR->{"indfstrp"}{"exc_type2"} = "coords-only";
 
   vdr_AlertInfoAdd($alt_info_HHR, "insertnp", "feature",
                    "INSERTION_OF_NT", # short description
                    "too large of an insertion in protein-based alignment", # long description
                    0, 1, 0, 0, "insertn_exc", "coords-value", # always_fails, causes_failure, prevents_annot, misc_not_failure, exc_key, exc_type
                    $FH_HR);
+  # insertn_mdl_exc: recommended key, values are exact (alignment-derived) model positions.
+  # insertn_exc (above) is retained for models built before VADR 1.8 and, for insertnp,
+  # matches on the pre-1.8 approximate (protein-derived) position instead; insertnn always
+  # matches on the exact position under either key. (brief 26_0602-046)
+  $alt_info_HHR->{"insertnp"}{"exc_key2"}  = "insertn_mdl_exc";
+  $alt_info_HHR->{"insertnp"}{"exc_type2"} = "coords-value";
 
   vdr_AlertInfoAdd($alt_info_HHR, "insertnn", "feature",
                    "INSERTION_OF_NT", # short description
                    "too large of an insertion in nucleotide-based alignment of CDS feature", # long description
                    0, 0, 0, 0, "insertn_exc", "coords-value", # always_fails, causes_failure, prevents_annot, misc_not_failure, exc_key, exc_type
                    $FH_HR);
+  $alt_info_HHR->{"insertnn"}{"exc_key2"}  = "insertn_mdl_exc";
+  $alt_info_HHR->{"insertnn"}{"exc_type2"} = "coords-value";
 
   vdr_AlertInfoAdd($alt_info_HHR, "deletinp", "feature",
                    "DELETION_OF_NT", # short description
                    "too large of a deletion in protein-based alignment", # long description
                    0, 1, 0, 1, "deletin_exc", "coords-value", # always_fails, causes_failure, prevents_annot, misc_not_failure, exc_key, exc_type
                    $FH_HR);
+  # deletin_mdl_exc: see comment above the insertnp vdr_AlertInfoAdd() call (brief 26_0602-046).
+  $alt_info_HHR->{"deletinp"}{"exc_key2"}  = "deletin_mdl_exc";
+  $alt_info_HHR->{"deletinp"}{"exc_type2"} = "coords-value";
 
   vdr_AlertInfoAdd($alt_info_HHR, "deletinn", "feature",
                    "DELETION_OF_NT", # short description
                    "too large of a deletion in nucleotide-based alignment of CDS feature", # long description
                    0, 0, 0, 1, "deletin_exc", "coords-value", # always_fails, causes_failure, prevents_annot, misc_not_failure, exc_key, exc_type
                    $FH_HR);
+  $alt_info_HHR->{"deletinn"}{"exc_key2"}  = "deletin_mdl_exc";
+  $alt_info_HHR->{"deletinn"}{"exc_type2"} = "coords-value";
 
   vdr_AlertInfoAdd($alt_info_HHR, "deletinf", "feature",
                    "DELETION_OF_FEATURE_SECTION", # short description
@@ -6869,11 +6912,20 @@ sub vdr_ModelInfoValidateExceptionKeys {
 
   my ($mdl_info_HR, $alt_info_HHR, $FH_HR) = @_;
 
-  # small optimization, make temporary hash of all $alt_info_HH{<code>}{"exc_key"}
-  my %tmp_key_H = ();
+  # small optimization, make temporary hash of all $alt_info_HH{<code>}{"exc_key"} and {"exc_key2"}
+  # (exc_key2 is the recommended, exact-model-position alternative to a legacy exc_key that
+  # matches on an approximate position, e.g. indfstr_mdl_exc alongside indfstr_exc; brief 26_0602-046)
+  my %tmp_key_H  = ();
+  my %tmp_pair_H = (); # key: a code's exc_key, value: that same code's exc_key2, if both are defined
   foreach my $code (sort keys %{$alt_info_HHR}) { 
     if(defined $alt_info_HHR->{$code}{"exc_key"}) { 
       $tmp_key_H{$alt_info_HHR->{$code}{"exc_key"}} = $alt_info_HHR->{$code}{"exc_type"};
+    }
+    if(defined $alt_info_HHR->{$code}{"exc_key2"}) { 
+      $tmp_key_H{$alt_info_HHR->{$code}{"exc_key2"}} = $alt_info_HHR->{$code}{"exc_type2"};
+    }
+    if((defined $alt_info_HHR->{$code}{"exc_key"}) && (defined $alt_info_HHR->{$code}{"exc_key2"})) { 
+      $tmp_pair_H{$alt_info_HHR->{$code}{"exc_key"}} = $alt_info_HHR->{$code}{"exc_key2"};
     }
   }
  
@@ -6894,6 +6946,15 @@ sub vdr_ModelInfoValidateExceptionKeys {
         my $errmsg = sprintf("ERROR, in $sub_name, invalid format for exception key: $exc_key, type 'coords-value', read %s.\nBut expected coords-value string, with span separated by commas, e.g. \"11..15:+:23\" or \"11..15:+:23,18..18:+:36\".", $mdl_info_HR->{$exc_key});
         vdr_ExceptionCoordsAndValuesToSegmentsAndValues($mdl_info_HR->{$exc_key}, $errmsg, \%sgm_value_H, $FH_HR);
       }
+    }
+  }
+  # a model must not define both the legacy and recommended exception key for the same alert
+  # family (e.g. indfstr_exc and indfstr_mdl_exc): these use different coordinate systems for
+  # protein-validation alerts, so having both is ambiguous (brief 26_0602-046)
+  foreach my $exc_key1 (sort keys %tmp_pair_H) { 
+    my $exc_key2 = $tmp_pair_H{$exc_key1};
+    if((defined $mdl_info_HR->{$exc_key1}) && (defined $mdl_info_HR->{$exc_key2})) { 
+      ofile_FAIL("ERROR, in $sub_name, model defines both exception keys $exc_key1 and $exc_key2, these mix two different coordinate systems for the same alert(s), use only one", 1, $FH_HR);
     }
   }
   return;
