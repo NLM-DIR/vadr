@@ -9018,7 +9018,7 @@ sub vdr_GlsearchFormat3And9CToStockholmAndInsertFile {
       # end of all alignments
       $keep_going = 0;
     }
-    elsif($line =~ /^\s*\d+\>\>\>(\S+).*(\d+)\s+nt/) { 
+    elsif($line =~ /^\s*\d+\>\>\>(\S+)\s+-\s+(\d+)\s+nt/) { 
       # 1>>>lcl|SARS-CoV-2/human/USA/IN-CDC-LC00002770/2021/17579-27826 - 10248 nt (forward-only)
       #start of new query
       ($q_name, $q_len) = ($1, $2);
