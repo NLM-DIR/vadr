@@ -9059,7 +9059,13 @@ sub vdr_GlsearchFormat3And9CToStockholmAndInsertFile {
       if($line !~ /^Parameters/) { 
         ofile_FAIL("ERROR, in $sub_name, parsing $gls_file, on line $line_ctr, does not begin with Parameters", 1, $FH_HR);
       }
-      $line = <IN>; $line_ctr++; # blank line
+      $line = <IN>; $line_ctr++; # blank line, unless glsearch found no hit
+      if($line =~ /^\!\! No sequences/) { 
+        # glsearch reported no hit for this query against the single model sequence;
+        # this should not happen because we run glsearch with -M 1-0 (no library length window)
+        chomp $line;
+        ofile_FAIL("ERROR, in $sub_name, parsing $gls_file, on line $line_ctr, glsearch found no hit for query $q_name against model $exp_mdl_name (\"$line\"); this is unexpected because glsearch is run with -M 1-0", 1, $FH_HR);
+      }
       $line = <IN>; $line_ctr++;
       if($line !~ /^The best scores/) { 
         ofile_FAIL("ERROR, in $sub_name, parsing $gls_file, on line $line_ctr, does not begin with The best scores", 1, $FH_HR);
