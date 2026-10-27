@@ -1,0 +1,3 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+ENTOY100A-NOANNOTN1	-	-	*sequence*	NO_ANNOTATION	-	-	no significant similarity detected [no match to any model library]
+NC_001475.1001-1200	-	-	*sequence*	NO_ANNOTATION	-	-	no significant similarity detected [no match to any model library]
