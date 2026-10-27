@@ -73,7 +73,7 @@
 
 ---
 ### VADR 1.7.3 release (September 2026)
-  * `v-annotate.pl` behaviour is unchanged in this release; annotation
+  * `v-annotate.pl` behavior is unchanged in this release; annotation
     results are identical to 1.7.2 (only the version string in output
     files differs). Everything below affects `vadr-install.sh` and
     `v-scan.pl` only.
@@ -93,7 +93,7 @@
     but not actually installed, instead of dying, so a partial install
     (for example, an install with only the `calici` library) works with
     `v-scan.pl` out of the box
-  * `v-scan.pl` behaviour change, on an install where a single model
+  * `v-scan.pl` behavior change, on an install where a single model
     library backs more than one option key (for example, an install
     containing only the `flavi` library, which backs the `dengue`,
     `hcv` and `flavi` keys; or only `calici`, which backs `norovirus`
