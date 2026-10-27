@@ -36,6 +36,10 @@ require "sqp_utils.pm";
 # - Parses --cls_only output to determine which sequences to
 #   annotate with each defined model library
 #
+# - With -m, reruns v-annotate.pl --cls_only with HMM-based
+#   classification for sequences that matched no library,
+#   against each library that has a CM file
+#
 # - For each model library with at least one sequence to annotate:
 #   o fetches sequences to new fasta file
 #   o runs v-annotate.pl again using options specified in config file
@@ -504,6 +508,61 @@ if($do_clsonly) {
     parse_sqc_clsonly_file($sqc_H{$okey}, $okey, \@{$other_okey_HA{$okey}}, \%okey2skip_ant_H, \%seq_H, \@seq_A, \%seq_okey_H, \%seq_mdl_H, \%seq_sc_H, \%seq_exc_okey_H, \%opt_HH, $FH_HR);
   }
 }
+
+#######################################################################
+# With -m, rescan sequences that matched no library (and no excluded
+# library) with HMM-based classification (v-annotate.pl --cls_only
+# without -s) against each library that has a CM file. The blastn-based
+# classification above requires a blastn hit of at least 50 bits to a
+# library's model sequences, which short fragments from variable
+# regions may lack. Results are parsed with parse_sqc_clsonly_file() so
+# the same best-scoring library rule is applied among the rescanned
+# libraries. Only sequences that matched no library are rescanned, so
+# the library assigned to any other sequence cannot change.
+#######################################################################
+my @clsfb_okey_A   = (); # okeys we rescanned unmatched sequences against
+my @clsfb_outdir_A = (); # --cls_only output directories for the rescan, one per okey in @clsfb_okey_A
+if(($do_clsonly) && ($do_multi)) {
+  my @clsfb_seq_A = (); # sequences that matched no library
+  foreach my $seqname (@seq_A) {
+    if((! defined $seq_okey_H{$seqname}) && (! defined $seq_exc_okey_H{$seqname})) {
+      push(@clsfb_seq_A, $seqname);
+    }
+  }
+  my $clsfb_nseq = scalar(@clsfb_seq_A);
+  if($clsfb_nseq > 0) {
+    # determine which libraries have a CM file and its cmpress index files,
+    # which HMM-based classification requires; libraries without them are not rescanned
+    foreach $okey (@okey_clsonly_used_A) {
+      my $cm_file = $okey_mdir_H{$okey} . "/" . mkey_from_opts($okey, $okey_opts_H{$okey}) . ".cm";
+      my $have_cm = 1;
+      foreach my $sfx ("", ".i1f", ".i1i", ".i1m", ".i1p") {
+        if(! -s $cm_file . $sfx) { $have_cm = 0; }
+      }
+      if($have_cm) { push(@clsfb_okey_A, $okey); }
+    }
+  }
+  if(($clsfb_nseq > 0) && (scalar(@clsfb_okey_A) > 0)) {
+    my $clsfb_fa_file = $dir_tail . "/" . $dir_tail . ".clsfb.fa";
+    $in_sqfile->fetch_seqs_given_names(\@clsfb_seq_A, 60, $clsfb_fa_file);
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "clsfb.fa", $clsfb_fa_file, $do_keep, $do_keep, "fasta file with sequences that matched no library, rescanned with HMMs");
+    push(@to_remove_A, $clsfb_fa_file);
+    push(@to_remove_A, $clsfb_fa_file . ".ssi");
+    foreach $okey (@clsfb_okey_A) {
+      my $clsfb_outdir = $dir_tail . "/" . $dir_tail . ".clsfb." . $okey;
+      push(@clsfb_outdir_A, $clsfb_outdir);
+      my $clsfb_sqc = $clsfb_outdir . "/" . $dir_tail . ".clsfb." . $okey . ".vadr.sqc";
+      $mkey_opt2use  = "--mkey " . mkey_from_opts($okey, $okey_opts_H{$okey});
+      $mlist_opt2use = mlist_from_opts($okey_opts_H{$okey});
+      $cmd = $execs_H{"v-annotate.pl"} . " -f $split_cpu_opt2use --origfa --cls_only $mkey_opt2use --mdir $okey_mdir_H{$okey} $mlist_opt2use $keep_opt $clsfb_fa_file $clsfb_outdir";
+      if(! $do_verbose) { $cmd .= " > /dev/null"; }
+      my $start_secs = ofile_OutputProgressPrior(sprintf("Rescanning $clsfb_nseq unmatched seq%s against %-*s (HMM) ", ($clsfb_nseq == 1) ? "" : "s", $okey_width, $okey), $progress_w, $log_FH, *STDOUT);
+      utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $FH_HR);
+      ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+      parse_sqc_clsonly_file($clsfb_sqc, $okey, \@{$other_okey_HA{$okey}}, \%okey2skip_ant_H, \%seq_H, \@seq_A, \%seq_okey_H, \%seq_mdl_H, \%seq_sc_H, \%seq_exc_okey_H, \%opt_HH, $FH_HR);
+    }
+  }
+}
     
 # Fill per-okey lists of sequences that match best to each okey
 my %seqlist_HA = ();     # key is okey, value is array of sequences that match to (and will be annotated with) this okey
@@ -648,6 +707,9 @@ if($do_keep) {
   for($z = 0; $z < scalar(@okey_clsonly_used_A); $z++) {
     ofile_OutputString($FH_HR->{"log"}, 1, sprintf("# All %-*s library --cls_only  output files can be found in directory $clsonly_outdir_A[$z]\n", $okey_width, $okey_clsonly_used_A[$z]));
   }
+  for($z = 0; $z < scalar(@clsfb_outdir_A); $z++) {
+    ofile_OutputString($FH_HR->{"log"}, 1, sprintf("# All %-*s library HMM rescan output files can be found in directory $clsfb_outdir_A[$z]\n", $okey_width, $clsfb_okey_A[$z]));
+  }
   for($z = 0; $z < scalar(@okey_ant_used_A); $z++) {
     ofile_OutputString($FH_HR->{"log"}, 1, sprintf("# All %-*s library annotation output files can be found in directory $ant_outdir_A[$z]\n", $ant_okey_width, $okey_ant_used_A[$z]));
   }
@@ -659,6 +721,10 @@ else {
     if((defined $clsonly_outdir_A[$z]) && ($clsonly_outdir_A[$z] ne "")) { 
       utl_RunCommand("rm $clsonly_outdir_A[$z]/*; rmdir $clsonly_outdir_A[$z]", opt_Get("-v", \%opt_HH), 0, $FH_HR);
     }
+  }
+  # remove HMM rescan directories
+  for($z = 0; $z < scalar(@clsfb_outdir_A); $z++) {
+    utl_RunCommand("rm $clsfb_outdir_A[$z]/*; rmdir $clsfb_outdir_A[$z]", opt_Get("-v", \%opt_HH), 0, $FH_HR);
   }
   for($z = 0; $z < scalar(@ant_outdir_A); $z++) {
     # parse the .log file to determine which output files we want to list
