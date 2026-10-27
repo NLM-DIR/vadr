@@ -556,7 +556,10 @@ if(($do_clsonly) && ($do_multi) && (! opt_Get("--noclsfb", \%opt_HH))) {
       my $clsfb_sqc = $clsfb_outdir . "/" . $dir_tail . ".clsfb." . $okey . ".vadr.sqc";
       $mkey_opt2use  = "--mkey " . mkey_from_opts($okey, $okey_opts_H{$okey});
       $mlist_opt2use = mlist_from_opts($okey_opts_H{$okey});
-      $cmd = $execs_H{"v-annotate.pl"} . " -f $split_cpu_opt2use --origfa --cls_only $mkey_opt2use --mdir $okey_mdir_H{$okey} $mlist_opt2use $keep_opt $clsfb_fa_file $clsfb_outdir";
+      # --origfa is not used here: with --split, if v-annotate.pl splits its input into a
+      # single chunk, it removes that input file when it finishes, and with --origfa that
+      # would be $clsfb_fa_file, which the next library needs (rescans often have few seqs)
+      $cmd = $execs_H{"v-annotate.pl"} . " -f $split_cpu_opt2use --cls_only $mkey_opt2use --mdir $okey_mdir_H{$okey} $mlist_opt2use $keep_opt $clsfb_fa_file $clsfb_outdir";
       if(! $do_verbose) { $cmd .= " > /dev/null"; }
       my $start_secs = ofile_OutputProgressPrior(sprintf("Rescanning $clsfb_nseq unmatched seq%s against %-*s (HMM) ", ($clsfb_nseq == 1) ? "" : "s", $okey_width, $okey), $progress_w, $log_FH, *STDOUT);
       utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $FH_HR);
