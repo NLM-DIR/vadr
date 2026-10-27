@@ -372,7 +372,7 @@ Follow these steps to build a VADR model library:
 If your model is larger than 30Kb, or you know that you will use the
 `-s` and `--glsearch` options with `v-annotate.pl` as is recommended
 for coronavirus annotation
-(https://github.com/ncbi/vadr/wiki/Coronavirus-annotation), you should
+(https://github.com/NLM-DIR/vadr/wiki/Coronavirus-annotation), you should
 also use the `--skipbuild` option with `v-build.pl`. If you do, no CM
 files will be created so you can skip steps 4 and 8 below and ignore
 any other steps involving a `.cm` file.
@@ -474,7 +474,7 @@ model library used in the [paper on VADR 1.0](../README.md#reference)
 it exactly, you'll want to install version 1.0. The install script for
 v1.0 is here:
 
-https://raw.githubusercontent.com/ncbi/vadr/vadr-1.0/vadr-install.sh
+https://raw.githubusercontent.com/NLM-DIR/vadr/vadr-1.0/vadr-install.sh
 
 Additionally, if the RefSeq annotation for any of these 197 VADR
 models has changed since October 2019, then it may not be able to

@@ -5,13 +5,13 @@ VADR 1.7.3; September 2026
 These are quick installation instructions. For complete documentation,
 please go to:
 
-https://github.com/ncbi/vadr/blob/master/documentation/install.md
+https://github.com/NLM-DIR/vadr/blob/master/documentation/install.md
 
 ------------
 Installation
 ------------
 Copy the file
-https://raw.githubusercontent.com/ncbi/vadr/master/vadr-install.sh
+https://raw.githubusercontent.com/NLM-DIR/vadr/master/vadr-install.sh
 to a new empty directory where you want to install VADR.
 
 If you are installing on a Linux system, execute the command:
@@ -69,7 +69,7 @@ tests as explained above.
 ---
 
 See 
-https://github.com/ncbi/vadr/blob/master/documentation/install.md
+https://github.com/NLM-DIR/vadr/blob/master/documentation/install.md
 for more details and information on troubleshooting.
 
 ---

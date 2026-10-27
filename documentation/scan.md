@@ -184,7 +184,7 @@ You can download or build additional vadr model libraries and add them
 to the config file or make your own config file. To use a different
 config file `<s>` use the `-c <s>` option. The list of available VADR
 models and an example config file that uses them all is 
-[here](https://github.com/ncbi/vadr/wiki/Available-VADR-model-files).
+[here](https://github.com/NLM-DIR/vadr/wiki/Available-VADR-model-files).
 
 #### Printing information from the config file<a name="printinfo">
 

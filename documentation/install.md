@@ -18,14 +18,14 @@ and/or installing VADR and its dependencies. That file is located
 online at github. To install the latest version of VADR download this
 file:
 
-https://raw.githubusercontent.com/ncbi/vadr/master/vadr-install.sh
+https://raw.githubusercontent.com/NLM-DIR/vadr/master/vadr-install.sh
 
 To download any specific release/version, for example version 1.0 download
 the corresponding `vadr-install.sh` file for that release/version
 (prior to version 1.0, the name of the installation script was
 `install.sh`, not `vadr-install.sh`):
 
-https://raw.githubusercontent.com/ncbi/vadr/vadr-1.0/vadr-install.sh
+https://raw.githubusercontent.com/NLM-DIR/vadr/vadr-1.0/vadr-install.sh
 
 Copy the `vadr-install.sh` file into the directory in which you want
 to install VADR. A good name for that directory is
@@ -268,7 +268,7 @@ vadr-install.sh>`)
 ```
 ********************************************************
 The final step is to update your environment variables.
-(See https://github.com/ncbi/vadr/blob/1.6.3/documentation/install.md for more information.)
+(See https://github.com/NLM-DIR/vadr/blob/vadr-1.6.3/documentation/install.md for more information.)
 
 If you are using the bash or zsh shell (zsh is default in MacOS/X as
 of v10.15 (Catalina)), add the following lines to the end of your
@@ -515,9 +515,9 @@ and it is recommended to use the `-s` and `--glsearch` options with `v-annotate.
 * [`v-annotate.pl` example usage, command-line options and alert information](annotate.md#top)
 * [Explanations and examples of `v-annotate.pl` detailed alert and error messages](alerts.md#top)
 * [VADR output file formats](formats.md#top)
-* [Available VADR model files (github wiki)](https://github.com/ncbi/vadr/wiki/Available-VADR-model-files)
-* [SARS-CoV-2 annotation (github wiki)](https://github.com/ncbi/vadr/wiki/Coronavirus-annotation)
-* [Development notes and instructions (github wiki)](https://github.com/ncbi/vadr/wiki/Development-notes-and-instructions)
+* [Available VADR model files (github wiki)](https://github.com/NLM-DIR/vadr/wiki/Available-VADR-model-files)
+* [SARS-CoV-2 annotation (github wiki)](https://github.com/NLM-DIR/vadr/wiki/Coronavirus-annotation)
+* [Development notes and instructions (github wiki)](https://github.com/NLM-DIR/vadr/wiki/Development-notes-and-instructions)
 
 ---
 #### Questions, comments or feature requests? Send a mail to eric.nawrocki@nih.gov.

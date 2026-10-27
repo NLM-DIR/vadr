@@ -52,11 +52,11 @@ sequences. Sequences with zero fatal alerts are designated as
 typical usage of vadr. For examples specific to other viruses
 (SARS-CoV-2, mpox, and RSV) see:**
 
-https://github.com/ncbi/vadr/wiki/Coronavirus-annotation
+https://github.com/NLM-DIR/vadr/wiki/Coronavirus-annotation
 
-https://github.com/ncbi/vadr/wiki/Mpox-virus-annotation
+https://github.com/NLM-DIR/vadr/wiki/Mpox-virus-annotation
 
-https://github.com/ncbi/vadr/wiki/RSV-annotation
+https://github.com/NLM-DIR/vadr/wiki/RSV-annotation
 
 To determine the command-line usage of 
 `v-annotate.pl` (or any VADR script), use the `-h` option, like this:
@@ -1707,7 +1707,7 @@ SARS-CoV-2 annotation, provided you are running on a machine with 8
 available cores and 16G of total RAM: `--glsearch --split --cpu 8`. 
 
 For more information on SARS-CoV-2 annotation with VADR see 
-https://github.com/ncbi/vadr/wiki/Coronavirus-annotation
+https://github.com/NLM-DIR/vadr/wiki/Coronavirus-annotation
 
 ---
 ## <a name="altparallel"></a>Alternative parallelization using a cluster

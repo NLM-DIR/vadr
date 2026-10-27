@@ -2769,7 +2769,7 @@ provide an alignment to `v-build.pl` are:
    places (example below)
 3. to add secondary structure to the model so sequences will be
    aligned based on sequence and structure (example
-   [here](#https://github.com/ncbi/vadr/wiki/Rfam-based-structural-annotation-of-a-viral-genome-sequence))
+   [here](https://github.com/NLM-DIR/vadr/wiki/Rfam-based-structural-annotation-of-a-viral-genome-sequence))
 
 As an example, we can build a new CM for one of our RSV models that
 does a more consistent job of modeling the deletion in the attachment
@@ -3030,7 +3030,7 @@ I followed the six step procedure above when creating the [VADR RSV
 models](https://bitbucket.org/nawrockie/vadr-models-rsv/src/master/),
 which can be used with `v-annotate.pl` to validate and annotate RSV
 sequences as described
-[here](https://github.com/ncbi/vadr/wiki/RSV-annotation). Those RSV
+[here](https://github.com/NLM-DIR/vadr/wiki/RSV-annotation). Those RSV
 models are based on the `KY654518` and `MZ516105` reference sequences,
 but the exact steps I took when creating them are not identical to
 those listed above (I created this tutorial several months after I had
@@ -3195,7 +3195,7 @@ any hits found in our reference sequence using Infernal and the Rfam
 database of RNA families, which includes hundreds of viral RNA
 families. There is a separate documentation page on how to do that (on
 the VADR GitHub wiki)
-[here](https://github.com/ncbi/vadr/wiki/Rfam-based-structural-annotation-of-a-viral-genome-sequence).
+[here](https://github.com/NLM-DIR/vadr/wiki/Rfam-based-structural-annotation-of-a-viral-genome-sequence).
 
 For RSV, it turns out there are actually zero Rfam hits (as of release
 14.9) in the RefSeq sequences. For other viruses though, if you have
