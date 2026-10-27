@@ -423,6 +423,29 @@ my $do_clsonly = (($n_okey_ant_possible > 1) && ($n_okey_clsonly > 0)) ? 1 : 0;
 # if we only have one option key to annotate with, we don't need to sample
 if(! $do_clsonly) { $do_sample = 0; }
 
+# With -m, unless --noclsfb, determine which libraries sequences that match
+# no library will be rescanned against with HMM-based classification (see
+# below): those that have a CM file. HMM-based classification also requires
+# the cmpress index files for the CM file, so if a library has a CM file
+# but not those files, the library is not installed correctly and we exit
+# in error. We check this here, before the classification stage, so that
+# whether we exit does not depend on whether any sequences match no library.
+my @clsfb_okey_A   = (); # okeys to rescan unmatched sequences against
+my $do_clsfb       = (($do_clsonly) && ($do_multi) && (! opt_Get("--noclsfb", \%opt_HH))) ? 1 : 0;
+if($do_clsfb) {
+  foreach $okey (@okey_clsonly_used_A) {
+    my $cm_file = $okey_mdir_H{$okey} . "/" . mkey_from_opts($okey, $okey_opts_H{$okey}) . ".cm";
+    if(-e $cm_file) {
+      foreach my $sfx ("", ".i1f", ".i1i", ".i1m", ".i1p") {
+        if(! -s $cm_file . $sfx) {
+          ofile_FAIL("ERROR, model library $okey has CM file $cm_file,\nbut " . (($sfx eq "") ? "that file is empty" : "its cmpress index file $cm_file$sfx does not exist or is empty") . ".\nTo fix, run 'cmpress -F $cm_file', or use --noclsfb to skip rescanning unmatched sequences with HMMs.\n", 1, $FH_HR);
+        }
+      }
+      push(@clsfb_okey_A, $okey);
+    }
+  }
+}
+
 if($do_sample) {
   if($sample_nseq >= $in_nseq) {
     # num to sample meets or exceeds number of seqs in file, look at all of them in original file
@@ -515,16 +538,16 @@ if($do_clsonly) {
 # With -m, unless --noclsfb, rescan sequences that matched no library
 # (and no excluded library) with HMM-based classification
 # (v-annotate.pl --cls_only without -s) against each library that has
-# a CM file. The blastn-based classification above requires a blastn
-# hit of at least 50 bits to a library's model sequences, which short
-# fragments from variable regions may lack. Results are parsed with parse_sqc_clsonly_file() so
-# the same best-scoring library rule is applied among the rescanned
-# libraries. Only sequences that matched no library are rescanned, so
-# the library assigned to any other sequence cannot change.
+# a CM file (@clsfb_okey_A, determined above). The blastn-based
+# classification above requires a blastn hit of at least 50 bits to a
+# library's model sequences, which short fragments from variable regions
+# may lack. Results are parsed with parse_sqc_clsonly_file() so the same
+# best-scoring library rule is applied among the rescanned libraries.
+# Only sequences that matched no library are rescanned, so the library
+# assigned to any other sequence cannot change.
 #######################################################################
-my @clsfb_okey_A   = (); # okeys we rescanned unmatched sequences against
 my @clsfb_outdir_A = (); # --cls_only output directories for the rescan, one per okey in @clsfb_okey_A
-if(($do_clsonly) && ($do_multi) && (! opt_Get("--noclsfb", \%opt_HH))) {
+if(($do_clsfb) && (scalar(@clsfb_okey_A) > 0)) {
   my @clsfb_seq_A = (); # sequences that matched no library
   foreach my $seqname (@seq_A) {
     if((! defined $seq_okey_H{$seqname}) && (! defined $seq_exc_okey_H{$seqname})) {
@@ -533,18 +556,6 @@ if(($do_clsonly) && ($do_multi) && (! opt_Get("--noclsfb", \%opt_HH))) {
   }
   my $clsfb_nseq = scalar(@clsfb_seq_A);
   if($clsfb_nseq > 0) {
-    # determine which libraries have a CM file and its cmpress index files,
-    # which HMM-based classification requires; libraries without them are not rescanned
-    foreach $okey (@okey_clsonly_used_A) {
-      my $cm_file = $okey_mdir_H{$okey} . "/" . mkey_from_opts($okey, $okey_opts_H{$okey}) . ".cm";
-      my $have_cm = 1;
-      foreach my $sfx ("", ".i1f", ".i1i", ".i1m", ".i1p") {
-        if(! -s $cm_file . $sfx) { $have_cm = 0; }
-      }
-      if($have_cm) { push(@clsfb_okey_A, $okey); }
-    }
-  }
-  if(($clsfb_nseq > 0) && (scalar(@clsfb_okey_A) > 0)) {
     my $clsfb_fa_file = $dir_tail . "/" . $dir_tail . ".clsfb.fa";
     $in_sqfile->fetch_seqs_given_names(\@clsfb_seq_A, 60, $clsfb_fa_file);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "clsfb.fa", $clsfb_fa_file, $do_keep, $do_keep, "fasta file with sequences that matched no library, rescanned with HMMs");

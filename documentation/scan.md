@@ -430,7 +430,9 @@ stage, `v-scan.pl` rescans just those sequences with the more
 sensitive, but slower, HMM-based classification of `v-annotate.pl
 --cls_only` (without `-s`), against each library that has a CM file
 (libraries without one, which can only be used with `-s`, are not
-rescanned). Each sequence is then assigned to its best-matching library
+rescanned; a library that has a CM file but not the `cmpress` index
+files for it is not installed correctly, and `v-scan.pl` exits in error
+before the classification stage). Each sequence is then assigned to its best-matching library
 in the same way as in the classification stage. This adds one line per
 rescanned library to the output, for example:
 
