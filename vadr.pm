@@ -8095,7 +8095,7 @@ sub vdr_MergeOutputAlcTabularFile {
           $alc_sep_flag = 0; 
         }
         $alt_idx++;
-        # don't need to check if alert is 'misc_not_feature' already have '*' added to 'causes_failure' column values
+        # don't need to check if alert is 'misc_not_failure' already have '*' added to 'causes_failure' column values
         # don't need to check if alert is 'causes_failure' already know that from tables we parsed
         push(@data_alc_AA, [$alt_idx, $alt_code, 
                             $data_HH{$alt_code}{"causes_failure"},
