@@ -657,7 +657,7 @@ integer.
 
 | ............option............ | explanation | 
 |----------------------------|-------------| 
-| `--ignore_mnf`       | ignore non-zero 'misc_not_feature' values in `modelinfo` file, set to 0 for all features/models |
+| `--ignore_mnf`       | ignore non-zero 'misc_not_failure' values in `modelinfo` file, set to 0 for all features/models |
 | `--ignore_isdel`     | ignore non-zero 'is_deletable' values in `modelinfo` file, set to 0 for all features/models |
 | `--ignore_afset`     | ignore non-zero 'alternative_ftr_set' and 'alternative_ftr_set_subn' values in `modelinfo` file |
 | `--ignore_afsetsubn` | ignore non-zero 'alternative_ftr_set_subn' values in `modelinfo` file |
@@ -1284,7 +1284,7 @@ specify that alert codes in the comma-separated string `<s2>` be
 removed from the set.
 
 Non-essential features are specified in the `.modelinfo` file, with a
-key/value pair string: `misc_not_feature:"1"` in the `FEATURE` line
+key/value pair string: `misc_not_failure:"1"` in the `FEATURE` line
 for the corresponding feature.
 
 For example, the sequence `JN975492.1` is the one sequence in the 
