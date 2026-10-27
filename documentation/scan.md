@@ -432,9 +432,11 @@ sensitive, but slower, HMM-based classification of `v-annotate.pl
 (libraries without one, which can only be used with `-s`, are not
 rescanned; a library that has a CM file but not the `cmpress` index
 files for it is not installed correctly, and `v-scan.pl` exits in error
-before the classification stage). Each sequence is then assigned to its best-matching library
-in the same way as in the classification stage. This adds one line per
-rescanned library to the output, for example:
+before the classification stage). A sequence matches a library in the
+rescan only if it has a hit of at least 20 bits; this threshold can be
+changed with `--clsfb_minbit <x>`. Each sequence is then assigned to its
+best-matching library in the same way as in the classification stage.
+This adds one line per rescanned library to the output, for example:
 
 ```
 # Rescanning 2 unmatched seqs against flavi          (HMM)     ... done. [   41.6 seconds]
@@ -595,6 +597,7 @@ integer.
 | `--origfa`       | do not copy the input fasta file into output directory prior to analysis, use the original |
 | `--keep`         | keep [additional `v-annotate.pl` output files](formats.md#annotate-keep) that are normally removed |
 | `--noclsfb`      | with `-m`, do not rescan sequences that match no library with HMM-based classification, see [here](#clsfb) |
+| `--clsfb_minbit <x>` | with `-m`, set the minimum bit score for a sequence to match a library when rescanning sequences that match no library to `<x>`, default `<x>` is 20, see [here](#clsfb) |
 
 ### `v-scan.pl` options for specifying which model libraries to use<a name="options-libraries"></a>
 | ..........option.......... | explanation | 
