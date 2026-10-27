@@ -104,6 +104,7 @@ opt_Add("--lone",       "boolean", 0,         $g,    undef, undef,      "exit if
 opt_Add("--origfa",     "boolean", 0,         $g,    undef,   undef,    "do not copy fasta file prior to analysis, use original",                                  "do not copy fasta file prior to analysis, use original", \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,         $g,    undef, undef,      "leaving intermediate files on disk",                                                      "do not remove intermediate files, keep them all on disk", \%opt_HH, \@opt_order_A);
 opt_Add("--noclsfb",    "boolean", 0,         $g,     "-m", undef,      "do not rescan seqs that match no library with HMM-based classification",                  "with -m, do not rescan seqs that match no library using HMMs", \%opt_HH, \@opt_order_A);
+opt_Add("--clsfb_minbit", "real",  20,        $g,     "-m","--noclsfb", "set minimum bit score for a match when rescanning seqs that match no library to <x>",     "with -m, set minimum bit score for a match in HMM rescan to <x>", \%opt_HH, \@opt_order_A);
 #     option            type       default group   requires incompat    preamble-output                                                                            help-output    
 $opt_group_desc_H{++$g} = "options for specifying which model libraries to use";
 opt_Add("--only",        "string", 0,         $g,   undef,"--skip",     "only use the model library(ies) in comma separated string <s>",                           "only use the model library(ies) in comma separated string <s>",   \%opt_HH, \@opt_order_A);
@@ -137,6 +138,7 @@ my $options_okay =
                 'origfa'   => \$GetOptions_H{"--origfa"},
                 'keep'     => \$GetOptions_H{"--keep"}, 
                 'noclsfb'  => \$GetOptions_H{"--noclsfb"}, 
+                'clsfb_minbit=s' => \$GetOptions_H{"--clsfb_minbit"}, 
                 'only=s'   => \$GetOptions_H{"--only"}, 
                 'skip=s'   => \$GetOptions_H{"--skip"}, 
                 'all'      => \$GetOptions_H{"--all"}, 
@@ -570,7 +572,9 @@ if(($do_clsfb) && (scalar(@clsfb_okey_A) > 0)) {
       # --origfa is not used here: with --split, if v-annotate.pl splits its input into a
       # single chunk, it removes that input file when it finishes, and with --origfa that
       # would be $clsfb_fa_file, which the next library needs (rescans often have few seqs)
-      $cmd = $execs_H{"v-annotate.pl"} . " -f $split_cpu_opt2use --cls_only $mkey_opt2use --mdir $okey_mdir_H{$okey} $mlist_opt2use $keep_opt $clsfb_fa_file $clsfb_outdir";
+      # --minbit sets the minimum cmsearch bit score; v-annotate.pl's default (-10) lets
+      # through noise-level hits that would otherwise match unrelated sequences to a library
+      $cmd = $execs_H{"v-annotate.pl"} . " -f $split_cpu_opt2use --cls_only --minbit " . opt_Get("--clsfb_minbit", \%opt_HH) . " $mkey_opt2use --mdir $okey_mdir_H{$okey} $mlist_opt2use $keep_opt $clsfb_fa_file $clsfb_outdir";
       if(! $do_verbose) { $cmd .= " > /dev/null"; }
       my $start_secs = ofile_OutputProgressPrior(sprintf("Rescanning $clsfb_nseq unmatched seq%s against %-*s (HMM) ", ($clsfb_nseq == 1) ? "" : "s", $okey_width, $okey), $progress_w, $log_FH, *STDOUT);
       utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $FH_HR);
