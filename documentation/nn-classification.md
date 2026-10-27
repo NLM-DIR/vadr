@@ -22,9 +22,9 @@ In this mode, after a sequence is aligned to its best-matching model, VADR compa
 
 To enable nearest-neighbor based classification, you need:
 
-1. **A Stockholm format seed alignment file** (`.stk`) - This must be the alignment used to build the covariance model (CM). The alignment must have the same number of reference (RF) positions as the model. Use `cmbuild -O` to output the seed alignment when building your CM.
-2. **Group and subgroup annotations** in the seed alignment file using `#=GS` markup
-3. **A modified model info file** (`.minfo`) that references the seed alignment file using special `:FILE:` syntax
+1. **A Stockholm format classification alignment file** (`.stk`) - The alignment's nongap reference (RF) columns must correspond to the consensus positions of the covariance model (CM), so it must have the same number of nongap RF positions as the model. Typically this is the seed alignment used to build the CM (use `cmbuild -O` to output it when building your CM), but it does not have to be. For example, the seed alignment merged with additional full-length sequences aligned to the CM (e.g. with `cmalign` and `esl-alimerge`, keeping the RF annotation unchanged) also qualifies. See [Stockholm Alignment File Format](#stk-format).
+2. **Group and subgroup annotations** in the classification alignment file using `#=GS` markup
+3. **A modified model info file** (`.minfo`) that references the classification alignment file using special `:FILE:` syntax
 4. **(Optional) Region boundaries** specified in the alignment file for region-specific classification
 
 ## How It Works<a name="how-it-works"></a>
@@ -67,7 +67,10 @@ FEATURE evB type:"mat_peptide" coords:"3037..3945:+" gene:"POLY" product:"VP1"
 
 ## Stockholm Alignment File Format<a name="stk-format"></a>
 
-The seed alignment must be in Stockholm format with specific annotations. This should be the same alignment file used to build the covariance model.
+The classification alignment must be in Stockholm format with specific annotations. Its nongap RF columns must correspond one-to-one to the consensus positions of the covariance model. VADR checks only that the nongap RF length equals the model length, so it is up to you to make sure the columns actually correspond. The simplest way to satisfy this is to use the seed alignment the CM was built from, but that is not required. There are two ways to change the set of reference sequences used for classification:
+
+- **Classification-only change:** point the `:FILE:` fields in the `.minfo` file at a different or expanded alignment, such as the seed alignment merged with additional full-length reference sequences aligned to the CM, with the RF annotation unchanged. The CM is not rebuilt, so feature annotation is unaffected. Only group/subgroup classification, and any alerts that depend on it, can change.
+- **Seed+rebuild:** add the new reference sequences to the seed alignment and rebuild the CM from it. This changes the CM as well as the classification alignment, so annotation output can change too.
 
 **Important:** When building your CM with `cmbuild`, use the `--hand` option to preserve the RF annotation:
 
