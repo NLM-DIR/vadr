@@ -36,9 +36,9 @@ require "sqp_utils.pm";
 # - Parses --cls_only output to determine which sequences to
 #   annotate with each defined model library
 #
-# - With -m, reruns v-annotate.pl --cls_only with HMM-based
-#   classification for sequences that matched no library,
-#   against each library that has a CM file
+# - With -m (unless --noclsfb), reruns v-annotate.pl --cls_only
+#   with HMM-based classification for sequences that matched no
+#   library, against each library that has a CM file
 #
 # - For each model library with at least one sequence to annotate:
 #   o fetches sequences to new fasta file
@@ -103,6 +103,7 @@ opt_Add("--cpu",        "integer", 0,         $g,     "-m", undef,      "with -m
 opt_Add("--lone",       "boolean", 0,         $g,    undef, undef,      "exit if at least one sequence matches to multiple libraries",                             "exit if at least one sequence matches to multiple libraries", \%opt_HH, \@opt_order_A);
 opt_Add("--origfa",     "boolean", 0,         $g,    undef,   undef,    "do not copy fasta file prior to analysis, use original",                                  "do not copy fasta file prior to analysis, use original", \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,         $g,    undef, undef,      "leaving intermediate files on disk",                                                      "do not remove intermediate files, keep them all on disk", \%opt_HH, \@opt_order_A);
+opt_Add("--noclsfb",    "boolean", 0,         $g,     "-m", undef,      "do not rescan seqs that match no library with HMM-based classification",                  "with -m, do not rescan seqs that match no library using HMMs", \%opt_HH, \@opt_order_A);
 #     option            type       default group   requires incompat    preamble-output                                                                            help-output    
 $opt_group_desc_H{++$g} = "options for specifying which model libraries to use";
 opt_Add("--only",        "string", 0,         $g,   undef,"--skip",     "only use the model library(ies) in comma separated string <s>",                           "only use the model library(ies) in comma separated string <s>",   \%opt_HH, \@opt_order_A);
@@ -135,6 +136,7 @@ my $options_okay =
                 'lone'     => \$GetOptions_H{"--lone"}, 
                 'origfa'   => \$GetOptions_H{"--origfa"},
                 'keep'     => \$GetOptions_H{"--keep"}, 
+                'noclsfb'  => \$GetOptions_H{"--noclsfb"}, 
                 'only=s'   => \$GetOptions_H{"--only"}, 
                 'skip=s'   => \$GetOptions_H{"--skip"}, 
                 'all'      => \$GetOptions_H{"--all"}, 
@@ -510,19 +512,19 @@ if($do_clsonly) {
 }
 
 #######################################################################
-# With -m, rescan sequences that matched no library (and no excluded
-# library) with HMM-based classification (v-annotate.pl --cls_only
-# without -s) against each library that has a CM file. The blastn-based
-# classification above requires a blastn hit of at least 50 bits to a
-# library's model sequences, which short fragments from variable
-# regions may lack. Results are parsed with parse_sqc_clsonly_file() so
+# With -m, unless --noclsfb, rescan sequences that matched no library
+# (and no excluded library) with HMM-based classification
+# (v-annotate.pl --cls_only without -s) against each library that has
+# a CM file. The blastn-based classification above requires a blastn
+# hit of at least 50 bits to a library's model sequences, which short
+# fragments from variable regions may lack. Results are parsed with parse_sqc_clsonly_file() so
 # the same best-scoring library rule is applied among the rescanned
 # libraries. Only sequences that matched no library are rescanned, so
 # the library assigned to any other sequence cannot change.
 #######################################################################
 my @clsfb_okey_A   = (); # okeys we rescanned unmatched sequences against
 my @clsfb_outdir_A = (); # --cls_only output directories for the rescan, one per okey in @clsfb_okey_A
-if(($do_clsonly) && ($do_multi)) {
+if(($do_clsonly) && ($do_multi) && (! opt_Get("--noclsfb", \%opt_HH))) {
   my @clsfb_seq_A = (); # sequences that matched no library
   foreach my $seqname (@seq_A) {
     if((! defined $seq_okey_H{$seqname}) && (! defined $seq_exc_okey_H{$seqname})) {
