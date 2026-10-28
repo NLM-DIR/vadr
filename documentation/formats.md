@@ -368,7 +368,7 @@ All example files linked to below, except where otherwise stated, were created b
 ---
 ### Explanation of `.alc`-suffixed output files<a name="alc"></a>
 
-`.alc` data lines have 12 or more fields, the names of which appear in the first two
+`.alc` data lines have 11 or more fields, the names of which appear in the first two
 comment lines in each file. There is one data line for each alert code
 that occurs at least once in the input sequence file that
 `v-annotate.pl` processed. [Example file](annotate-files/va-noro.9.vadr.alc).
@@ -378,16 +378,15 @@ that occurs at least once in the input sequence file that
 |-----|-----------------------|-------------|
 |   1 | `idx`                 | index of alert code |
 |   2 | `alert code`          | 8 character VADR alert code |
-|   3 | `causes failure`      | `yes` if this code is fatal and causes the associated input sequence to FAIL, `no` if this code is non-fatal; an instance of a `yes` code can still be non-fatal for some features, see `non-fatal` and `why nonfatal` |
+|   3 | `causes failure`      | `yes` if this code is fatal and causes the associated input sequence to FAIL, `no` if this code is non-fatal; some instances of a `yes` code can be non-fatal, see `non-fatal` |
 |   4 | `short description`   | short description of the alert that often maps to error message from NCBI's submission system, multiple alert codes can have the same short description |
 |   5 | `per type`            | `feature` if this alert pertains to a specific feature in a sequence, `sequence` if it does not |
-|   6 | `fatal cases`         | number of fatal instances of this alert in the output (number of rows for this alert in the `.alt` file with `yes` in the `fail` column), can be more than 1 per sequence |
-|   7 | `non-fatal`           | number of non-fatal instances of this alert in the output (number of rows for this alert in the `.alt` file with `no` in the `fail` column), can be more than 1 per sequence |
-|   8 | `why nonfatal`        | reasons for non-fatal cases of alerts that cause failure; `-` if there are none or the alert does not cause failure. Comma-separated `<reason>:<count>` values, in the order `drop`, `mnf`: `drop` cases are for non-coding feature types that are dropped from the feature table instead of causing failure with `--ncf drop` (explained [here](annotate.md#ncf)); `mnf` cases are for features with `misc_not_failure:"1"` (explained [here](annotate.md#mnf)). For example, `drop:15,mnf:2`. The counts sum to the `non-fatal` value |
-|   9 | `num seqs`            | number of input sequences with at least one instance of this alert |
-|  10 | `seqs fail`           | number of input sequences with at least one fatal instance of this alert |
-|  11 | `seqs alone`          | number of input sequences for which this is the only alert code with a fatal instance (sequence or feature alerts): the sequence has no fatal alerts of any other code |
-|  12 to end | `long description`    |longer description of the alert, specific to each alert type; *this field, unlike all others, contains whitespace* |
+|   6 | `num cases`           | number of instances of this alert in the output (number of rows for this alert in `.alt` file), can be more than 1 per sequence |
+|   7 | `num seqs`            | number of input sequences with at least one instance of this alert |
+|   8 | `non-fatal`           | which instances of this alert are non-fatal (`no` in the `fail` column of the `.alt` file): `all` if `causes failure` is `no`; if `causes failure` is `yes`, `-` if every instance is fatal, otherwise the reasons for the non-fatal instances as comma-separated `<reason>:<count>` values in the order `drop`, `mnf`, e.g. `drop:15,mnf:2`. `drop` instances are for non-coding feature types that are dropped from the feature table instead of causing failure with `--ncf drop` (explained [here](annotate.md#ncf)); `mnf` instances are for features with `misc_not_failure:"1"` (explained [here](annotate.md#mnf)). The number of fatal instances is `num cases` minus the sum of the counts |
+|   9 | `seqs fail`           | number of input sequences with at least one fatal instance of this alert |
+|  10 | `seqs alone`          | number of input sequences for which this is the only alert code with a fatal instance (sequence or feature alerts): the sequence has no fatal alerts of any other code |
+|  11 to end | `long description`    |longer description of the alert, specific to each alert type; *this field, unlike all others, contains whitespace* |
 
 ---
 ### Explanation of `.alt`-suffixed output files<a name="alt"></a>
