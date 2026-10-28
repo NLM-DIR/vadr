@@ -1,6 +1,6 @@
-#     alert     causes   short                             per    num   num  long       
-#idx  code      failure  description                      type  cases  seqs  description
-#---  --------  -------  ----------------------------  -------  -----  ----  -----------
-1     lowsim5c  no       LOW_FEATURE_SIMILARITY_START  feature      3     1  region overlapping annotated feature that is or matches a CDS at 5' end of sequence lacks significant similarity
-2     lowsim3c  no       LOW_FEATURE_SIMILARITY_END    feature      6     2  region overlapping annotated feature that is or matches a CDS at 3' end of sequence lacks significant similarity
-#---  --------  -------  ----------------------------  -------  -----  ----  -----------
+#     alert     causes   short                             per  fatal   non-  why        num  seqs   seqs  long       
+#idx  code      failure  description                      type  cases  fatal  nonfatal  seqs  fail  alone  description
+#---  --------  -------  ----------------------------  -------  -----  -----  --------  ----  ----  -----  -----------
+1     lowsim5c  no       LOW_FEATURE_SIMILARITY_START  feature      0      3  -            1     0      0  region overlapping annotated feature that is or matches a CDS at 5' end of sequence lacks significant similarity
+2     lowsim3c  no       LOW_FEATURE_SIMILARITY_END    feature      0      6  -            2     0      0  region overlapping annotated feature that is or matches a CDS at 3' end of sequence lacks significant similarity
+#---  --------  -------  ----------------------------  -------  -----  -----  --------  ----  ----  -----  -----------
