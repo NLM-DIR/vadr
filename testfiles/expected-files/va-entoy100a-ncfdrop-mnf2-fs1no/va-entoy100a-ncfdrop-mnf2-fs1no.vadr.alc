@@ -1,13 +1,13 @@
-#     alert     causes   short                              per  fatal   non-  why            num  seqs   seqs  long       
-#idx  code      failure  description                       type  cases  fatal  nonfatal      seqs  fail  alone  description
-#---  --------  -------  -----------------------------  -------  -----  -----  ------------  ----  ----  -----  -----------
-1     mutstart  yes      MUTATION_AT_START              feature      0      3  mnf:3            3     0      0  expected start codon could not be identified
-2     mutendns  yes      MUTATION_AT_END                feature      0      2  mnf:2            2     0      0  expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon
-3     unexleng  yes      UNEXPECTED_LENGTH              feature      0      8  mnf:8            4     0      0  length of complete coding (CDS or mat_peptide) feature is not a multiple of 3
-4     cdsstopn  yes      CDS_HAS_STOP_CODON             feature      0      6  mnf:6            6     0      0  in-frame stop codon exists 5' of stop position predicted by homology to reference
-5     fsthicft  yes      POSSIBLE_FRAMESHIFT_HIGH_CONF  feature      0      4  mnf:4            4     0      0  high confidence possible frameshift in CDS (frame not restored before end)
-6     fsthicfi  yes      POSSIBLE_FRAMESHIFT_HIGH_CONF  feature      0      8  mnf:8            8     0      0  high confidence possible frameshift in CDS (frame restored before end)
-7     peptrans  yes      PEPTIDE_TRANSLATION_PROBLEM    feature      0     24  mnf:24          12     0      0  mat_peptide may not be translated because its parent CDS has a problem
-8     indf3gap  yes      INDEFINITE_ANNOTATION_END      feature      0      4  drop:2,mnf:2     2     0      0  alignment to homology model is a gap at 3' boundary
-9     indf3lcn  yes      INDEFINITE_ANNOTATION_END      feature      0      4  drop:4           4     0      0  alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS
-#---  --------  -------  -----------------------------  -------  -----  -----  ------------  ----  ----  -----  -----------
+#     alert     causes   short                              per    num   num  non-          seqs   seqs  long       
+#idx  code      failure  description                       type  cases  seqs  fatal         fail  alone  description
+#---  --------  -------  -----------------------------  -------  -----  ----  ------------  ----  -----  -----------
+1     mutstart  yes      MUTATION_AT_START              feature      3     3  mnf:3            0      0  expected start codon could not be identified
+2     mutendns  yes      MUTATION_AT_END                feature      2     2  mnf:2            0      0  expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon
+3     unexleng  yes      UNEXPECTED_LENGTH              feature      8     4  mnf:8            0      0  length of complete coding (CDS or mat_peptide) feature is not a multiple of 3
+4     cdsstopn  yes      CDS_HAS_STOP_CODON             feature      6     6  mnf:6            0      0  in-frame stop codon exists 5' of stop position predicted by homology to reference
+5     fsthicft  yes      POSSIBLE_FRAMESHIFT_HIGH_CONF  feature      4     4  mnf:4            0      0  high confidence possible frameshift in CDS (frame not restored before end)
+6     fsthicfi  yes      POSSIBLE_FRAMESHIFT_HIGH_CONF  feature      8     8  mnf:8            0      0  high confidence possible frameshift in CDS (frame restored before end)
+7     peptrans  yes      PEPTIDE_TRANSLATION_PROBLEM    feature     24    12  mnf:24           0      0  mat_peptide may not be translated because its parent CDS has a problem
+8     indf3gap  yes      INDEFINITE_ANNOTATION_END      feature      4     2  drop:2,mnf:2     0      0  alignment to homology model is a gap at 3' boundary
+9     indf3lcn  yes      INDEFINITE_ANNOTATION_END      feature      4     4  drop:4           0      0  alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS
+#---  --------  -------  -----------------------------  -------  -----  ----  ------------  ----  -----  -----------
