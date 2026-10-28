@@ -259,19 +259,21 @@ Next, the alerts reported for the sequences are summarized:
 ```
 # Summary of reported alerts:
 #
-#     alert     causes   short                            per    num   num  long
-#idx  code      failure  description                     type  cases  seqs  description
-#---  --------  -------  ---------------------------  -------  -----  ----  -----------
-1     mutendcd  yes      MUTATION_AT_END              feature      1     1  expected stop codon could not be identified, predicted CDS stop by homology is invalid
-2     cdsstopn  yes      CDS_HAS_STOP_CODON           feature      1     1  in-frame stop codon exists 5' of stop position predicted by homology to reference
-3     cdsstopp  yes      CDS_HAS_STOP_CODON           feature      1     1  stop codon in protein-based alignment
-4     indf5pst  yes      INDEFINITE_ANNOTATION_START  feature      1     1  protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint
-5     indf3pst  yes      INDEFINITE_ANNOTATION_END    feature      1     1  protein-based alignment does not extend close enough to nucleotide-based alignment 3' endpoint
-#---  --------  -------  ---------------------------  -------  -----  ----  -----------
+#     alert     causes   short                            per  fatal   non-  why        num  seqs   seqs  long
+#idx  code      failure  description                     type  cases  fatal  nonfatal  seqs  fail  alone  description
+#---  --------  -------  ---------------------------  -------  -----  -----  --------  ----  ----  -----  -----------
+1     mutendcd  yes      MUTATION_AT_END              feature      1      0  -            1     1      0  expected stop codon could not be identified, predicted CDS stop by homology is invalid
+2     cdsstopn  yes      CDS_HAS_STOP_CODON           feature      1      0  -            1     1      0  in-frame stop codon exists 5' of stop position predicted by homology to reference
+3     cdsstopp  yes      CDS_HAS_STOP_CODON           feature      1      0  -            1     1      0  stop codon in protein-based alignment
+4     indf5pst  yes      INDEFINITE_ANNOTATION_START  feature      1      0  -            1     1      0  protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint
+5     indf3pst  yes      INDEFINITE_ANNOTATION_END    feature      1      0  -            1     1      0  protein-based alignment does not extend close enough to nucleotide-based alignment 3' endpoint
+#---  --------  -------  ---------------------------  -------  -----  -----  --------  ----  ----  -----  -----------
 ```
 
 For the nine sequences, there were five different alert codes
-reported, each with one case for a single sequence. This tabular
+reported, each with one fatal case for a single sequence. All five
+are in the same sequence, so none of them is the only fatal alert code
+for that sequence (`seqs alone` is 0). This tabular
 summary does not indicate to which sequence(s) each alert pertains.
 We can find that out from other output files as discussed further
 below.
@@ -570,15 +572,15 @@ time, despite the same alerts being reported.
 #
 # Summary of reported alerts:
 #
-#     alert     causes   short                            per    num   num  long
-#idx  code      failure  description                     type  cases  seqs  description
-#---  --------  -------  ---------------------------  -------  -----  ----  -----------
-1     mutendcd  no       MUTATION_AT_END              feature      1     1  expected stop codon could not be identified, predicted CDS stop by homology is invalid
-2     cdsstopn  no       CDS_HAS_STOP_CODON           feature      1     1  in-frame stop codon exists 5' of stop position predicted by homology to reference
-3     cdsstopp  no       CDS_HAS_STOP_CODON           feature      1     1  stop codon in protein-based alignment
-4     indf5pst  no       INDEFINITE_ANNOTATION_START  feature      1     1  protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint
-5     indf3pst  no       INDEFINITE_ANNOTATION_END    feature      1     1  protein-based alignment does not extend close enough to nucleotide-based alignment 3' endpoint
-#---  --------  -------  ---------------------------  -------  -----  ----  -----------
+#     alert     causes   short                            per  fatal   non-  why        num  seqs   seqs  long
+#idx  code      failure  description                     type  cases  fatal  nonfatal  seqs  fail  alone  description
+#---  --------  -------  ---------------------------  -------  -----  -----  --------  ----  ----  -----  -----------
+1     mutendcd  no       MUTATION_AT_END              feature      0      1  -            1     0      0  expected stop codon could not be identified, predicted CDS stop by homology is invalid
+2     cdsstopn  no       CDS_HAS_STOP_CODON           feature      0      1  -            1     0      0  in-frame stop codon exists 5' of stop position predicted by homology to reference
+3     cdsstopp  no       CDS_HAS_STOP_CODON           feature      0      1  -            1     0      0  stop codon in protein-based alignment
+4     indf5pst  no       INDEFINITE_ANNOTATION_START  feature      0      1  -            1     0      0  protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint
+5     indf3pst  no       INDEFINITE_ANNOTATION_END    feature      0      1  -            1     0      0  protein-based alignment does not extend close enough to nucleotide-based alignment 3' endpoint
+#---  --------  -------  ---------------------------  -------  -----  -----  --------  ----  ----  -----  -----------
 ```
 
 The `--alt_fail <s>` option works the same way as `alt_pass <s>` but alert codes

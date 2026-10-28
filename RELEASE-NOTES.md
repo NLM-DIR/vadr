@@ -70,6 +70,21 @@
     the same alert is a `v-annotate.pl` error. See the
     [exceptions section of `annotate.md`](documentation/annotate.md#exceptionsmdl)
     for when to use which key.
+  * `.alc` output file format change: the `num cases` column is replaced
+    by `fatal cases` and `non-fatal` columns (the number of instances
+    with `yes` and `no` in the `.alt` file `fail` column), followed by
+    `why nonfatal`, which gives the reasons for non-fatal instances of
+    alerts that cause failure (`drop` for non-coding features dropped
+    with `--ncf drop`, `mnf` for `misc_not_failure` features, e.g.
+    `drop:15,mnf:2`, or `-`). Two new columns follow `num seqs`:
+    `seqs fail`, the number of sequences with at least one fatal
+    instance of the alert, and `seqs alone`, the number of sequences
+    for which it is the only fatal alert code. The `causes failure`
+    column is now always `yes` or `no`: the `yes*` value, which meant
+    that `misc_not_failure` could make the alert non-fatal for at least
+    one feature in the model library, is no longer used. The `.alc`
+    file format is described
+    [here](documentation/formats.md#alc).
 
 ---
 ### VADR 1.7.3 release (September 2026)
