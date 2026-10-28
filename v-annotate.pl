@@ -13092,16 +13092,17 @@ sub output_tabular {
       if(($alt_fatal_ct_H{$alt_code} + $alt_nonfatal_ct_H{$alt_code}) != $alt_ct_H{$alt_code}) { 
         ofile_FAIL("ERROR in $sub_name, fatal and non-fatal counts for alert $alt_code do not sum to total", 1, $FH_HR);
       }
-      # 'why nonfatal' is only relevant for alerts that cause failure, 
-      # vdr_AlertNonFatalReasonsString() checks the reasons sum to the non-fatal count
-      my $nonfatal_why_str = ($alt_info_HH{$alt_code}{"causes_failure"}) ? 
-          vdr_AlertNonFatalReasonsString($alt_nonfatal_why_HH{$alt_code}, $alt_nonfatal_ct_H{$alt_code}, $alt_code, $FH_HR) : "-";
+      # 'non-fatal' column: "all" for alerts that do not cause failure, otherwise 
+      # the reasons for non-fatal instances, vdr_AlertNonFatalString() checks 
+      # the reasons sum to the non-fatal count
+      my $nonfatal_str = vdr_AlertNonFatalString($alt_info_HH{$alt_code}{"causes_failure"}, $alt_nonfatal_why_HH{$alt_code}, 
+                                                 $alt_fatal_ct_H{$alt_code}, $alt_nonfatal_ct_H{$alt_code}, $alt_code, $FH_HR);
       push(@data_alc_AA, [$alt_idx, $alt_code, 
                           $alt_info_HH{$alt_code}{"causes_failure"} ? "yes" : "no",
                           helper_tabular_replace_spaces($alt_info_HH{$alt_code}{"sdesc"}), 
                           $alt_info_HH{$alt_code}{"pertype"}, 
-                          $alt_fatal_ct_H{$alt_code}, $alt_nonfatal_ct_H{$alt_code}, $nonfatal_why_str,
-                          $alt_seq_ct_H{$alt_code}, $alt_seq_fail_ct_H{$alt_code}, $alt_seq_alone_ct_H{$alt_code},
+                          $alt_ct_H{$alt_code}, $alt_seq_ct_H{$alt_code}, $nonfatal_str,
+                          $alt_seq_fail_ct_H{$alt_code}, $alt_seq_alone_ct_H{$alt_code},
                           $alt_info_HHR->{$alt_code}{"ldesc"}]);
       $sum_alt_ct     += $alt_ct_H{$alt_code};
       $sum_alt_seq_ct += $alt_seq_ct_H{$alt_code};
@@ -17583,9 +17584,9 @@ sub helper_tabular_fill_header_and_justification_arrays {
     @{$clj_AR  }      = (1,     1,      1,       1,      1,      0,     1,       1,      1,          0,        0,     0,        0,     1);
   }
   elsif($ofile_key eq "alc") {
-    @{$head_AAR->[0]} = ("",    "alert",  "causes",  "short",       "per",  "fatal", "non-",  "why",      "num",  "seqs", "seqs",  "long");
-    @{$head_AAR->[1]} = ("idx", "code",   "failure", "description", "type", "cases", "fatal", "nonfatal", "seqs", "fail", "alone", "description");
-    @{$clj_AR}        = (1,     1,        1,          1,            0,      0,       0,       1,          0,      0,      0,       1);
+    @{$head_AAR->[0]} = ("",    "alert",  "causes",  "short",       "per",  "num",   "num",  "non-",  "seqs", "seqs",  "long");
+    @{$head_AAR->[1]} = ("idx", "code",   "failure", "description", "type", "cases", "seqs", "fatal", "fail", "alone", "description");
+    @{$clj_AR}        = (1,     1,        1,          1,            0,      0,       0,      1,       0,      0,       1);
   }
   elsif($ofile_key eq "mdl") {
     @{$head_AAR->[0]} = ("",    "",      "",      "",         "num",  "num",  "num");

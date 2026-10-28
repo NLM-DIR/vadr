@@ -134,6 +134,7 @@ require "sqp_utils.pm";
 # vdr_FeatureAlertCausesDrop()
 # vdr_FeatureAlertNonFatalReason()
 # vdr_AlertNonFatalReasons()
+# vdr_AlertNonFatalString()
 # vdr_AlertNonFatalReasonsString()
 # vdr_AlertNonFatalReasonsStringParse()
 #
@@ -4034,7 +4035,7 @@ sub vdr_FeatureAlertNonFatalReason {
 #
 # Purpose:    Return the list of reasons an instance of an alert
 #             that causes failure can be non-fatal, in the order
-#             they are listed in the 'why nonfatal' column of the
+#             they are listed in the 'non-fatal' column of the
 #             .alc file. See vdr_FeatureAlertNonFatalReason().
 #
 # Arguments:  none
@@ -4049,11 +4050,53 @@ sub vdr_AlertNonFatalReasons {
 }
 
 #################################################################
+# Subroutine: vdr_AlertNonFatalString()
+# Incept:     EPN, Wed Oct 28 2026 (w/Claude)
+#
+# Purpose:    Return the value for the 'non-fatal' column of the
+#             .alc file for one alert code: "all" if the alert does
+#             not cause failure (every instance is non-fatal), 
+#             otherwise the string from vdr_AlertNonFatalReasonsString(): 
+#             the reasons for the non-fatal instances, or "-" if 
+#             every instance is fatal.
+#
+# Arguments: 
+#  $causes_failure: '1' if the alert causes failure, '0' if not
+#  $reason_ct_HR:   ref to hash, key: reason, value: count, can be undef
+#  $fatal_ct:       number of fatal instances
+#  $nonfatal_ct:    number of non-fatal instances
+#  $alt_code:       alert code, for error messages
+#  $FH_HR:          REF to hash of file handles, including "log" and "cmd"
+#
+# Returns:    the string
+#
+# Dies:       if $causes_failure is 0 and $fatal_ct is not 0, or 
+#             if vdr_AlertNonFatalReasonsString() dies
+#
+################################################################# 
+sub vdr_AlertNonFatalString { 
+  my $sub_name = "vdr_AlertNonFatalString";
+  my $nargs_exp = 6;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($causes_failure, $reason_ct_HR, $fatal_ct, $nonfatal_ct, $alt_code, $FH_HR) = @_;
+
+  if(! $causes_failure) { 
+    if($fatal_ct != 0) { 
+      ofile_FAIL("ERROR in $sub_name, alert $alt_code does not cause failure but has $fatal_ct fatal instances", 1, $FH_HR);
+    }
+    return "all";
+  }
+  return vdr_AlertNonFatalReasonsString($reason_ct_HR, $nonfatal_ct, $alt_code, $FH_HR);
+}
+
+#################################################################
 # Subroutine: vdr_AlertNonFatalReasonsString()
 # Incept:     EPN, Wed Oct 28 2026 (w/Claude)
 #
-# Purpose:    Return the string for the 'why nonfatal' column of 
-#             the .alc file for one alert code: comma-separated
+# Purpose:    Return the string for the 'non-fatal' column of 
+#             the .alc file for one alert code that causes failure
+#             (see vdr_AlertNonFatalString()): comma-separated
 #             <reason>:<count> for each reason with a count > 0, 
 #             in the order of vdr_AlertNonFatalReasons(), or "-" 
 #             if there are none. Checks that the counts sum to
@@ -8167,9 +8210,9 @@ sub vdr_MergeOutputAlcTabularFile {
   # but not doing that currently
   my @head_alc_AA = ();
   my @data_alc_AA = ();
-  @{$head_alc_AA[0]} = ("",    "alert",  "causes",  "short",       "per",  "fatal", "non-",  "why",      "num",  "seqs", "seqs",  "long");
-  @{$head_alc_AA[1]} = ("idx", "code",   "failure", "description", "type", "cases", "fatal", "nonfatal", "seqs", "fail", "alone", "description");
-  my @clj_alc_A      = (1,     1,        1,          1,            0,      0,       0,       1,          0,      0,      0,       1);
+  @{$head_alc_AA[0]} = ("",    "alert",  "causes",  "short",       "per",  "num",   "num",  "non-",  "seqs", "seqs",  "long");
+  @{$head_alc_AA[1]} = ("idx", "code",   "failure", "description", "type", "cases", "seqs", "fatal", "fail", "alone", "description");
+  my @clj_alc_A      = (1,     1,        1,          1,            0,      0,       0,      1,       0,      0,       1);
 
   # read each .alc file and store info in it
   my ($idx, $alt_code);
@@ -8177,34 +8220,34 @@ sub vdr_MergeOutputAlcTabularFile {
   my %data_HH = (); # key 1: alert code, key 2: column name, value: value from column
   my %why_HH  = (); # key 1: alert code, key 2: non-fatal reason, value: summed count
   my @invariant_keys_A = ("causes_failure", "short_description", "per_type", "long_description");
-  my @sum_keys_A       = ("fatal_cases", "nonfatal_cases", "num_seqs", "seqs_fail", "seqs_alone"); 
+  my @sum_keys_A       = ("num_cases", "num_seqs", "seqs_fail", "seqs_alone"); 
   my $key;
   my %line_H = ();
   for(my $i = 0; $i < scalar(@filelist_A); $i++) { 
     open(IN, $filelist_A[$i]) || ofile_FileOpenFailure($filelist_A[$i], $sub_name, $!, "reading", $FH_HR);
     while(my $line = <IN>) { 
-       ##---  --------  -------  ----------------------  -------  -----  -----  --------  ----  ----  -----  -----------
-       ##     alert     causes   short                       per  fatal   non-  why        num  seqs   seqs  long
-       ##idx  code      failure  description                type  cases  fatal  nonfatal  seqs  fail  alone  description
-       ##---  --------  -------  ----------------------  -------  -----  -----  --------  ----  ----  -----  -----------
-       #1     ambgnt5f  no       N_AT_FEATURE_START      feature      0      3  -            1     0      0  first nucleotide of non-CDS feature is an N
-       #---  --------  -------  ----------------------  -------  -----  -----  --------  ----  ----  -----  -----------
-       #2     lowsimis  yes      LOW_SIMILARITY          feature      2      1  drop:1       3     2      1  internal region without significant similarity
-       ##---  --------  -------  ----------------------  -------  -----  -----  --------  ----  ----  -----  -----------
+       ##---  --------  -------  ------------------------  --------  -----  ----  ------  ----  -----  -----------
+       ##     alert     causes   short                          per    num   num  non-    seqs   seqs  long
+       ##idx  code      failure  description                   type  cases  seqs  fatal   fail  alone  description
+       ##---  --------  -------  ------------------------  --------  -----  ----  ------  ----  -----  -----------
+       #1     ambgnt3f  no       AMBIGUITY_AT_FEATURE_END   feature      2     1  all        0      0  final nucleotide of non-CDS feature is an ambiguous nucleotide
+       ##---  --------  -------  ------------------------  --------  -----  ----  ------  ----  -----  -----------
+       #2     indf3lcn  yes      INDEFINITE_ANNOTATION_END  feature      3     2  drop:2     1      0  alignment to homology model has low confidence at 3' boundary for feature that does not match a CDS
+       #3     deletinp  yes      DELETION_OF_NT             feature      1     1  -          1      1  too large of a deletion in protein-based alignment
+       ##---  --------  -------  ------------------------  --------  -----  ----  ------  ----  -----  -----------
       if($line !~ m/^\#/) { 
         chomp $line;
-        if($line =~ m/^(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/) { 
+        if($line =~ m/^(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(.+)$/) { 
           ($idx, $alt_code, 
            $line_H{"causes_failure"}, 
            $line_H{"short_description"}, 
            $line_H{"per_type"}, 
-           $line_H{"fatal_cases"}, 
-           $line_H{"nonfatal_cases"}, 
-           $line_H{"why_nonfatal"}, 
+           $line_H{"num_cases"}, 
            $line_H{"num_seqs"}, 
+           $line_H{"nonfatal"}, 
            $line_H{"seqs_fail"}, 
            $line_H{"seqs_alone"}, 
-           $line_H{"long_description"}) = ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+           $line_H{"long_description"}) = ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
         }
         else { 
           ofile_FAIL("ERROR in $sub_name unable to parse $filelist_A[$i] file line:\n$line\n", 1, $FH_HR);
@@ -8228,7 +8271,14 @@ sub vdr_MergeOutputAlcTabularFile {
           $data_HH{$alt_code}{$key} += $line_H{$key};
         }
         if(! defined $why_HH{$alt_code}) { %{$why_HH{$alt_code}} = (); }
-        vdr_AlertNonFatalReasonsStringParse($line_H{"why_nonfatal"}, $why_HH{$alt_code}, $FH_HR);
+        if($line_H{"causes_failure"} eq "no") { 
+          if($line_H{"nonfatal"} ne "all") { 
+            ofile_FAIL("ERROR in $sub_name, non-fatal value for alert $alt_code that does not cause failure is not \"all\" in $filelist_A[$i]", 1, $FH_HR);
+          }
+        }
+        else { 
+          vdr_AlertNonFatalReasonsStringParse($line_H{"nonfatal"}, $why_HH{$alt_code}, $FH_HR);
+        }
       }
     }
   }
@@ -8244,7 +8294,7 @@ sub vdr_MergeOutputAlcTabularFile {
   my $alc_sep_flag = 0;
   foreach my $alt_code (@alt_code_A) { 
     if(defined $data_HH{$alt_code}) { 
-      if(($data_HH{$alt_code}{"fatal_cases"} + $data_HH{$alt_code}{"nonfatal_cases"}) > 0) { 
+      if($data_HH{$alt_code}{"num_cases"} > 0) { 
         if(! $alt_info_HHR->{$alt_code}{"causes_failure"}) { 
           $alc_sep_flag = 1; 
         }
@@ -8255,18 +8305,25 @@ sub vdr_MergeOutputAlcTabularFile {
         }
         $alt_idx++;
         # don't need to check if alert is 'causes_failure' already know that from tables we parsed
-        # 'why nonfatal' is "-" for alerts that do not cause failure in each table we parsed, 
-        # so the merged counts are empty for them and vdr_AlertNonFatalReasonsString() returns "-"
-        my $nonfatal_why_str = ($data_HH{$alt_code}{"causes_failure"} eq "yes") ? 
-            vdr_AlertNonFatalReasonsString($why_HH{$alt_code}, $data_HH{$alt_code}{"nonfatal_cases"}, $alt_code, $FH_HR) : "-";
+        # merged 'non-fatal' value: "all" for alerts that do not cause failure (checked 
+        # for each table above), otherwise the summed reason counts, whose total can not
+        # exceed the number of cases
+        my $nonfatal_ct = 0;
+        foreach my $reason (keys (%{$why_HH{$alt_code}})) { $nonfatal_ct += $why_HH{$alt_code}{$reason}; }
+        my $fatal_ct = ($data_HH{$alt_code}{"causes_failure"} eq "yes") ? ($data_HH{$alt_code}{"num_cases"} - $nonfatal_ct) : 0;
+        if($data_HH{$alt_code}{"causes_failure"} eq "no") { $nonfatal_ct = $data_HH{$alt_code}{"num_cases"}; }
+        if($fatal_ct < 0) { 
+          ofile_FAIL("ERROR in $sub_name, for alert $alt_code, more non-fatal cases than cases", 1, $FH_HR);
+        }
+        my $nonfatal_str = vdr_AlertNonFatalString(($data_HH{$alt_code}{"causes_failure"} eq "yes") ? 1 : 0, $why_HH{$alt_code}, 
+                                                   $fatal_ct, $nonfatal_ct, $alt_code, $FH_HR);
         push(@data_alc_AA, [$alt_idx, $alt_code, 
                             $data_HH{$alt_code}{"causes_failure"},
                             $data_HH{$alt_code}{"short_description"},
                             $data_HH{$alt_code}{"per_type"}, 
-                            $data_HH{$alt_code}{"fatal_cases"}, 
-                            $data_HH{$alt_code}{"nonfatal_cases"}, 
-                            $nonfatal_why_str, 
+                            $data_HH{$alt_code}{"num_cases"}, 
                             $data_HH{$alt_code}{"num_seqs"}, 
+                            $nonfatal_str, 
                             $data_HH{$alt_code}{"seqs_fail"}, 
                             $data_HH{$alt_code}{"seqs_alone"}, 
                             $data_HH{$alt_code}{"long_description"}]);
