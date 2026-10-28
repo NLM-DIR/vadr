@@ -57,3 +57,47 @@ exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m1lib/vs-m1lib.noro.3.vadr.alt
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-m1lib/vs-m1lib.noro.3.vadr.fail.list
 rmdir: vs-m1lib
 rmdir: vs-m1lib-cfg
+##
+# vscan-clsfb.fa: 4 sequences. gi|1215708385|gb|KY594653.1| matches
+# noro.3 in the blastn-based classification stage. ENTOY100A-NOANNOTN1
+# (a shuffled toy sequence), NC_001475.1001-1200 and NC_002640.4001-4200
+# (200 nt windows of the dengue virus 3 and 4 RefSeqs, serotypes not in
+# the dengue.2 library) match no library in that stage, so they are
+# rescanned with HMM-based classification. NC_001475.1001-1200 then
+# matches dengue.2 and is annotated with it. NC_002640.4001-4200 scores
+# below the default --clsfb_minbit of 20 bits to dengue.2, and it and
+# ENTOY100A-NOANNOTN1 still match no library.
+command: mkdir -p vs-clsfb-cfg; sed "s:@MDIR@:$VADRSCRIPTSDIR/testfiles/models:" $VADRSCRIPTSDIR/testfiles/vscan-m.config > vs-clsfb-cfg/vscan-m.config; perl $VADRSCRIPTSDIR/v-scan.pl -f -m -c vs-clsfb-cfg/vscan-m.config $VADRSCRIPTSDIR/testfiles/vscan-clsfb.fa vs-clsfb > vs-clsfb.out
+desc: vscan-clsfb
+out: vs-clsfb/vs-clsfb.vadr.slb
+out: vs-clsfb/vs-clsfb.vadr.alt.list
+out: vs-clsfb/vs-clsfb.vadr.pass.list
+out: vs-clsfb/vs-clsfb.vadr.fail.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-clsfb/vs-clsfb.vadr.slb
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-clsfb/vs-clsfb.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-clsfb/vs-clsfb.vadr.pass.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-clsfb/vs-clsfb.vadr.fail.list
+rmdir: vs-clsfb
+rmdir: vs-clsfb-cfg
+##
+# same as above but with --noclsfb: NC_001475.1001-1200 is not
+# rescanned, so it matches no library.
+command: mkdir -p vs-noclsfb-cfg; sed "s:@MDIR@:$VADRSCRIPTSDIR/testfiles/models:" $VADRSCRIPTSDIR/testfiles/vscan-m.config > vs-noclsfb-cfg/vscan-m.config; perl $VADRSCRIPTSDIR/v-scan.pl -f -m --noclsfb -c vs-noclsfb-cfg/vscan-m.config $VADRSCRIPTSDIR/testfiles/vscan-clsfb.fa vs-noclsfb > vs-noclsfb.out
+desc: vscan-noclsfb
+out: vs-noclsfb/vs-noclsfb.vadr.slb
+out: vs-noclsfb/vs-noclsfb.vadr.alt.list
+out: vs-noclsfb/vs-noclsfb.vadr.fail.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-noclsfb/vs-noclsfb.vadr.slb
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-noclsfb/vs-noclsfb.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-noclsfb/vs-noclsfb.vadr.fail.list
+rmdir: vs-noclsfb
+rmdir: vs-noclsfb-cfg
+##
+# same as the vscan-clsfb test but with --clsfb_minbit -10:
+# NC_002640.4001-4200 now matches dengue.2 in the rescan.
+command: mkdir -p vs-clsfbmb-cfg; sed "s:@MDIR@:$VADRSCRIPTSDIR/testfiles/models:" $VADRSCRIPTSDIR/testfiles/vscan-m.config > vs-clsfbmb-cfg/vscan-m.config; perl $VADRSCRIPTSDIR/v-scan.pl -f -m --clsfb_minbit -10 -c vs-clsfbmb-cfg/vscan-m.config $VADRSCRIPTSDIR/testfiles/vscan-clsfb.fa vs-clsfbmb > vs-clsfbmb.out
+desc: vscan-clsfbmb
+out: vs-clsfbmb/vs-clsfbmb.vadr.slb
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/vs-clsfbmb/vs-clsfbmb.vadr.slb
+rmdir: vs-clsfbmb
+rmdir: vs-clsfbmb-cfg

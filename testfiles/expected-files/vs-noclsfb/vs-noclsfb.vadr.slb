@@ -1,0 +1,7 @@
+#seq  seq                           seq                                 sub            fatal 
+#idx  name                          len  library  model      grp        grp  p/f       alerts
+#---  ----------------------------  ---  -------  ---------  ---------  ---  --------  ------
+1     ENTOY100A-NOANNOTN1           100  -        -          -          -    NO-MATCH  noannotn
+2     NC_001475.1001-1200           200  -        -          -          -    NO-MATCH  noannotn
+3     NC_002640.4001-4200           200  -        -          -          -    NO-MATCH  noannotn
+4     gi|1215708385|gb|KY594653.1|  301  noro.3   NC_039477  Norovirus  GII  PASS      -     

@@ -7,6 +7,7 @@
 * [Walk-throughs of `v-scan.pl` examples](#longwalk)
   * [running `v-scan.pl` when all sequences are expected to match one unknown model library (mode 1)](#mode1)
   * [running `v-scan.pl` when sequences may match multiple models libraries (mode 2)](#mode2)
+    * [rescanning sequences that match no library with HMMs](#clsfb)
     * [combined output files created with `-m`](#combined)
   * [running `v-scan.pl` when all sequences are expected to match one known model library (mode 3)](#mode3)
 * [`v-scan.pl` command-line options](#options)
@@ -415,6 +416,45 @@ Also, following the summary of sequences matching each library, you
 will see per-library summary statistics for each of the four libraries
 matched, and a list of output sequences for each library.
 
+#### Rescanning sequences that match no library with HMMs<a name="clsfb"></a>
+
+The classification stage runs `v-annotate.pl --cls_only -s`, which
+uses `blastn` to compare each sequence against the sequences of the
+models in each library. A sequence matches a library only if it has a
+`blastn` hit of at least 50 bits (by default). Short sequences, such as fragments
+from variable regions of a genome, can lack such a hit to any library
+even when the right library would annotate them without problems.
+
+So with `-m`, if any sequences match no library in the classification
+stage, `v-scan.pl` rescans just those sequences with the more
+sensitive, but slower, HMM-based classification of `v-annotate.pl
+--cls_only` (without `-s`), against each library that has a CM file
+(libraries without one, which can only be used with `-s`, are not
+rescanned; a library that has a CM file but not the `cmpress` index
+files for it is not installed correctly, and `v-scan.pl` exits in error
+before the classification stage). A sequence matches a library in the
+rescan only if it has a hit of at least 20 bits; this threshold can be
+changed with `--clsfb_minbit <x>`. Each sequence is then assigned to its
+best-matching library in the same way as in the classification stage.
+This adds one line per rescanned library to the output, for example:
+
+```
+# Rescanning 2 unmatched seqs against flavi          (HMM)     ... done. [   41.6 seconds]
+```
+
+Sequences that matched a library in the classification stage are not
+rescanned, so the library they are annotated with is not affected.
+Because the rescan is more sensitive, a sequence of a virus that is
+not in any library may be assigned to a library for a related virus.
+It will then be annotated with that library and will usually fail.
+The rescan is skipped entirely when every sequence matches a library.
+When it runs, it can take considerably longer than the
+classification stage for libraries with large CM files. To turn it
+off, use `--noclsfb`; sequences that match no library are then reported
+as described [below](#combined) without being rescanned.
+
+The rescan is only performed with `-m`.
+
 #### Combined output files created with `-m`<a name="combined"></a>
 
 With `-m`, `v-annotate.pl` is run once per matched library, and its
@@ -443,7 +483,8 @@ which only one library or no library was matched, so that their names
 do not depend on which libraries were matched. 
 
 **Sequences that match no library:** with `-m`, a sequence that
-matches no model library in the classification stage is not annotated
+matches no model library in the classification stage, including the
+[HMM rescan](#clsfb), is not annotated
 with any library, and so does not appear in any of the per-library
 output files. Instead, `v-scan.pl` reports it in the combined files:
 it is listed with the status `NO-MATCH` in the `.slb` file, and it
@@ -551,10 +592,12 @@ integer.
 | `-c <s>`         | use the config file `<s>` instead of the config file in $VADRCONFIGFILE |
 | `-v`             | *verbose* mode: all commands will be output to standard output as they are run | 
 | `--first`        | specify that if a sequence matches to more than one library, use the first one; by default the higher scoring match is used |
-| `--cpu <n>`      | parallelize classification stage across <n> CPU workers, requires `-m`, only impacts the initial classification stage, parallelization of annotation stage can be controlled by adding `--split --cpu <n>` to options strings in the config file |
+| `--cpu <n>`      | parallelize classification stage across <n> CPU workers, requires `-m`, only impacts the initial classification stage and the [HMM rescan](#clsfb), parallelization of annotation stage can be controlled by adding `--split --cpu <n>` to options strings in the config file |
 | `--lone`         | exit if at least one sequence matches to multiple libraries |
 | `--origfa`       | do not copy the input fasta file into output directory prior to analysis, use the original |
 | `--keep`         | keep [additional `v-annotate.pl` output files](formats.md#annotate-keep) that are normally removed |
+| `--noclsfb`      | with `-m`, do not rescan sequences that match no library with HMM-based classification, see [here](#clsfb) |
+| `--clsfb_minbit <x>` | with `-m`, set the minimum bit score for a sequence to match a library when rescanning sequences that match no library to `<x>`, default `<x>` is 20, see [here](#clsfb) |
 
 ### `v-scan.pl` options for specifying which model libraries to use<a name="options-libraries"></a>
 | ..........option.......... | explanation | 
