@@ -12511,9 +12511,20 @@ sub output_tabular {
   my $nalt_seq_possible = scalar(@seq_alt_code_A);
   my %alt_ct_H     = (); # total number of alerts per alert code
   my %alt_seq_ct_H = (); # number of seqs with at least one instance of each alert code
+  my %alt_fatal_ct_H      = (); # number of fatal alerts per alert code ('yes' in .alt 'fail' column)
+  my %alt_nonfatal_ct_H   = (); # number of non-fatal alerts per alert code ('no' in .alt 'fail' column)
+  my %alt_nonfatal_why_HH = (); # key 1: alert code, key 2: reason from vdr_FeatureAlertNonFatalReason(), value: number of 
+                                # non-fatal alerts of an alert code that causes failure, for that reason
+  my %alt_seq_fail_ct_H   = (); # number of seqs with at least one fatal instance of each alert code
+  my %alt_seq_alone_ct_H  = (); # number of seqs whose only fatal alert code is each alert code
   foreach $alt_code (@alt_code_A) { 
     $alt_ct_H{$alt_code} = 0;
     $alt_seq_ct_H{$alt_code} = 0;
+    $alt_fatal_ct_H{$alt_code}    = 0;
+    $alt_nonfatal_ct_H{$alt_code} = 0;
+    %{$alt_nonfatal_why_HH{$alt_code}} = ();
+    $alt_seq_fail_ct_H{$alt_code}  = 0;
+    $alt_seq_alone_ct_H{$alt_code} = 0;
   }
 
   # make hash of model names to indices in mdl_info_AHR, we'll 
@@ -12708,6 +12719,7 @@ sub output_tabular {
     my $alt_nftr       = 0; # number of features we've printed at least 1 alert for
     my $alt_nseqftr    = 0; # number of features we've printed for this sequence/feature combo
     my %alt_seqcode_H  = (); # key is alert code: '1' if we've printed >= 1 alerts for this sequence/code combo
+    my %alt_seqfatal_H = (); # key is alert code: '1' if we've printed >= 1 fatal alerts for this sequence/code combo
 
     # print per-sequence alerts, if any
     if(defined $alt_seq_instances_HHR->{$seq_name}) { 
@@ -12730,9 +12742,17 @@ sub output_tabular {
             my ($instance_scoords, $instance_mcoords, $instance_detail) = alert_instance_parse($instance_str);
             $alt_nseqftr++;
             $alt_ct_H{$alt_code}++;
+            my $alt_is_fatal = $alt_info_HHR->{$alt_code}{"causes_failure"} ? 1 : 0;
+            if($alt_is_fatal) { 
+              $alt_fatal_ct_H{$alt_code}++;
+              $alt_seqfatal_H{$alt_code} = 1;
+            }
+            else { 
+              $alt_nonfatal_ct_H{$alt_code}++;
+            }
             my $alt_idx2print = $seq_idx2print . "." . $alt_nftr . "." . $alt_nseqftr;
             push(@data_alt_AA, [$alt_idx2print, $seq_name, $seq_mdl1, "-", "-", "-", $alt_code, 
-                                $alt_info_HHR->{$alt_code}{"causes_failure"} ? "yes" : "no", 
+                                $alt_is_fatal ? "yes" : "no", 
                                 helper_tabular_replace_spaces($alt_info_HHR->{$alt_code}{"sdesc"}), 
                                 ($instance_scoords eq "VADRNULL") ? "-" : $instance_scoords, 
                                 ($instance_scoords eq "VADRNULL") ? "-" : vdr_CoordsLength($instance_scoords, $FH_HR),
@@ -12927,9 +12947,21 @@ sub output_tabular {
                     my ($instance_scoords, $instance_mcoords, $instance_detail) = alert_instance_parse($instance_str);
                     $alt_nseqftr++;
                     $alt_ct_H{$alt_code}++;
+                    my $alt_is_fatal = vdr_FeatureAlertCausesFailure($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code);
+                    if($alt_is_fatal) { 
+                      $alt_fatal_ct_H{$alt_code}++;
+                      $alt_seqfatal_H{$alt_code} = 1;
+                    }
+                    else { 
+                      $alt_nonfatal_ct_H{$alt_code}++;
+                      my $nonfatal_reason = vdr_FeatureAlertNonFatalReason($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code, $FH_HR);
+                      if($nonfatal_reason ne "") { 
+                        $alt_nonfatal_why_HH{$alt_code}{$nonfatal_reason}++;
+                      }
+                    }
                     my $alt_idx2print = $seq_idx2print . "." . $alt_nftr . "." . $alt_nseqftr;
                     push(@data_alt_AA, [$alt_idx2print, $seq_name, $seq_mdl1, $ftr_type2print, $ftr_name2print, ($ftr_idx+1), $alt_code, 
-                                        vdr_FeatureAlertCausesFailure($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) ? "yes" : "no", 
+                                        $alt_is_fatal ? "yes" : "no", 
                                         helper_tabular_replace_spaces($alt_info_HHR->{$alt_code}{"sdesc"}), 
                                         ($instance_scoords eq "VADRNULL") ? "-" : $instance_scoords, 
                                         ($instance_scoords eq "VADRNULL") ? "-" : vdr_CoordsLength($instance_scoords, $FH_HR),
@@ -12944,6 +12976,16 @@ sub output_tabular {
           }
         }
       }
+    }
+
+    # update counts of sequences with >= 1 fatal alert of each code, and of
+    # sequences for which that code is the only code with a fatal alert
+    my @seqfatal_code_A = keys (%alt_seqfatal_H);
+    foreach $alt_code (@seqfatal_code_A) { 
+      $alt_seq_fail_ct_H{$alt_code}++;
+    }
+    if(scalar(@seqfatal_code_A) == 1) { 
+      $alt_seq_alone_ct_H{$seqfatal_code_A[0]}++;
     }
 
     my $seq_alt_str = helper_output_sequence_alert_strings($seq_name, 1, $alt_info_HHR, \@seq_alt_code_A, $alt_seq_instances_HHR, $FH_HR);
@@ -13047,30 +13089,19 @@ sub output_tabular {
         $alc_sep_flag = 0; 
       }
       $alt_idx++;
-      # determine if this alert has "misc_not_failure" for at least 1 feature in 1 model,
-      # if so, we'll add a '*' 
-      my $misc_not_failure_flag = 0;
-      my $cur_nmdl = scalar(@{$mdl_info_AHR});
-      for(my $cur_mdl_idx = 0; $cur_mdl_idx < $cur_nmdl; $cur_mdl_idx++) { 
-        my $cur_mdl_name = $mdl_info_AHR->[$cur_mdl_idx]{"name"};
-        my $cur_nftr = scalar(@{$ftr_info_HAHR->{$cur_mdl_name}});
-        for(my $cur_ftr_idx = 0; $cur_ftr_idx < $cur_nftr; $cur_ftr_idx++) { 
-          if(vdr_FeatureAlertIsMiscNotFailure($ftr_info_HAHR->{$cur_mdl_name}, $alt_info_HHR, $cur_ftr_idx, $alt_code)) { 
-            $misc_not_failure_flag = 1;
-            $cur_ftr_idx = $cur_nftr; # breaks ftr loop
-            $cur_mdl_idx = $cur_nmdl; # breaks mdl loop
-          }
-        }
+      if(($alt_fatal_ct_H{$alt_code} + $alt_nonfatal_ct_H{$alt_code}) != $alt_ct_H{$alt_code}) { 
+        ofile_FAIL("ERROR in $sub_name, fatal and non-fatal counts for alert $alt_code do not sum to total", 1, $FH_HR);
       }
-      my $causes_failure_str = $alt_info_HH{$alt_code}{"causes_failure"} ? "yes" : "no";
-      if(($causes_failure_str eq "yes") && ($misc_not_failure_flag)) { 
-        $causes_failure_str .= "*";
-      }
+      # 'why nonfatal' is only relevant for alerts that cause failure, 
+      # vdr_AlertNonFatalReasonsString() checks the reasons sum to the non-fatal count
+      my $nonfatal_why_str = ($alt_info_HH{$alt_code}{"causes_failure"}) ? 
+          vdr_AlertNonFatalReasonsString($alt_nonfatal_why_HH{$alt_code}, $alt_nonfatal_ct_H{$alt_code}, $alt_code, $FH_HR) : "-";
       push(@data_alc_AA, [$alt_idx, $alt_code, 
-                          $causes_failure_str,
+                          $alt_info_HH{$alt_code}{"causes_failure"} ? "yes" : "no",
                           helper_tabular_replace_spaces($alt_info_HH{$alt_code}{"sdesc"}), 
                           $alt_info_HH{$alt_code}{"pertype"}, 
-                          $alt_ct_H{$alt_code}, $alt_seq_ct_H{$alt_code},
+                          $alt_fatal_ct_H{$alt_code}, $alt_nonfatal_ct_H{$alt_code}, $nonfatal_why_str,
+                          $alt_seq_ct_H{$alt_code}, $alt_seq_fail_ct_H{$alt_code}, $alt_seq_alone_ct_H{$alt_code},
                           $alt_info_HHR->{$alt_code}{"ldesc"}]);
       $sum_alt_ct     += $alt_ct_H{$alt_code};
       $sum_alt_seq_ct += $alt_seq_ct_H{$alt_code};
@@ -17552,9 +17583,9 @@ sub helper_tabular_fill_header_and_justification_arrays {
     @{$clj_AR  }      = (1,     1,      1,       1,      1,      0,     1,       1,      1,          0,        0,     0,        0,     1);
   }
   elsif($ofile_key eq "alc") {
-    @{$head_AAR->[0]} = ("",    "alert",  "causes",  "short",       "per",  "num",   "num",  "long");
-    @{$head_AAR->[1]} = ("idx", "code",   "failure", "description", "type", "cases", "seqs", "description");
-    @{$clj_AR}        = (1,     1,        1,          1,            0,      0,      0,        1);
+    @{$head_AAR->[0]} = ("",    "alert",  "causes",  "short",       "per",  "fatal", "non-",  "why",      "num",  "seqs", "seqs",  "long");
+    @{$head_AAR->[1]} = ("idx", "code",   "failure", "description", "type", "cases", "fatal", "nonfatal", "seqs", "fail", "alone", "description");
+    @{$clj_AR}        = (1,     1,        1,          1,            0,      0,       0,       1,          0,      0,      0,       1);
   }
   elsif($ofile_key eq "mdl") {
     @{$head_AAR->[0]} = ("",    "",      "",      "",         "num",  "num",  "num");

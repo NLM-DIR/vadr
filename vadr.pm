@@ -132,6 +132,10 @@ require "sqp_utils.pm";
 # vdr_FeatureAlertCausesFailure()
 # vdr_FeatureAlertIsMiscNotFailure()
 # vdr_FeatureAlertCausesDrop()
+# vdr_FeatureAlertNonFatalReason()
+# vdr_AlertNonFatalReasons()
+# vdr_AlertNonFatalReasonsString()
+# vdr_AlertNonFatalReasonsStringParse()
 #
 # Subroutines related to the non-coding feature (ncf) policy (--ncf):
 # vdr_NcfPolicies()
@@ -3978,6 +3982,161 @@ sub vdr_FeatureAlertCausesDrop {
   return ((vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) eq "drop") && 
           ($alt_info_HHR->{$alt_code}{"causes_failure"})) 
       ? 1 : 0;
+}
+
+#################################################################
+# Subroutine: vdr_FeatureAlertNonFatalReason()
+# Incept:     EPN, Wed Oct 28 2026 (w/Claude)
+#
+# Purpose:    For an instance of alert $alt_code for feature $ftr_idx,
+#             return the reason the instance is non-fatal when the
+#             alert's "causes_failure" value is 1, one of the
+#             reasons from vdr_AlertNonFatalReasons():
+#             'drop': the feature is dropped from the feature table
+#                     instead (see vdr_FeatureAlertCausesDrop())
+#             'mnf':  the feature and alert have the misc_not_failure
+#                     attribute (see vdr_FeatureAlertIsMiscNotFailure())
+#             Returns "" if the instance is fatal or if the alert's 
+#             "causes_failure" value is 0.
+#
+# Arguments: 
+#  $ftr_info_AHR:  ref to the feature info array of hashes 
+#  $alt_info_HHR:  REF to the alert info hash of arrays, PRE-FILLED
+#  $ftr_idx:       feature index
+#  $alt_code:      alert code
+#  $FH_HR:         REF to hash of file handles, including "log" and "cmd"
+#
+# Returns:    'drop', 'mnf' or ""
+#
+# Dies:       if the alert causes failure, the instance is not fatal
+#             and neither reason applies (should be impossible).
+#
+################################################################# 
+sub vdr_FeatureAlertNonFatalReason { 
+  my $sub_name = "vdr_FeatureAlertNonFatalReason";
+  my $nargs_exp = 5;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code, $FH_HR) = @_;
+
+  if(! $alt_info_HHR->{$alt_code}{"causes_failure"}) { return ""; }
+  if(vdr_FeatureAlertCausesFailure($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code)) { return ""; }
+  if(vdr_FeatureAlertCausesDrop($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code)) { return "drop"; }
+  if(vdr_FeatureAlertIsMiscNotFailure($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code)) { return "mnf"; }
+
+  ofile_FAIL("ERROR in $sub_name, alert $alt_code causes failure but is not fatal for feature $ftr_idx for an unknown reason", 1, $FH_HR);
+  return ""; # never reached
+}
+
+#################################################################
+# Subroutine: vdr_AlertNonFatalReasons()
+# Incept:     EPN, Wed Oct 28 2026 (w/Claude)
+#
+# Purpose:    Return the list of reasons an instance of an alert
+#             that causes failure can be non-fatal, in the order
+#             they are listed in the 'why nonfatal' column of the
+#             .alc file. See vdr_FeatureAlertNonFatalReason().
+#
+# Arguments:  none
+#
+# Returns:    array of reasons
+#
+# Dies:       never
+#
+################################################################# 
+sub vdr_AlertNonFatalReasons { 
+  return ("drop", "mnf");
+}
+
+#################################################################
+# Subroutine: vdr_AlertNonFatalReasonsString()
+# Incept:     EPN, Wed Oct 28 2026 (w/Claude)
+#
+# Purpose:    Return the string for the 'why nonfatal' column of 
+#             the .alc file for one alert code: comma-separated
+#             <reason>:<count> for each reason with a count > 0, 
+#             in the order of vdr_AlertNonFatalReasons(), or "-" 
+#             if there are none. Checks that the counts sum to
+#             $nonfatal_ct.
+#
+# Arguments: 
+#  $reason_ct_HR:  ref to hash, key: reason, value: count, can be undef
+#  $nonfatal_ct:   number of non-fatal instances the counts must sum to
+#  $alt_code:      alert code, for the error message
+#  $FH_HR:         REF to hash of file handles, including "log" and "cmd"
+#
+# Returns:    the string
+#
+# Dies:       if $reason_ct_HR has a key that is not a reason, or
+#             if the counts do not sum to $nonfatal_ct
+#
+################################################################# 
+sub vdr_AlertNonFatalReasonsString { 
+  my $sub_name = "vdr_AlertNonFatalReasonsString";
+  my $nargs_exp = 4;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($reason_ct_HR, $nonfatal_ct, $alt_code, $FH_HR) = @_;
+
+  my @reason_A = vdr_AlertNonFatalReasons();
+  my %reason_H = map { $_ => 1 } @reason_A;
+  my $sum = 0;
+  if(defined $reason_ct_HR) { 
+    foreach my $reason (sort keys (%{$reason_ct_HR})) { 
+      if(! defined $reason_H{$reason}) { 
+        ofile_FAIL("ERROR in $sub_name, unexpected reason $reason for alert $alt_code", 1, $FH_HR);
+      }
+      $sum += $reason_ct_HR->{$reason};
+    }
+  }
+  if($sum != $nonfatal_ct) { 
+    ofile_FAIL("ERROR in $sub_name, for alert $alt_code, non-fatal reason counts sum to $sum, expected $nonfatal_ct", 1, $FH_HR);
+  }
+
+  my @str_A = ();
+  foreach my $reason (@reason_A) { 
+    if((defined $reason_ct_HR) && (defined $reason_ct_HR->{$reason}) && ($reason_ct_HR->{$reason} > 0)) { 
+      push(@str_A, $reason . ":" . $reason_ct_HR->{$reason});
+    }
+  }
+  return (scalar(@str_A) > 0) ? join(",", @str_A) : "-";
+}
+
+#################################################################
+# Subroutine: vdr_AlertNonFatalReasonsStringParse()
+# Incept:     EPN, Wed Oct 28 2026 (w/Claude)
+#
+# Purpose:    Parse a string created by vdr_AlertNonFatalReasonsString()
+#             and add its counts to %{$reason_ct_HR}.
+#
+# Arguments: 
+#  $str:           the string, "-" or <reason>:<count>[,<reason>:<count>]
+#  $reason_ct_HR:  ref to hash, key: reason, value: count, ADDED TO HERE
+#  $FH_HR:         REF to hash of file handles, including "log" and "cmd"
+#
+# Returns:    void
+#
+# Dies:       if $str can not be parsed or has an unknown reason
+#
+################################################################# 
+sub vdr_AlertNonFatalReasonsStringParse { 
+  my $sub_name = "vdr_AlertNonFatalReasonsStringParse";
+  my $nargs_exp = 3;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($str, $reason_ct_HR, $FH_HR) = @_;
+
+  if($str eq "-") { return; }
+  my %reason_H = map { $_ => 1 } vdr_AlertNonFatalReasons();
+  foreach my $tok (split(",", $str)) { 
+    if(($tok =~ /^([^:]+)\:(\d+)$/) && (defined $reason_H{$1})) { 
+      $reason_ct_HR->{$1} = ((defined $reason_ct_HR->{$1}) ? $reason_ct_HR->{$1} : 0) + $2;
+    }
+    else { 
+      ofile_FAIL("ERROR in $sub_name, unable to parse token $tok in non-fatal reasons string $str", 1, $FH_HR);
+    }
+  }
+  return;
 }
 
 #################################################################
@@ -8008,46 +8167,44 @@ sub vdr_MergeOutputAlcTabularFile {
   # but not doing that currently
   my @head_alc_AA = ();
   my @data_alc_AA = ();
-  @{$head_alc_AA[0]} = ("",    "alert",  "causes",  "short",       "per",  "num",   "num",  "long");
-  @{$head_alc_AA[1]} = ("idx", "code",   "failure", "description", "type", "cases", "seqs", "description");
-  my @clj_alc_A      = (1,     1,        1,          1,            0,      0,      0,        1);
+  @{$head_alc_AA[0]} = ("",    "alert",  "causes",  "short",       "per",  "fatal", "non-",  "why",      "num",  "seqs", "seqs",  "long");
+  @{$head_alc_AA[1]} = ("idx", "code",   "failure", "description", "type", "cases", "fatal", "nonfatal", "seqs", "fail", "alone", "description");
+  my @clj_alc_A      = (1,     1,        1,          1,            0,      0,       0,       1,          0,      0,      0,       1);
 
   # read each .alc file and store info in it
-  my ($idx, $alt_code, $causes_failure, $short_description, $per_type, $num_cases, $num_seqs, $long_description);
+  my ($idx, $alt_code);
 
   my %data_HH = (); # key 1: alert code, key 2: column name, value: value from column
+  my %why_HH  = (); # key 1: alert code, key 2: non-fatal reason, value: summed count
   my @invariant_keys_A = ("causes_failure", "short_description", "per_type", "long_description");
-  my @sum_keys_A       = ("num_cases", "num_seqs"); 
+  my @sum_keys_A       = ("fatal_cases", "nonfatal_cases", "num_seqs", "seqs_fail", "seqs_alone"); 
   my $key;
   my %line_H = ();
   for(my $i = 0; $i < scalar(@filelist_A); $i++) { 
     open(IN, $filelist_A[$i]) || ofile_FileOpenFailure($filelist_A[$i], $sub_name, $!, "reading", $FH_HR);
     while(my $line = <IN>) { 
-       ##---  --------  -------  ---------------------------  --------  -----  ----  -----------
-       ##     alert     causes   short                       per    num   num  long       
-       ##idx  code      failure  description                type  cases  seqs  description
-       ##---  --------  -------  ----------------------  -------  -----  ----  -----------
-       #1     ambgnt5f  no       N_AT_FEATURE_START      feature      3     1  first nucleotide of non-CDS feature is an N
-       #2     ambgnt3f  no       N_AT_FEATURE_END        feature      3     1  final nucleotide of non-CDS feature is an N
-       #3     ambgnt5c  no       N_AT_CDS_START          feature      2     1  first nucleotide of CDS is an N
-       #4     ambgnt3c  no       N_AT_CDS_END            feature      2     1  final nucleotide of CDS is an N
-       #---  --------  -------  ----------------------  -------  -----  ----  -----------
-       #5     unexleng  yes*     UNEXPECTED_LENGTH       feature      1     1  length of complete coding (CDS or mat_peptide) feature is not a multiple of 3
-       #6     cdsstopn  yes*     CDS_HAS_STOP_CODON      feature      1     1  in-frame stop codon exists 5' of stop position predicted by homology to reference
-       #7     fstukcfi  yes*     POSSIBLE_FRAMESHIFT     feature      1     1  possible frameshift in CDS (internal)
-       #8     indfantn  yes      INDEFINITE_ANNOTATION   feature      1     1  nucleotide-based search identifies CDS not identified in protein-based search
-       #9     lowsimic  yes      LOW_FEATURE_SIMILARITY  feature      2     1  region within annotated feature that is or matches a CDS lacks significant similarity
-       ##---  --------  -------  ----------------------  -------  -----  ----  -----------
+       ##---  --------  -------  ----------------------  -------  -----  -----  --------  ----  ----  -----  -----------
+       ##     alert     causes   short                       per  fatal   non-  why        num  seqs   seqs  long
+       ##idx  code      failure  description                type  cases  fatal  nonfatal  seqs  fail  alone  description
+       ##---  --------  -------  ----------------------  -------  -----  -----  --------  ----  ----  -----  -----------
+       #1     ambgnt5f  no       N_AT_FEATURE_START      feature      0      3  -            1     0      0  first nucleotide of non-CDS feature is an N
+       #---  --------  -------  ----------------------  -------  -----  -----  --------  ----  ----  -----  -----------
+       #2     lowsimis  yes      LOW_SIMILARITY          feature      2      1  drop:1       3     2      1  internal region without significant similarity
+       ##---  --------  -------  ----------------------  -------  -----  -----  --------  ----  ----  -----  -----------
       if($line !~ m/^\#/) { 
         chomp $line;
-        if($line =~ m/^(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(.+)$/) { 
+        if($line =~ m/^(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/) { 
           ($idx, $alt_code, 
            $line_H{"causes_failure"}, 
            $line_H{"short_description"}, 
            $line_H{"per_type"}, 
-           $line_H{"num_cases"}, 
+           $line_H{"fatal_cases"}, 
+           $line_H{"nonfatal_cases"}, 
+           $line_H{"why_nonfatal"}, 
            $line_H{"num_seqs"}, 
-           $line_H{"long_description"}) = ($1, $2, $3, $4, $5, $6, $7, $8);
+           $line_H{"seqs_fail"}, 
+           $line_H{"seqs_alone"}, 
+           $line_H{"long_description"}) = ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
         }
         else { 
           ofile_FAIL("ERROR in $sub_name unable to parse $filelist_A[$i] file line:\n$line\n", 1, $FH_HR);
@@ -8070,6 +8227,8 @@ sub vdr_MergeOutputAlcTabularFile {
         foreach $key (@sum_keys_A) { 
           $data_HH{$alt_code}{$key} += $line_H{$key};
         }
+        if(! defined $why_HH{$alt_code}) { %{$why_HH{$alt_code}} = (); }
+        vdr_AlertNonFatalReasonsStringParse($line_H{"why_nonfatal"}, $why_HH{$alt_code}, $FH_HR);
       }
     }
   }
@@ -8085,7 +8244,7 @@ sub vdr_MergeOutputAlcTabularFile {
   my $alc_sep_flag = 0;
   foreach my $alt_code (@alt_code_A) { 
     if(defined $data_HH{$alt_code}) { 
-      if($data_HH{$alt_code}{"num_cases"} > 0) { 
+      if(($data_HH{$alt_code}{"fatal_cases"} + $data_HH{$alt_code}{"nonfatal_cases"}) > 0) { 
         if(! $alt_info_HHR->{$alt_code}{"causes_failure"}) { 
           $alc_sep_flag = 1; 
         }
@@ -8095,14 +8254,21 @@ sub vdr_MergeOutputAlcTabularFile {
           $alc_sep_flag = 0; 
         }
         $alt_idx++;
-        # don't need to check if alert is 'misc_not_failure' already have '*' added to 'causes_failure' column values
         # don't need to check if alert is 'causes_failure' already know that from tables we parsed
+        # 'why nonfatal' is "-" for alerts that do not cause failure in each table we parsed, 
+        # so the merged counts are empty for them and vdr_AlertNonFatalReasonsString() returns "-"
+        my $nonfatal_why_str = ($data_HH{$alt_code}{"causes_failure"} eq "yes") ? 
+            vdr_AlertNonFatalReasonsString($why_HH{$alt_code}, $data_HH{$alt_code}{"nonfatal_cases"}, $alt_code, $FH_HR) : "-";
         push(@data_alc_AA, [$alt_idx, $alt_code, 
                             $data_HH{$alt_code}{"causes_failure"},
                             $data_HH{$alt_code}{"short_description"},
                             $data_HH{$alt_code}{"per_type"}, 
-                            $data_HH{$alt_code}{"num_cases"}, 
+                            $data_HH{$alt_code}{"fatal_cases"}, 
+                            $data_HH{$alt_code}{"nonfatal_cases"}, 
+                            $nonfatal_why_str, 
                             $data_HH{$alt_code}{"num_seqs"}, 
+                            $data_HH{$alt_code}{"seqs_fail"}, 
+                            $data_HH{$alt_code}{"seqs_alone"}, 
                             $data_HH{$alt_code}{"long_description"}]);
         $zero_alerts = 0;
       }
