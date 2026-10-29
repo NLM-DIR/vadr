@@ -385,7 +385,7 @@ that occurs at least once in the input sequence file that
 |   7 | `num seqs`            | number of input sequences with at least one instance of this alert |
 |   8 | `non-fatal`           | which instances of this alert are non-fatal (`no` in the `fail` column of the `.alt` file): `all` if `causes failure` is `no`; if `causes failure` is `yes`, `-` if every instance is fatal, otherwise the reasons for the non-fatal instances as comma-separated `<reason>:<count>` values in the order `drop`, `mnf`, e.g. `drop:15,mnf:2`. `drop` instances are for non-coding feature types that are dropped from the feature table instead of causing failure with `--ncf drop` (explained [here](annotate.md#ncf)); `mnf` instances are for features with `misc_not_failure:"1"` (explained [here](annotate.md#mnf)). The number of fatal instances is `num cases` minus the sum of the counts |
 |   9 | `seqs fail`           | number of input sequences with at least one fatal instance of this alert |
-|  10 | `seqs alone`          | number of input sequences for which this is the only alert code with a fatal instance (sequence or feature alerts): the sequence has no fatal alerts of any other code |
+|  10 | `seqs alone`          | number of input sequences for which this is the only alert code with a fatal instance (sequence or feature alerts); these sequences would pass if this alert were not fatal, e.g. with `--alt_pass` |
 |  11 to end | `long description`    |longer description of the alert, specific to each alert type; *this field, unlike all others, contains whitespace* |
 
 ---
