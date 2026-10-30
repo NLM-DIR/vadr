@@ -459,6 +459,7 @@ opt_Add("--out_allfasta",   "boolean", 0,    $g,    undef,"--keep", "additionall
 opt_Add("--out_nofasta",    "boolean", 0,    $g,    undef,"--keep,--out_allfasta", "do not output fasta files of passing/failing seqs",  "do not output fasta files of passing/failing seqs",                 \%opt_HH, \@opt_order_A);
 opt_Add("--out_noftrfasta", "boolean", 0,    $g, "--keep","--out_allfasta", "with --keep, do not output fasta for each feature",         "with --keep, do not output fasta for each feature",                 \%opt_HH, \@opt_order_A);
 opt_Add("--out_debug",      "boolean", 0,    $g,    undef,"--split","dump voluminous info from various data structures to output files", "dump voluminous info from various data structures to output files", \%opt_HH, \@opt_order_A);
+opt_Add("--out_idl",        "boolean", 0,    $g,    undef,"--cls_only", "output per-indel tabular file of long insertions/deletions (.idl)", "output per-indel tabular file of long insertions/deletions (.idl)", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "other expert options";
 #       option            type          default     group  requires incompat  preamble-output                                                          help-output    
@@ -682,6 +683,7 @@ my $options_okay =
                 'out_nofasta'   => \$GetOptions_H{"--out_nofasta"}, 
                 'out_noftrfasta'=> \$GetOptions_H{"--out_noftrfasta"}, 
                 'out_debug'     => \$GetOptions_H{"--out_debug"},
+                'out_idl'       => \$GetOptions_H{"--out_idl"},
 # other expert options
                 'execname=s'    => \$GetOptions_H{"--execname"},
                 'alicheck'      => \$GetOptions_H{"--alicheck"},
@@ -1620,6 +1622,11 @@ if($do_split) {
     helper_tabular_fill_header_and_justification_arrays("alt", \@head_AA, \@cljust_A, $FH_HR);
     vdr_MergeOutputConcatenatePreserveSpacing($out_root_no_vadr, ".alt", "alt", "per-alert tabular summary file", $do_check_exists, $nlines_preserve_spacing, "  ", 1, \@head_AA, \@cljust_A, \@chunk_outdir_A, \%opt_HH, \%ofile_info_HH);
     
+    if(opt_Get("--out_idl", \%opt_HH)) { 
+      helper_tabular_fill_header_and_justification_arrays("idl", \@head_AA, \@cljust_A, $FH_HR);
+      vdr_MergeOutputConcatenatePreserveSpacing($out_root_no_vadr, ".idl", "idl", "per-indel tabular file (--out_idl)", $do_check_exists, $nlines_preserve_spacing, "  ", 1, \@head_AA, \@cljust_A, \@chunk_outdir_A, \%opt_HH, \%ofile_info_HH);
+    }
+
     $zero_alt = vdr_MergeOutputAlcTabularFile ($out_root_no_vadr, \%alt_info_HH,"alert count tabular summary file", $do_check_exists, \@chunk_outdir_A, \%opt_HH, \%ofile_info_HH);
     
     helper_tabular_fill_header_and_justification_arrays("dcr", \@head_AA, \@cljust_A, $FH_HR);
@@ -2434,6 +2441,9 @@ if(! $do_clsonly) {
   ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "alt",      $out_root . ".alt", 1, 1, "per-alert tabular summary file");
   ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "alc",      $out_root . ".alc", 1, 1, "alert count tabular summary file");
   ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "dcr",      $out_root . ".dcr", 1, 1, "alignment doctoring tabular summary file");
+  if(opt_Get("--out_idl", \%opt_HH)) { 
+    ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "idl",    $out_root . ".idl", 1, 1, "per-indel tabular file (--out_idl)");
+  }
   if($do_blastn_ali) {
     ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "sda",    $out_root . ".sda", 1, 1, "seed alignment summary file (-s)");
   }
@@ -2453,6 +2463,9 @@ my ($zero_cls, $zero_alt) = output_tabular(\@mdl_info_AH, \%mdl_cls_ct_H, \%mdl_
                                            ($do_replace_ns) ? \%rpn_output_HH : undef,
                                            ((opt_IsUsed("--msub", \%opt_HH)) ? \%mdl_sub_H : undef),
                                            \%opt_HH, \%ofile_info_HH);
+if((! $do_clsonly) && (opt_Get("--out_idl", \%opt_HH))) { 
+  output_idl_file(\@mdl_info_AH, \@seq_name_A, \%ftr_info_HAH, \%ftr_results_HHAH, \%opt_HH, \%ofile_info_HH);
+}
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 
@@ -6212,6 +6225,7 @@ sub add_frameshift_alerts_for_one_sequence {
   my $nmaxins        = opt_Get("--nmaxins",     $opt_HHR); # maximum allowed insertion length in nucleotide alignment
   my $nmaxdel        = opt_Get("--nmaxdel",     $opt_HHR); # maximum allowed deletion length in nucleotide alignment
   my $do_glsearch    = opt_Get("--glsearch",    $opt_HHR); # we won't have PP values if this is 1
+  my $do_idl         = opt_Get("--out_idl",     $opt_HHR); # store long indels for the .idl file
   my $small_value = 0.000001; # for checking if PPs are below threshold
   my $nftr = scalar(@{$ftr_info_AHR});
   my $ftr_idx;
@@ -6224,7 +6238,11 @@ sub add_frameshift_alerts_for_one_sequence {
   my @insertn_posn_exc_AH = (); # 1D array: per feature, 2D hash: key is model position, value is maximum allowed insert for that position
   my @deletin_posn_exc_AH = (); # 1D array: per feature, 2D hash: key is model position, value is maximum allowed delete for that position
   my @fst_exc_AA          = (); # 1D array: per feature, 2D array: coords segments that are frameshift exceptions
+  my @insertn_exc_key_A   = (); # 1D array: per feature, name of the insertnn exception key the feature defines, "-" if none, for the .idl file
+  my @deletin_exc_key_A   = (); # 1D array: per feature, name of the deletinn exception key the feature defines, "-" if none, for the .idl file
   for($ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
+    $insertn_exc_key_A[$ftr_idx] = helper_idl_exc_key_name($ftr_info_AHR->[$ftr_idx], $alt_info_HHR->{"insertnn"});
+    $deletin_exc_key_A[$ftr_idx] = helper_idl_exc_key_name($ftr_info_AHR->[$ftr_idx], $alt_info_HHR->{"deletinn"});
     %{$insertn_sgm_exc_AH[$ftr_idx]}  = ();
     %{$deletin_sgm_exc_AH[$ftr_idx]}  = ();
     %{$insertn_posn_exc_AH[$ftr_idx]} = ();
@@ -6391,6 +6409,10 @@ sub add_frameshift_alerts_for_one_sequence {
                 if($cur_delete_len > 0) { 
                   my $local_rfpos   = ($strand eq "+") ? ($rfpos - $cur_delete_len) : ($rfpos + $cur_delete_len);
                   my $local_nmaxdel = (defined $deletin_posn_exc_AH[$ftr_idx]{$local_rfpos}) ? $deletin_posn_exc_AH[$ftr_idx]{$local_rfpos} : $nmaxdel;
+                  if(($do_idl) && ($cur_delete_len > $nmaxdel)) { 
+                    helper_idl_row_add($ftr_results_HAHR, $seq_name, $ftr_idx, "deletinn", "-", $cur_delete_len, "-", $local_rfpos, $local_nmaxdel, 
+                                       (defined $deletin_posn_exc_AH[$ftr_idx]{$local_rfpos}) ? $deletin_exc_key_A[$ftr_idx] : "-");
+                  }
                   if($cur_delete_len > $local_nmaxdel) { 
                     $alert_scoords = sprintf("seq:%s;", ($strand eq "+") ? 
                                              vdr_CoordsSegmentCreate($uapos-1, $uapos-1, $strand, $FH_HR) : 
@@ -6434,6 +6456,10 @@ sub add_frameshift_alerts_for_one_sequence {
               my $ins_len = ($strand eq "+") ? $rf2ilen_AR->[$rfpos] : $rf2ilen_AR->[($rfpos-1)];
               if($ins_len > 0) { 
                 my $local_nmaxins = (defined $insertn_posn_exc_AH[$ftr_idx]{$rfpos}) ? $insertn_posn_exc_AH[$ftr_idx]{$rfpos} : $nmaxins;
+                if(($do_idl) && ($ins_len > $nmaxins)) { 
+                  helper_idl_row_add($ftr_results_HAHR, $seq_name, $ftr_idx, "insertnn", "-", $ins_len, "-", $rfpos, $local_nmaxins, 
+                                     (defined $insertn_posn_exc_AH[$ftr_idx]{$rfpos}) ? $insertn_exc_key_A[$ftr_idx] : "-");
+                }
                 if($ins_len > $local_nmaxins) { 
                   $alert_scoords = sprintf("seq:%s;", ($strand eq "+") ? 
                                            vdr_CoordsSegmentCreate($uapos+1, $uapos + $ins_len, $strand, $FH_HR) : 
@@ -6458,6 +6484,10 @@ sub add_frameshift_alerts_for_one_sequence {
             push(@gr_frame_str_A, $gr_frame_str);
             my $local_rfpos   = ($strand eq "+") ? ($rfpos - $cur_delete_len) : ($rfpos + $cur_delete_len);
             my $local_nmaxdel = (defined $deletin_posn_exc_AH[$ftr_idx]{$local_rfpos}) ? $deletin_posn_exc_AH[$ftr_idx]{$local_rfpos} : $nmaxdel;
+            if(($do_idl) && ($cur_delete_len > $nmaxdel)) { 
+              helper_idl_row_add($ftr_results_HAHR, $seq_name, $ftr_idx, "deletinn", "-", $cur_delete_len, "-", $local_rfpos, $local_nmaxdel, 
+                                 (defined $deletin_posn_exc_AH[$ftr_idx]{$local_rfpos}) ? $deletin_exc_key_A[$ftr_idx] : "-");
+            }
             if($cur_delete_len > $local_nmaxdel) { 
               $alert_scoords = sprintf("seq:%s;", ($strand eq "+") ? 
                                        vdr_CoordsSegmentCreate($uapos-1, $uapos-1, $strand, $FH_HR) : 
@@ -8529,6 +8559,7 @@ sub add_protein_validation_alerts {
       $rpn_output_HHR, $seq_ua2rf_HAR, $opt_HHR, $FH_HR) = @_;
   
   my $do_pv_hmmer = opt_Get("--pv_hmmer", $opt_HHR) ? 1 : 0;
+  my $do_idl      = opt_Get("--out_idl",  $opt_HHR) ? 1 : 0; # store long indels for the .idl file
 
   my $mdl_name = $mdl_info_HR->{"name"};
   my $nseq = scalar(@{$seq_name_AR});
@@ -8991,11 +9022,19 @@ sub add_protein_validation_alerts {
                         # (legacy) always matches on the approximate position
                         my $nt_ins_spos_for_mdl_exc = (defined $nt_ins_spos_exact) ? $nt_ins_spos_exact : $nt_ins_spos_approx;
                         my $local_xmaxins = $xmaxins;
+                        my $local_ins_exc_key = "-"; # exception key that set $local_xmaxins, for the .idl file
                         if((defined $nt_ins_spos_for_mdl_exc) && (defined $insertn_mdl_posn_exc_AH[$ftr_idx]{$nt_ins_spos_for_mdl_exc})) { 
                           $local_xmaxins = $insertn_mdl_posn_exc_AH[$ftr_idx]{$nt_ins_spos_for_mdl_exc};
+                          $local_ins_exc_key = $alt_info_HHR->{"insertnp"}{"exc_key2"};
                         }
                         elsif((defined $nt_ins_spos_approx) && (defined $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos_approx})) { 
                           $local_xmaxins = $insertn_posn_exc_AH[$ftr_idx]{$nt_ins_spos_approx};
+                          $local_ins_exc_key = $alt_info_HHR->{"insertnp"}{"exc_key"};
+                        }
+                        if(($do_idl) && ($p_ins_len_A[$ins_idx] > $xmaxins)) { 
+                          helper_idl_row_add($ftr_results_HAHR, $seq_name, $ftr_idx, "insertnp", $ftr_results_prefix, $p_ins_len_A[$ins_idx], 
+                                             (defined $nt_ins_spos_approx) ? $nt_ins_spos_approx : "-", (defined $nt_ins_spos_exact) ? $nt_ins_spos_exact : "-", 
+                                             $local_xmaxins, $local_ins_exc_key);
                         }
                         if($p_ins_len_A[$ins_idx] > $local_xmaxins) { 
                           if(defined $alt_str_HH{$ftr_results_prefix}{"insertnp"}) { $alt_str_HH{$ftr_results_prefix}{"insertnp"} .= ":VADRSEP:"; } # we are adding another instance
@@ -9052,11 +9091,19 @@ sub add_protein_validation_alerts {
                         # (legacy) always matches on the approximate position
                         my $nt_del_spos_for_mdl_exc = (defined $nt_del_spos_exact) ? $nt_del_spos_exact : $nt_del_spos_approx;
                         my $local_xmaxdel = $xmaxdel;
+                        my $local_del_exc_key = "-"; # exception key that set $local_xmaxdel, for the .idl file
                         if((defined $nt_del_spos_for_mdl_exc) && (defined $deletin_mdl_posn_exc_AH[$ftr_idx]{$nt_del_spos_for_mdl_exc})) { 
                           $local_xmaxdel = $deletin_mdl_posn_exc_AH[$ftr_idx]{$nt_del_spos_for_mdl_exc};
+                          $local_del_exc_key = $alt_info_HHR->{"deletinp"}{"exc_key2"};
                         }
                         elsif((defined $nt_del_spos_approx) && (defined $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos_approx})) { 
                           $local_xmaxdel = $deletin_posn_exc_AH[$ftr_idx]{$nt_del_spos_approx};
+                          $local_del_exc_key = $alt_info_HHR->{"deletinp"}{"exc_key"};
+                        }
+                        if(($do_idl) && ($p_del_len_A[$del_idx] > $xmaxdel)) { 
+                          helper_idl_row_add($ftr_results_HAHR, $seq_name, $ftr_idx, "deletinp", $ftr_results_prefix, $p_del_len_A[$del_idx], 
+                                             (defined $nt_del_spos_approx) ? $nt_del_spos_approx : "-", (defined $nt_del_spos_exact) ? $nt_del_spos_exact : "-", 
+                                             $local_xmaxdel, $local_del_exc_key);
                         }
                         if($p_del_len_A[$del_idx] > $local_xmaxdel) { 
                           if(defined $alt_str_HH{$ftr_results_prefix}{"deletinp"}) { $alt_str_HH{$ftr_results_prefix}{"deletinp"} .= ":VADRSEP:"; } # we are adding another instance
@@ -13367,6 +13414,154 @@ sub helper_tabular_sgm_results_trunc_string {
 }
 
 #################################################################
+# Subroutine:  output_idl_file
+# Incept:      EPN, Fri Oct 30 2026 (w/Claude)
+#
+# Purpose:    Output the per-indel tabular file (.idl, --out_idl):
+#             one line per insertion or deletion longer than the
+#             default maximum (--xmaxins/--xmaxdel for insertnp/
+#             deletinp, --nmaxins/--nmaxdel for insertnn/deletinn),
+#             whether or not a position-specific exception exempts
+#             it. Protein-based lines are reported for every stored
+#             blastx hit of a CDS, not only the hit selected for
+#             output. Lines were stored in
+#             $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx]{"idl_AA"}
+#             by helper_idl_row_add() (brief 26_0602-055).
+#
+# Arguments:
+#  $mdl_info_AHR:       REF to array of hashes with model info
+#  $seq_name_AR:        REF to array of sequence names
+#  $ftr_info_HAHR:      REF to hash of arrays with information on the features
+#  $ftr_results_HHAHR:  REF to feature results HHAH
+#  $opt_HHR:            REF to 2D hash of option values
+#  $ofile_info_HHR:     REF to the 2D hash of output file information
+#
+# Returns:    void
+#
+#################################################################
+sub output_idl_file { 
+  my $sub_name = "output_idl_file";
+  my $nargs_exp = 6;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($mdl_info_AHR, $seq_name_AR, $ftr_info_HAHR, $ftr_results_HHAHR, $opt_HHR, $ofile_info_HHR) = @_;
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+  my $sidx_offset = opt_Get("--sidx", $opt_HHR) - 1;
+  my $do_headers  = ($sidx_offset == 0) ? 1 : 0; # if --sidx value is not 1 do not print comment header lines
+
+  my @head_idl_AA = ();
+  my @clj_idl_A   = ();
+  my @data_idl_AA = ();
+  helper_tabular_fill_header_and_justification_arrays("idl", \@head_idl_AA, \@clj_idl_A, $FH_HR);
+
+  my $nseq = scalar(@{$seq_name_AR});
+  my $nmdl = scalar(@{$mdl_info_AHR});
+  for(my $seq_idx = 0; $seq_idx < $nseq; $seq_idx++) { 
+    my $seq_name = $seq_name_AR->[$seq_idx];
+    my $seq_idx2print = $seq_idx + $sidx_offset + 1;
+    my $seq_nidl = 0;
+    for(my $mdl_idx = 0; $mdl_idx < $nmdl; $mdl_idx++) { 
+      my $mdl_name = $mdl_info_AHR->[$mdl_idx]{"name"};
+      if((exists $ftr_results_HHAHR->{$mdl_name}) && (exists $ftr_results_HHAHR->{$mdl_name}{$seq_name})) { 
+        my $ftr_info_AHR = \@{$ftr_info_HAHR->{$mdl_name}}; # for convenience
+        my $nftr = scalar(@{$ftr_info_AHR});
+        for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
+          if((defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx]) && 
+             (defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx]{"idl_AA"})) { 
+            foreach my $idl_AR (@{$ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx]{"idl_AA"}}) { 
+              my ($alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key) = @{$idl_AR};
+              $seq_nidl++;
+              push(@data_idl_AA, [$seq_idx2print . "." . $seq_nidl, $seq_name, $mdl_name, 
+                                  vdr_FeatureOutType($ftr_info_AHR, $ftr_idx), 
+                                  helper_tabular_replace_spaces($ftr_info_AHR->[$ftr_idx]{"outname"}), 
+                                  ($ftr_idx+1), $alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key, 
+                                  ($len > $max) ? "yes" : "no"]);
+            }
+          }
+        }
+      }
+    }
+  }
+  if($do_headers) { 
+    ofile_TableHumanOutput(\@data_idl_AA, \@head_idl_AA, \@clj_idl_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"idl"}, undef, $FH_HR);
+  }
+  elsif(scalar(@data_idl_AA) > 0) { 
+    ofile_TableHumanOutput(\@data_idl_AA, undef, \@clj_idl_A, undef, undef, "  ", "-", "#", "#", "", 1, $FH_HR->{"idl"}, undef, $FH_HR);
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine:  helper_idl_row_add
+# Incept:      EPN, Fri Oct 30 2026 (w/Claude)
+#
+# Purpose:    Store one line of the per-indel tabular file (.idl,
+#             --out_idl) for a sequence/feature, to be output by
+#             output_idl_file() (brief 26_0602-055).
+#
+# Arguments:
+#  $ftr_results_HAHR: REF to feature results HAH for the model, ADDED TO HERE
+#  $seq_name:         sequence name
+#  $ftr_idx:          feature index
+#  $alt_code:         alert code the indel is checked for: insertnp, deletinp, insertnn or deletinn
+#  $ftr_results_prefix: blastx hit prefix ("p_", "pl_", "pc_" or "pcl_") for insertnp/deletinp, "-" for insertnn/deletinn
+#  $len:              indel length (nt)
+#  $apos:             approximate (protein-position-derived) model position, "-" if none
+#  $epos:             exact (alignment-derived) model position, "-" if none
+#  $max:              maximum allowed length that applied (default or exception value)
+#  $exc_key:          exception key that set $max, "-" if the default applied
+#
+# Returns:    void
+#
+#################################################################
+sub helper_idl_row_add { 
+  my $sub_name = "helper_idl_row_add";
+  my $nargs_exp = 10;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_results_HAHR, $seq_name, $ftr_idx, $alt_code, $ftr_results_prefix, $len, $apos, $epos, $max, $exc_key) = @_;
+
+  my $pv_hit = $ftr_results_prefix;
+  $pv_hit =~ s/\_$//; # "p_" -> "p"
+  push(@{$ftr_results_HAHR->{$seq_name}[$ftr_idx]{"idl_AA"}}, [$alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key]);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  helper_idl_exc_key_name
+# Incept:      EPN, Fri Oct 30 2026 (w/Claude)
+#
+# Purpose:    Return the name of the position-specific exception key
+#             for an alert (exc_key or exc_key2 in %{$alt_info_HR})
+#             that a feature defines, for the .idl file (--out_idl).
+#             A feature never defines both (brief 26_0602-055).
+#
+# Arguments:
+#  $ftr_info_HR:  REF to hash of info for one feature
+#  $alt_info_HR:  REF to hash of info for one alert code
+#
+# Returns:    key name, or "-" if the feature defines neither
+#
+#################################################################
+sub helper_idl_exc_key_name { 
+  my $sub_name = "helper_idl_exc_key_name";
+  my $nargs_exp = 2;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_info_HR, $alt_info_HR) = @_;
+
+  foreach my $key ("exc_key2", "exc_key") { 
+    if((defined $alt_info_HR->{$key}) && (defined $ftr_info_HR->{$alt_info_HR->{$key}})) { 
+      return $alt_info_HR->{$key};
+    }
+  }
+  return "-";
+}
+
+#################################################################
 # Subroutine:  helper_tabular_replace_spaces
 # Incept:      EPN, Fri Mar 29 13:57:35 2019
 #
@@ -17582,6 +17777,11 @@ sub helper_tabular_fill_header_and_justification_arrays {
     @{$head_AAR->[0]} = ("",    "seq",  "",      "ftr",  "ftr",  "ftr", "alert", "",     "alert",       "seq",    "seq", "mdl",    "mdl", "alert");
     @{$head_AAR->[1]} = ("idx", "name", "model", "type", "name", "idx", "code",  "fail", "description", "coords", "len", "coords", "len", "detail");
     @{$clj_AR  }      = (1,     1,      1,       1,      1,      0,     1,       1,      1,          0,        0,     0,        0,     1);
+  }
+  elsif($ofile_key eq "idl") {
+    @{$head_AAR->[0]} = ("",    "seq",  "",      "ftr",  "ftr",  "ftr", "alert", "pv",  "indel", "approx", "exact",  "max", "exc", "alert");
+    @{$head_AAR->[1]} = ("idx", "name", "model", "type", "name", "idx", "code",  "hit", "len",   "mdlpos", "mdlpos", "len", "key", "if_rep");
+    @{$clj_AR}        = (1,     1,      1,       1,      1,      0,     1,       1,     0,       0,        0,        0,     1,     1);
   }
   elsif($ofile_key eq "alc") {
     @{$head_AAR->[0]} = ("",    "alert",  "causes",  "short",       "per",  "num",   "num",  "non-",  "seqs", "seqs",  "long");
