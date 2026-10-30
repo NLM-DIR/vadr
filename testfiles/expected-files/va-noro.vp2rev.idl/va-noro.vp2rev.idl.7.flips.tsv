@@ -1,0 +1,4 @@
+seq	A	B	A_fatal	B_fatal
+vp2rev-del	FAIL	PASS	deletinp:1@405:36	-
+vp2rev-del5p	FAIL	PASS	deletinp:1@690:36	-
+vp2rev-ins3p	FAIL	PASS	insertnp:1@256:33	-
