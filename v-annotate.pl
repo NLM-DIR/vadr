@@ -16817,10 +16817,12 @@ sub write_v_annotate_scripts_for_split_mode {
     push(@{$chunk_outdir_AR}, $out_dir); # save chunk directory
     $sidx += $nseqs_per_chunk_AR->[($i-1)]; # update number of sequences for next command
 
-    # only remove chunk files we created: if we did not split, $fasta_file is
+    # only remove chunk files we created (and the .ssi index the chunk's
+    # v-annotate.pl creates for it): if we did not split, $fasta_file is
     # $in_fa_file, which with --origfa is the caller's own input file
     if($did_split) { 
       push(@{$to_remove_AR}, $fasta_file);
+      push(@{$to_remove_AR}, $fasta_file . ".ssi");
     }
     push(@{$to_remove_AR}, $out_file);
   }
