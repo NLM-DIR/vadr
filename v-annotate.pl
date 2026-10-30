@@ -1471,6 +1471,7 @@ if($do_split) {
   my $tot_len_nt  = utl_HSumValues(\%seq_len_H);
   my $nchunk_estimate = vdr_SplitNumSeqFiles($tot_len_nt, \%opt_HH);
   my $nchunk = 1; # rewritten if $nchunk_estimate > 1
+  my $did_split = 0; # set to 1 if we split $in_fa_file into chunk files with esl-ssplit
   my $nseq = scalar(@seq_name_A);
   my @nseqs_per_chunk_A = (); # [0..$nchunk-1] number of sequences in each chunked fasta file
 
@@ -1494,11 +1495,13 @@ if($do_split) {
   if($nchunk_estimate != 1) { 
     $nchunk = vdr_SplitFastaFile($execs_H{"esl-ssplit"}, $in_fa_file, $nchunk_estimate, \@nseqs_per_chunk_A, \%opt_HH, \%ofile_info_HH);
     # vdr_SplitFastaFile will return the actual number of fasta files created, 
-    # which can differ from the requested amount (which is $nchunk_estimate) that we pass in. 
+    # which can differ from the requested amount (which is $nchunk_estimate) that we pass in,
+    # and can be 1 (e.g. esl-ssplit -r -n 2 on a few short sequences)
+    $did_split = 1;
   }
   else { 
-    # write_v_annotate_scripts_for_split_mode() knows about the expected 
-    # fasta file name in this case (there is no .1 suffix)
+    # we did not split, the only chunk is $in_fa_file itself (there is no .1 suffix), 
+    # write_v_annotate_scripts_for_split_mode() knows this because $did_split is 0
     $nseqs_per_chunk_A[0] = scalar(@seq_name_A); # all seqs will be in only seq file
   }
 
@@ -1508,7 +1511,7 @@ if($do_split) {
   my @cpu_out_file_AH  = (); # holds name of output files that vdr_WaitForFarmJobsToFinish() will check
                              # to see when all jobs are complete, will be filled in write_v_annotate_scripts_for_split_mode()
   my $out_root_no_vadr = $dir . "/" . $dir_tail;
-  my $script_cmd = write_v_annotate_scripts_for_split_mode($nchunk, $ncpu, $in_fa_file, $out_root_no_vadr, \@nseqs_per_chunk_A, 
+  my $script_cmd = write_v_annotate_scripts_for_split_mode($nchunk, $did_split, $ncpu, $in_fa_file, $out_root_no_vadr, \@nseqs_per_chunk_A, 
                                                            \@chunk_outdir_A, \@cpu_out_file_AH, \@to_remove_A, \%opt_HH, \%ofile_info_HH);
   my $nscript = scalar(@cpu_out_file_AH);
   
@@ -16723,6 +16726,9 @@ sub validate_and_parse_sub_file {
 #
 # Arguments:
 #  $nchunk:             number of fasta files we have created from original
+#  $did_split:          '1' if $in_fa_file was split into $nchunk files named
+#                       $in_fa_file.<i>, '0' if not, in which case $nchunk is 1 and
+#                       $in_fa_file itself is the only chunk
 #  $ncpu:               number of scripts to write
 #  $in_fa_file:         main fasta file that was split up
 #  $out_root_no_vadr:   string for naming output files, without 'vadr' suffix
@@ -16742,10 +16748,10 @@ sub validate_and_parse_sub_file {
 #################################################################
 sub write_v_annotate_scripts_for_split_mode { 
   my $sub_name = "write_v_annotate_scripts_for_split_mode";
-  my $nargs_exp = 10;
+  my $nargs_exp = 11;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($nchunk, $ncpu, $in_fa_file, $out_root_no_vadr, $nseqs_per_chunk_AR, $chunk_outdir_AR, $cpu_out_file_AHR, $to_remove_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($nchunk, $did_split, $ncpu, $in_fa_file, $out_root_no_vadr, $nseqs_per_chunk_AR, $chunk_outdir_AR, $cpu_out_file_AHR, $to_remove_AR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my $FH_HR = $ofile_info_HHR->{"FH"};
 
@@ -16792,7 +16798,7 @@ sub write_v_annotate_scripts_for_split_mode {
   my $sidx_opt = "";
   @{$cpu_out_file_AHR} = (); # tricky: need to fill "out" in i loop over chunks and "err" in fidx loop over cpus
   for(my $i = 1; $i <= $nchunk; $i++) { 
-    my $fasta_file = ($nchunk == 1) ? $in_fa_file : $in_fa_file . "." . $i;
+    my $fasta_file = ($did_split) ? $in_fa_file . "." . $i : $in_fa_file;
     my $out_dir    = $out_root_no_vadr . "." . $i;
     my $out_file   = $out_root_no_vadr . "." . $i . ".out";
     $fidx = ($i-1) % $ncpu;
@@ -16811,7 +16817,13 @@ sub write_v_annotate_scripts_for_split_mode {
     push(@{$chunk_outdir_AR}, $out_dir); # save chunk directory
     $sidx += $nseqs_per_chunk_AR->[($i-1)]; # update number of sequences for next command
 
-    push(@{$to_remove_AR}, $fasta_file);
+    # only remove chunk files we created (and the .ssi index the chunk's
+    # v-annotate.pl creates for it): if we did not split, $fasta_file is
+    # $in_fa_file, which with --origfa is the caller's own input file
+    if($did_split) { 
+      push(@{$to_remove_AR}, $fasta_file);
+      push(@{$to_remove_AR}, $fasta_file . ".ssi");
+    }
     push(@{$to_remove_AR}, $out_file);
   }
 
