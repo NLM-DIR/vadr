@@ -4,10 +4,21 @@
 #
 # the success-path tests (insertn_mdl_exc/deletin_mdl_exc reproduce the legacy-key results of
 # commands 5-6 in noro.vp2rev.pvcoords.testin) are commands 7-8 of that testin, run via
-# do-pvcoords-tests.sh. this script covers the one thing v-test.pl can't: a model info file
-# that is expected to be REJECTED.
+# do-pvcoords-tests.sh. in that fixture the approximate and exact model positions coincide.
+#
+# noro.mdlexc.testin covers a case where they differ, so that the legacy and recommended keys
+# must match at different positions (brief 26_0602-057).
+#
+# the rest of this script covers the one thing v-test.pl can't: a model info file that is
+# expected to be REJECTED.
 
 RETVAL=0;
+
+# noro.mdlexc
+$VADRSCRIPTSDIR/v-test.pl -f --rmout $VADRSCRIPTSDIR/testfiles/noro.mdlexc.testin noro.mdlexc
+if [ "$?" -ne 0 ]; then
+   RETVAL=1;
+fi
 
 # a feature that defines both the legacy (insertn_exc) and recommended (insertn_mdl_exc) key for
 # the same alert family must be rejected as a validation error, since the two keys use different

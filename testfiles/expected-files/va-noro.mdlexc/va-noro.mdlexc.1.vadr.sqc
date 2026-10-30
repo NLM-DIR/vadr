@@ -1,0 +1,5 @@
+#seq  seq          seq                                   sub                    seq    mdl         num                     sub   score  diff/  seq   
+#idx  name         len  p/f   ant  model1     grp1       grp1   score  sc/nt    cov    cov  bias  hits  str  model2  grp2  grp2   diff     nt  alerts
+#---  ----------  ----  ----  ---  ---------  ---------  ----  ------  -----  -----  -----  ----  ----  ---  ------  ----  ----  -----  -----  ------
+1     PZ823410.1  1647  PASS  yes  NC_029646  Norovirus  GII    728.2  0.442  0.999  0.214     0     1    +  -       -     -         -      -  -     
+2     PQ740347.1  3160  PASS  yes  NC_029646  Norovirus  GII   2139.9  0.677  1.000  0.415     0     1    +  -       -     -         -      -  -     
