@@ -20,6 +20,7 @@
   * [`.rpn` files](#rpn)
   * [`.rdt` files](#rdt)
   * [`.dcr` files](#dcr)
+  * [`.idl` files](#idl)
   * [`.scn` files](#scn)
   * [`.alt.list` files](#altlist)
   * [additional output files saved with the `--keep` option](#annotate-keep)
@@ -334,7 +335,7 @@ references on the file type/format.
 
 ---
 
-There are also eleven types of `v-annotate.pl` tabular output files with fields separated by 
+There are also twelve types of `v-annotate.pl` tabular output files with fields separated by 
 one or more spaces, that are designed to be easily parseable with simple unix tools or scripts.
 These files are listed in the table below
 
@@ -351,8 +352,9 @@ These files are listed in the table below
 | `.sda` | per-sequence seed alignment information (only created if `-s` used) | [va-noro-s.9.vadr.sda](annotate-files/va-noro-s.9.vadr.sda) | [description of format in this document](#sda) |
 | `.rpn` | per-sequence N replacement information (only created if `-r` used)  | [va-noro-r.9.vadr.rpn](annotate-files/va-noro-r.9.vadr.rpn) | [description of format in this document](#rpn) |
 | `.rdt` | per-(sequence,template) R2DT figure summary (only created if `--draw_r2dt` used) | example excerpt in [description of format in this document](#rdt) | [description of format in this document](#rdt) |
+| `.idl` | per-indel information (only created if `--out_idl` used) | [va-noro.vp2rev.idl.1.vadr.idl](../testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.1.vadr.idl) | [description of format in this document](#idl) |
 
-All eleven types of tabular output files share the following
+All twelve types of tabular output files share the following
 characteristics: 
 
 1. fields are separated by whitespace (with the possible exception of
@@ -361,7 +363,7 @@ characteristics:
 3. data lines begin with a non-whitespace character other than `#`
 4. all lines are either comment lines or data lines
 
-Each of these eleven tabular formats are explained in more detail below.
+Each of these twelve tabular formats are explained in more detail below.
 All example files linked to below, except where otherwise stated, were created by the `v-annotate.pl` [example command](annotate.md#examplebasic)
 `v-annotate.pl $VADRSCRIPTSDIR/documentation/annotate-files/noro.9.fa va-noro.9`.
 
@@ -853,7 +855,41 @@ header section.
 |  17 | `did swap`            | `yes` if doctoring (swap) took place, `no` if it did not, either because it would not have created a valid start or stop codon, or because the swap was not possible (an earlier doctoring of the same sequence already filled the gap or used the nucleotide) |
 
 ---
-### Explanation of `.scn`-suffixed output files<a name="scn"></a>
+### Explanation of `.idl`-suffixed output files<a name="idl"></a>
+
+`.idl` files are only created if `v-annotate.pl` is run with `--out_idl`.
+`.idl` data lines have 14 fields, the names of which appear in the first two
+comment lines in each file. There is one data line for each insertion
+or deletion in a CDS that is longer than the default maximum length
+for its alert (`--xmaxins`, `--xmaxdel`, `--nmaxins`, `--nmaxdel`,
+all 27 by default), whether or not a [position-specific
+exception](annotate.md#exceptions) exempts it. Nucleotide-based
+(*insertnn*, *deletinn*) lines come from the nucleotide alignment;
+protein-based (*insertnp*, *deletinp*) lines come from the `blastx`
+protein validation and are given for every stored `blastx` hit of the
+CDS (field 8), not only for the hit whose alerts are reported, so
+there may be several lines for the same insertion or deletion. The
+file is the input for the `convert` mode of
+`vadr-propose-indel-exc.pl` ([see here](annotate.md#exceptionspropose)).
+[Example file](../testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.1.vadr.idl).
+
+| idx | field                 | description |
+|-----|-----------------------|-------------|
+|   1 | `idx`                 | index of the line in format `<d1>.<d2>`, where `<d1>` is the index of the sequence in the input sequence file and `<d2>` is the index of the line for this sequence |
+|   2 | `seq name`            | sequence name | 
+|   3 | `model`               | name of the model used to annotate the sequence |
+|   4 | `ftr type`            | type of the feature (will always be `CDS`) |
+|   5 | `ftr name`            | name of the feature |
+|   6 | `ftr idx`             | index (in input model info file) of the feature |
+|   7 | `alert code`          | alert code the insertion or deletion is checked for: *insertnp*, *deletinp*, *insertnn* or *deletinn* |
+|   8 | `pv hit`              | for *insertnp*/*deletinp*, the stored `blastx` hit: `p` (top-scoring hit, to the predicted CDS or the full sequence), `pl` (longest hit, to the predicted CDS or the full sequence), `pc` (top-scoring hit to the predicted CDS only), `pcl` (longest hit to the predicted CDS only); `-` for *insertnn*/*deletinn* |
+|   9 | `indel len`           | length of the insertion or deletion in nucleotides |
+|  10 | `approx mdlpos`       | for *insertnp*/*deletinp*, the approximate (protein-position-derived) model position that a legacy `insertn_exc`/`deletin_exc` value is matched on; `-` for *insertnn*/*deletinn* or if there is none |
+|  11 | `exact mdlpos`        | exact (alignment-derived) model position that an `insertn_mdl_exc`/`deletin_mdl_exc` value is matched on, and that a legacy value is matched on for *insertnn*/*deletinn*: the model position after which an insertion occurs, or the first deleted model position; `-` if the sequence was not aligned |
+|  12 | `max len`             | maximum allowed length that applied: the default, or the exception value |
+|  13 | `exc key`             | exception key that set `max len`, `-` if the default applied |
+|  14 | `alert if_rep`        | `yes` if the alert is raised for this insertion or deletion (`indel len` > `max len`), `no` if not; a raised protein-based alert is only reported if its `blastx` hit is the one selected for the CDS |
+
 
 `.scn` data lines have 19 fields, the names of which appear in the first two
 comment lines in each file. There is one data line for each **sequence** in the

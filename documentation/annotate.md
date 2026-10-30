@@ -1003,6 +1003,7 @@ explained more [here](#memory).
 | `--out_nofasta`    | minimize total size of output; do not output fasta files of all passing and all failing sequences |
 | `--out_noftrfasta` | with --keep, do not output fasta file for each feature | 
 | `--out_debug`      | create additional output files with information on various data structures |
+| `--out_idl`        | create an additional [per-indel tabular file](formats.md#idl) with `.idl` suffix, listing every insertion and deletion longer than the default maximum, for use with `vadr-propose-indel-exc.pl` ([see below](#exceptionspropose)) |
 
 ### Other `v-annotate.pl` expert options<a name="options-expert"></a>
 
@@ -1538,7 +1539,9 @@ convention the value uses:
   `insertn_mdl_exc`/`deletin_mdl_exc`/`indfstr_mdl_exc` without checking
   the value**: the old value may sit at the wrong position under exact
   matching, and will need to be re-derived from an actual `mdl coords`
-  output rather than simply relabeled.
+  output rather than simply relabeled. The `convert` mode of
+  `vadr-propose-indel-exc.pl` does this re-derivation ([see
+  below](#exceptionspropose)).
 
 A single feature (or `MODEL` line, for `indfstr_exc`/`indfstr_mdl_exc`)
 may define **only one** of each pair, never both: `v-annotate.pl` reports
@@ -1641,6 +1644,61 @@ Prior to VADR version 1.6, some alert exceptions in model info files
 were permitted in different formats. As of version 1.6, the formats
 above are enforced, but the formats present in publicly available
 model files created prior to v1.6 are also compatible with v1.6+.
+
+### <a name="exceptionspropose"></a>Proposing `insertn_mdl_exc`/`deletin_mdl_exc` values with `vadr-propose-indel-exc.pl`
+
+`$VADRSCRIPTSDIR/miniscripts/vadr-propose-indel-exc.pl` proposes
+`insertn_mdl_exc` and `deletin_mdl_exc` values from `v-annotate.pl`
+output on a set of sequences you trust to be correct (for example,
+sequences from a curated reference set whose insertions and deletions
+are real). It writes a copy of the model info file in which only the
+`insertn_exc`, `deletin_exc`, `insertn_mdl_exc` and `deletin_mdl_exc`
+keys are changed (`<out root>.minfo`), and a tab-delimited report with
+one line per value (`<out root>.exc.tsv`): its origin, and the
+insertions and deletions in the input that it exempts. The script does
+not judge whether an insertion or deletion is biologically real: the
+sequences you give it are the statement of what to accept, so review
+the report before using the new file. It has three modes:
+
+- **`convert`**: re-derive legacy `insertn_exc`/`deletin_exc` values as
+  `insertn_mdl_exc`/`deletin_mdl_exc` values. Run `v-annotate.pl` with
+  `--out_idl` and the current model info file on the trusted
+  sequences, then 
+  `vadr-propose-indel-exc.pl convert <in.minfo> <out root> <v-annotate output dir(s)>`.
+  For each feature with a legacy value, the new value has a point
+  at each exact model position of an `insertnp`/`deletinp` insertion
+  or deletion that a legacy value exempted, with that legacy value's
+  maximum length. Legacy ranges that exempted an `insertnn`/`deletinn`
+  alert (which always matched on the exact position) are kept as
+  they are, and so are legacy ranges that exempted nothing in the
+  input (use `--drop_unused` to remove them).
+
+- **`extend`**: add values for the fatal `insertnp`/`deletinp` alerts
+  reported for the trusted sequences: a point at each alert's model
+  position (its `mdl coords`), with maximum length the longest such
+  insertion or deletion there. Existing values are never lowered or
+  removed. By default only sequences whose fatal alerts are all
+  `insertnp`/`deletinp` are used, since they would pass if those
+  alerts were exempted (`--allseqs` uses all sequences). A feature
+  with a legacy key is skipped; `convert` it first. `--out_idl` is not
+  needed for this mode.
+
+- **`compare`**: 
+  `vadr-propose-indel-exc.pl compare <out root> <dir A>[,<dir A2>...] <dir B>[,<dir B2>...]`
+  lists the sequences that change between PASS and FAIL from one set
+  of `v-annotate.pl` output directories to another, with their fatal
+  alerts (`<out root>.flips.tsv`).
+
+With `--cv <n>`, `convert` and `extend` also write `<n>` held-out
+folds: `<out root>.cv<i>.minfo`, derived without the sequences of
+fold `<i>`, and `<out root>.cv<i>.list`, the sequences of fold `<i>`.
+Running `v-annotate.pl` with each fold's model info file on that
+fold's sequences and using `compare` against the original run
+estimates how many new sequences will still fail with an `insertnp`
+or `deletinp` alert. Use the full runs for this, not the counts in
+the `.exc.tsv` report: protein-based lines in the `.idl` file are
+given for every stored `blastx` hit, but only the selected hit's
+alerts are reported.
 
 ---
 

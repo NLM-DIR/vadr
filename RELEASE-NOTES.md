@@ -83,6 +83,21 @@
     `misc_not_failure` could make the alert non-fatal for at least one
     feature in the model library, is no longer used. The `.alc` file
     format is described [here](documentation/formats.md#alc).
+  * `v-annotate.pl`: new `--out_idl` option creates a per-indel tabular
+    output file (`.idl`) with one line for each insertion and deletion
+    in a CDS longer than the default maximum length, whether or not an
+    exception exempts it, with its approximate and exact model
+    positions and the maximum length that applied. The format is
+    described [here](documentation/formats.md#idl).
+  * new miniscript `miniscripts/vadr-propose-indel-exc.pl` proposes
+    `insertn_mdl_exc`/`deletin_mdl_exc` values from `v-annotate.pl`
+    output on trusted sequences: `convert` re-derives legacy
+    `insertn_exc`/`deletin_exc` values at exact model positions (from
+    `--out_idl` output), `extend` adds values for the `insertnp`/
+    `deletinp` alerts reported for trusted sequences, and `compare`
+    lists PASS/FAIL changes between two runs, for checking the held-out
+    folds written with `--cv`. See the
+    [exceptions section of `annotate.md`](documentation/annotate.md#exceptionspropose).
 
 ---
 ### VADR 1.7.3 release (September 2026)
