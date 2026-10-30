@@ -936,6 +936,7 @@ with format described [here](formats.md#rpn).
 | `--r_fetchr`        | for `-r`, fetch features to fasta files from sequences *with Ns replaced*, instead of original input sequences *without Ns replaced* |
 | `--r_cdsmpr`        | for `-r`, identify CDS- and mat_peptide-specific alerts using subsequences fetched from sequences *with Ns replaced*, instead of original input sequences *without Ns replaced* |
 | `--r_pvorig`        | for `-r`, use original input sequences *without Ns replaced* in protein validation stage, instead of sequences *with Ns replaced* |
+| `--r_nnmask`        | for `-r`, exclude positions in which Ns were replaced from nearest-neighbor classification (models with a `:FILE:` group/subgroup alignment), so the classification uses only the nucleotides present in the input sequence; if fewer than `--nn_regionlen` such positions remain in the classification region, the full sequence is used instead |
 | `--r_prof`          | for `-r`, use slower profile methods, not blastn, to identify Ns to replaced |
 | `--r_list`          | for `-r`, only use models listed in file `<s>` for N replacement stage |
 | `--r_only <s>`      | for `-r`, only use model named `<s>` for N replacement stage |
