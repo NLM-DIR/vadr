@@ -1,0 +1,49 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+# Tests --r_nnmask, which excludes positions in which Ns were replaced
+# (-r) from nearest-neighbor (nn) classification. The toy-nnmask model's
+# classification alignment has three sequences (subgroups A, B and C)
+# that differ only in the classification region (61..140). The -r blastn
+# db (models/toy-nnmask.rpn.fa) contains only the subgroup B sequence,
+# so it is the source of all replaced nts. All three test sequences are
+# identical to the subgroup A sequence apart from Ns:
+#  seq1: Ns at 61..100, classified as B without --r_nnmask and as A with it
+#  seq2: Ns at 61..140 (the entire region), classified as B (1.0000 
+#        identity) without --r_nnmask; with it, fewer than --nn_regionlen
+#        unreplaced positions remain in the region, so the full sequence 
+#        is used (A and B tie, nnindfcl and nnalrgcl)
+#  seq3: no Ns, classified as A with and without --r_nnmask
+#
+# -r without --r_nnmask
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -r --r_file $VADRSCRIPTSDIR/testfiles/models/toy-nnmask.rpn.fa --mdir $VADRSCRIPTSDIR/testfiles/models --mkey toy-nnmask $VADRSCRIPTSDIR/testfiles/toy-nnmask-seqs.fa va-toy-nnmask-r > va-toy-nnmask-r.out
+desc: annotate-toy-nnmask-r
+out: va-toy-nnmask-r/va-toy-nnmask-r.vadr.sqc
+out: va-toy-nnmask-r/va-toy-nnmask-r.vadr.scn
+out: va-toy-nnmask-r/va-toy-nnmask-r.vadr.rpn
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r/va-toy-nnmask-r.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r/va-toy-nnmask-r.vadr.scn
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r/va-toy-nnmask-r.vadr.rpn
+rmdir: va-toy-nnmask-r
+#
+# -r with --r_nnmask
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -r --r_nnmask --r_file $VADRSCRIPTSDIR/testfiles/models/toy-nnmask.rpn.fa --mdir $VADRSCRIPTSDIR/testfiles/models --mkey toy-nnmask $VADRSCRIPTSDIR/testfiles/toy-nnmask-seqs.fa va-toy-nnmask-r-nnmask > va-toy-nnmask-r-nnmask.out
+desc: annotate-toy-nnmask-r-nnmask
+out: va-toy-nnmask-r-nnmask/va-toy-nnmask-r-nnmask.vadr.sqc
+out: va-toy-nnmask-r-nnmask/va-toy-nnmask-r-nnmask.vadr.scn
+out: va-toy-nnmask-r-nnmask/va-toy-nnmask-r-nnmask.vadr.rpn
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r-nnmask/va-toy-nnmask-r-nnmask.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r-nnmask/va-toy-nnmask-r-nnmask.vadr.scn
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r-nnmask/va-toy-nnmask-r-nnmask.vadr.rpn
+rmdir: va-toy-nnmask-r-nnmask

@@ -1,0 +1,2 @@
+MODEL toy-nnmask group:":FILE:toy-nnmask.stk" subgroup:":FILE:toy-nnmask.stk" cmfile:"toy-nnmask.cm" length:"200"
+FEATURE toy-nnmask type:"gene" coords:"1..200:+" gene:"TEST"
