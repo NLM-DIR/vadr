@@ -400,6 +400,7 @@ opt_Add("--r_diffminfract",  "real",   0.75,   $g,  "-r","--r_diffno","min allow
 opt_Add("--r_fetchr",     "boolean",      0,   $g,    "-r", undef,    "fetch features for output fastas from seqs w/Ns replaced, not originals",      "fetch features for output fastas from seqs w/Ns replaced, not originals", \%opt_HH, \@opt_order_A);
 opt_Add("--r_cdsmpr",     "boolean",      0,   $g,    "-r", undef,    "detect CDS and MP alerts in sequences w/Ns replaced, not originals",           "detect CDS and MP alerts in sequences w/Ns replaced, not originals",      \%opt_HH, \@opt_order_A);
 opt_Add("--r_pvorig",     "boolean",      0,   $g,    "-r", undef,    "use original sequences for protein validation step, not replaced seqs",        "use original sequences for protein validation, not replaced seqs",        \%opt_HH, \@opt_order_A);
+opt_Add("--r_nnmask",     "boolean",      0,   $g,    "-r", undef,    "exclude positions with replaced Ns from nearest-neighbor classification",       "exclude positions with replaced Ns from nearest-neighbor classification", \%opt_HH, \@opt_order_A);
 opt_Add("--r_prof",       "boolean",      0,   $g,    "-r", undef,    "use slower profile methods, not blastn, to identify Ns to replace",            "use slower profile methods, not blastn, to identify Ns to replace",       \%opt_HH, \@opt_order_A);
 opt_Add("--r_list",       "string",   undef,   $g,    "-r", undef,    "with -r, only use models listed in file <s> for N replacement stage",          "with -r, only use models listed in file <s> for N replacement stage",     \%opt_HH, \@opt_order_A);
 opt_Add("--r_only",       "string",   undef,   $g,    "-r","--r_list","with -r, only use model named <s> for N replacement stage",                    "with -r, only use model named <s> for N replacement stage",               \%opt_HH, \@opt_order_A);
@@ -632,6 +633,7 @@ my $options_okay =
                 'r_fetchr'         => \$GetOptions_H{"--r_fetchr"},
                 'r_cdsmpr'         => \$GetOptions_H{"--r_cdsmpr"},
                 'r_pvorig'         => \$GetOptions_H{"--r_pvorig"},
+                'r_nnmask'         => \$GetOptions_H{"--r_nnmask"},
                 'r_prof'           => \$GetOptions_H{"--r_prof"},
                 'r_list=s'         => \$GetOptions_H{"--r_list"},
                 'r_only=s'         => \$GetOptions_H{"--r_only"},
@@ -1729,6 +1731,8 @@ my %stg_results_HHH = (); # key 1: sequence name,
 # -r related output for .rpn file
 my %rpn_output_HH = (); # 2D key with info to output related to the  option
                         # key1: sequence name, key2 various stats (see output_tabular())
+my %rpn_pos_HH = ();    # with --r_nnmask: 2D key, key1: sequence name, key2: position (1..seqlen)
+                        # in which an N was replaced, value: 1
 my $rpn_fa_file = undef;
 if($do_replace_ns) { 
   my %seq_replaced_H = ();
@@ -1788,6 +1792,12 @@ if($do_replace_ns) {
 
     # replace main $fa_file we will work with subsequently
     $rpn_sqfile = Bio::Easel::SqFile->new({ fileLocation => $rpn_fa_file });
+
+    # with --r_nnmask, record the positions in which Ns were replaced, so 
+    # they can be excluded from nearest-neighbor classification
+    if(opt_Get("--r_nnmask", \%opt_HH)) { 
+      get_replaced_positions(\$in_sqfile, \$rpn_sqfile, \%seq_replaced_H, \%rpn_pos_HH, $FH_HR);
+    }
   }
   ofile_OutputProgressComplete($start_secs, undef, $FH_HR->{"log"}, *STDOUT);
 } # end of 'if($do_replace_ns)'
@@ -2199,7 +2209,9 @@ for($mdl_idx = 0; $mdl_idx < $nmdl; $mdl_idx++) {
       for(my $a = 0; $a < scalar(@{$stk_file_HA{$mdl_name}}); $a++) { 
 	      if(-s $stk_file_HA{$mdl_name}[$a]) { # skip empty alignments, which may exist if all seqs were not alignable
           classify_based_on_alignment(\%{$mdl_info_AH[$mdl_idx]}, $mdl_msa, $stk_file_HA{$mdl_name}[$a], \%{$mdl_alninfo_AHH[$mdl_idx]}, 
-                                      \%cls_output_HH, \%mdl_nn_cls_ct_HH, \%alt_seq_instances_HH, \%alt_info_HH, \@to_remove_A, \%opt_HH, $FH_HR);
+                                      \%cls_output_HH, \%mdl_nn_cls_ct_HH, \%alt_seq_instances_HH, \%alt_info_HH, 
+                                      (opt_Get("--r_nnmask", \%opt_HH)) ? \%rpn_pos_HH : undef,
+                                      \@to_remove_A, \%opt_HH, $FH_HR);
         }
       }
     }
@@ -18379,6 +18391,60 @@ sub helper_nucleotide_ambiguity_distribution {
 }
 
 #################################################################
+# Subroutine:  get_replaced_positions()
+# Incept:      EPN, Fri Oct 30 2026 (w/Claude)
+#
+# Purpose:     For each sequence in which Ns were replaced (-r), 
+#              determine the positions that were N in the original
+#              sequence and are not N in the replaced sequence. 
+#              Used with --r_nnmask to exclude those positions from 
+#              nearest-neighbor classification (brief 26_0602-054).
+#
+# Arguments: 
+#  $in_sqfile_R:     REF to Bio::Easel::SqFile object for original sequences
+#  $rpn_sqfile_R:    REF to Bio::Easel::SqFile object for sequences with Ns replaced
+#  $seq_replaced_HR: REF to hash, key is name of a sequence with >= 1 N replaced
+#  $rpn_pos_HHR:     REF to 2D hash, FILLED HERE, key1: sequence name, 
+#                    key2: position (1..seqlen) of a replaced N, value: 1
+#  $FH_HR:           REF to hash of file handles
+#
+# Returns:  void
+#
+# Dies:     if an original and replaced sequence differ in length,
+#           or at a position that was not an N in the original
+#################################################################
+sub get_replaced_positions {
+  my $sub_name = "get_replaced_positions";
+  my $nargs_exp = 5;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($in_sqfile_R, $rpn_sqfile_R, $seq_replaced_HR, $rpn_pos_HHR, $FH_HR) = (@_);
+
+  foreach my $seq_name (sort keys %{$seq_replaced_HR}) { 
+    my $orig_sqstring = $$in_sqfile_R->fetch_seq_to_sqstring($seq_name);
+    my $rpn_sqstring  = $$rpn_sqfile_R->fetch_seq_to_sqstring($seq_name);
+    $orig_sqstring =~ tr/a-z/A-Z/;
+    $rpn_sqstring  =~ tr/a-z/A-Z/;
+    my $seq_len = length($orig_sqstring);
+    if($seq_len != length($rpn_sqstring)) { 
+      ofile_FAIL("ERROR in $sub_name, original and N-replaced sequence $seq_name differ in length", 1, $FH_HR);
+    }
+    %{$rpn_pos_HHR->{$seq_name}} = ();
+    for(my $i = 0; $i < $seq_len; $i++) { 
+      my $orig_char = substr($orig_sqstring, $i, 1);
+      my $rpn_char  = substr($rpn_sqstring,  $i, 1);
+      if($orig_char ne $rpn_char) { 
+        if($orig_char ne "N") { 
+          ofile_FAIL(sprintf("ERROR in $sub_name, original and N-replaced sequence $seq_name differ at non-N position %d", ($i+1)), 1, $FH_HR);
+        }
+        $rpn_pos_HHR->{$seq_name}{($i+1)} = 1;
+      }
+    }
+  }
+  return;
+}
+
+#################################################################
 # Subroutine:  classify_based_on_alignment()
 # Incept:      EPN, Wed Mar 25 09:15:07 2020
 #
@@ -18396,6 +18462,9 @@ sub helper_nucleotide_ambiguity_distribution {
 #  $mdl_nn_cls_ct_HHR:      REF to 2D hash of counts of seqs assigned to each model/group/subgroup trio
 #  $alt_seq_instances_HHR:  REF to 2D hash with per-sequence alerts, added to here
 #  $alt_info_HHR:           REF to the alert info hash of arrays, PRE-FILLED
+#  $rpn_pos_HHR:            REF to 2D hash of positions in which Ns were replaced (key1: seq name,
+#                           key2: position), these are excluded from the classification;
+#                           undef unless --r_nnmask
 #  $to_remove_AR:           REF to array of alignment files to remove
 #  $opt_HHR:                ref to hash of file handles
 #  $FH_HR:                  ref to hash of file handles
@@ -18405,11 +18474,11 @@ sub helper_nucleotide_ambiguity_distribution {
 #################################################################
 sub classify_based_on_alignment {
   my $sub_name = "classify_based_on_alignment";
-  my $nargs_exp = 11;
+  my $nargs_exp = 12;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
   my ($mdl_info_HR, $mdl_msa, $in_stk_file, $mdl_alninfo_HHR, $cls_output_HHR, $mdl_nn_cls_ct_HHR, 
-      $alt_seq_instances_HHR, $alt_info_HHR, $to_remove_AR, $opt_HHR, $FH_HR) = (@_);
+      $alt_seq_instances_HHR, $alt_info_HHR, $rpn_pos_HHR, $to_remove_AR, $opt_HHR, $FH_HR) = (@_);
 
   # related to nearest-neighbor classification
   my $small_value    = 0.00000001; # for handling precision issues
@@ -18565,6 +18634,20 @@ sub classify_based_on_alignment {
     my $seqname = $seq_msa->get_sqname($sidx);
     my $seq_sqstring = $seq_msa->get_sqstring_aligned($sidx);
     $seq_sqstring =~ tr/a-z/A-Z/; # shouldn't be necessary, but just to be safe
+
+    # with --r_nnmask, replace each position in which an N was replaced with '*'
+    # so it is not counted as a residue below (and so does not contribute to 
+    # the identity with any model sequence), but is still part of the sequence 
+    # span (it is not a gap)
+    my $do_mask = ((defined $rpn_pos_HHR) && (defined $rpn_pos_HHR->{$seqname})) ? 1 : 0;
+    if($do_mask) { 
+      for(my $rfpos = 0; $rfpos < length($seq_sqstring); $rfpos++) { 
+        my $uapos = $rf_to_uapos_AA[$sidx][$rfpos];
+        if((defined $uapos) && ($uapos > 0) && (defined $rpn_pos_HHR->{$seqname}{$uapos})) { 
+          substr($seq_sqstring, $rfpos, 1, "*");
+        }
+      }
+    }
     
     # find first and final rf positions with a nongap, if none, these will stay 1
     my $seq_rf_start = 1;
@@ -18602,6 +18685,17 @@ sub classify_based_on_alignment {
       $apos_stop  = $seq_rf_stop;
       $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
       $using_defined_nn_region = 0; # if we were trying to, not enough sequence was within the region
+    }
+    if(($do_mask) && ($using_defined_nn_region)) { 
+      # with --r_nnmask, also revert to full sequence if the region has less than
+      # $min_nnregion_length positions that were not replaced
+      my $nres = ($possibly_subseq_sqstring =~ tr/A-Z//);
+      if($nres < $min_nnregion_length) { 
+        $apos_start = $seq_rf_start;
+        $apos_stop  = $seq_rf_stop;
+        $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
+        $using_defined_nn_region = 0;
+      }
     }
     my @seq_sqstring_A = split("", $possibly_subseq_sqstring);
     my $alen_p = ($apos_stop) - ($apos_start) + 1;
