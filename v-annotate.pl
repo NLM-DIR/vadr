@@ -2366,6 +2366,16 @@ for($mdl_idx = 0; $mdl_idx < $nmdl; $mdl_idx++) {
   }
 }
 
+# with --out_idl, move the per-indel lines stored for the .idl file out of
+# %ftr_results_HHAH before features that are not picked from
+# alternative_ftr_sets are removed below, so that lines for every
+# feature are output, and %ftr_results_HHAH is as it would be without
+# --out_idl (brief 26_0602-055)
+my %idl_HHHA = (); # 1st dim: model name, 2nd dim: sequence name, 3rd dim: feature index, value: array of .idl lines
+if(opt_Get("--out_idl", \%opt_HH)) { 
+  helper_idl_rows_move(\@mdl_info_AH, \%ftr_results_HHAH, \%idl_HHHA);
+}
+
 ##############################################################
 # Potentially remove annotation and alerts for some features
 # if we have 'alternative_ftr_set' information in the mdl info
@@ -2464,7 +2474,7 @@ my ($zero_cls, $zero_alt) = output_tabular(\@mdl_info_AH, \%mdl_cls_ct_H, \%mdl_
                                            ((opt_IsUsed("--msub", \%opt_HH)) ? \%mdl_sub_H : undef),
                                            \%opt_HH, \%ofile_info_HH);
 if((! $do_clsonly) && (opt_Get("--out_idl", \%opt_HH))) { 
-  output_idl_file(\@mdl_info_AH, \@seq_name_A, \%ftr_info_HAH, \%ftr_results_HHAH, \%opt_HH, \%ofile_info_HH);
+  output_idl_file(\@mdl_info_AH, \@seq_name_A, \%ftr_info_HAH, \%idl_HHHA, \%opt_HH, \%ofile_info_HH);
 }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -13424,15 +13434,16 @@ sub helper_tabular_sgm_results_trunc_string {
 #             whether or not a position-specific exception exempts
 #             it. Protein-based lines are reported for every stored
 #             blastx hit of a CDS, not only the hit selected for
-#             output. Lines were stored in
-#             $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx]{"idl_AA"}
-#             by helper_idl_row_add() (brief 26_0602-055).
+#             output, and for every feature of an alternative_ftr_set,
+#             not only the picked one. Lines were stored by
+#             helper_idl_row_add() and moved to %{$idl_HHHAR} by
+#             helper_idl_rows_move() (brief 26_0602-055).
 #
 # Arguments:
 #  $mdl_info_AHR:       REF to array of hashes with model info
 #  $seq_name_AR:        REF to array of sequence names
 #  $ftr_info_HAHR:      REF to hash of arrays with information on the features
-#  $ftr_results_HHAHR:  REF to feature results HHAH
+#  $idl_HHHAR:          REF to .idl lines: model name, sequence name, feature index
 #  $opt_HHR:            REF to 2D hash of option values
 #  $ofile_info_HHR:     REF to the 2D hash of output file information
 #
@@ -13444,7 +13455,7 @@ sub output_idl_file {
   my $nargs_exp = 6;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($mdl_info_AHR, $seq_name_AR, $ftr_info_HAHR, $ftr_results_HHAHR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($mdl_info_AHR, $seq_name_AR, $ftr_info_HAHR, $idl_HHHAR, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
   my $sidx_offset = opt_Get("--sidx", $opt_HHR) - 1;
@@ -13463,13 +13474,12 @@ sub output_idl_file {
     my $seq_nidl = 0;
     for(my $mdl_idx = 0; $mdl_idx < $nmdl; $mdl_idx++) { 
       my $mdl_name = $mdl_info_AHR->[$mdl_idx]{"name"};
-      if((exists $ftr_results_HHAHR->{$mdl_name}) && (exists $ftr_results_HHAHR->{$mdl_name}{$seq_name})) { 
+      if((exists $idl_HHHAR->{$mdl_name}) && (exists $idl_HHHAR->{$mdl_name}{$seq_name})) { 
         my $ftr_info_AHR = \@{$ftr_info_HAHR->{$mdl_name}}; # for convenience
         my $nftr = scalar(@{$ftr_info_AHR});
         for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
-          if((defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx]) && 
-             (defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx]{"idl_AA"})) { 
-            foreach my $idl_AR (@{$ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx]{"idl_AA"}}) { 
+          if(defined $idl_HHHAR->{$mdl_name}{$seq_name}{$ftr_idx}) { 
+            foreach my $idl_AR (@{$idl_HHHAR->{$mdl_name}{$seq_name}{$ftr_idx}}) { 
               my ($alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key) = @{$idl_AR};
               $seq_nidl++;
               push(@data_idl_AA, [$seq_idx2print . "." . $seq_nidl, $seq_name, $mdl_name, 
@@ -13526,6 +13536,49 @@ sub helper_idl_row_add {
   my $pv_hit = $ftr_results_prefix;
   $pv_hit =~ s/\_$//; # "p_" -> "p"
   push(@{$ftr_results_HAHR->{$seq_name}[$ftr_idx]{"idl_AA"}}, [$alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key]);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  helper_idl_rows_move
+# Incept:      EPN, Fri Oct 30 2026 (w/Claude)
+#
+# Purpose:    Move the .idl lines (--out_idl) stored by
+#             helper_idl_row_add() in the "idl_AA" key of each
+#             feature's results to %{$idl_HHHAR}, deleting the key.
+#             Called before features not picked from
+#             alternative_ftr_sets are removed (brief 26_0602-055).
+#
+# Arguments:
+#  $mdl_info_AHR:       REF to array of hashes with model info
+#  $ftr_results_HHAHR:  REF to feature results HHAH, "idl_AA" keys REMOVED HERE
+#  $idl_HHHAR:          REF to .idl lines: model name, sequence name, feature index, FILLED HERE
+#
+# Returns:    void
+#
+#################################################################
+sub helper_idl_rows_move { 
+  my $sub_name = "helper_idl_rows_move";
+  my $nargs_exp = 3;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($mdl_info_AHR, $ftr_results_HHAHR, $idl_HHHAR) = @_;
+
+  foreach my $mdl_info_HR (@{$mdl_info_AHR}) { 
+    my $mdl_name = $mdl_info_HR->{"name"};
+    if(! exists $ftr_results_HHAHR->{$mdl_name}) { next; }
+    foreach my $seq_name (keys %{$ftr_results_HHAHR->{$mdl_name}}) { 
+      my $nftr = scalar(@{$ftr_results_HHAHR->{$mdl_name}{$seq_name}});
+      for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
+        my $ftr_results_HR = $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx];
+        if((defined $ftr_results_HR) && (defined $ftr_results_HR->{"idl_AA"})) { 
+          $idl_HHHAR->{$mdl_name}{$seq_name}{$ftr_idx} = $ftr_results_HR->{"idl_AA"};
+          delete $ftr_results_HR->{"idl_AA"};
+        }
+      }
+    }
+  }
 
   return;
 }
