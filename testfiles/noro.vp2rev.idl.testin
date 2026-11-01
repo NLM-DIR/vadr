@@ -25,6 +25,14 @@ out: va-noro.vp2rev.idl.3.minfo
 out: va-noro.vp2rev.idl.3.exc.tsv
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.3.minfo
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.3.exc.tsv
+#
+# 10: as 3, using all .idl lines (also non-selected blastx hits) and keeping unused values
+command: perl $VADRSCRIPTSDIR/miniscripts/vadr-propose-indel-exc.pl --allrows --keep_unused convert $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.exc.minfo va-noro.vp2rev.idl.10 va-noro.vp2rev.idl.1 > va-noro.vp2rev.idl.10.out
+desc: propose-noro-vp2rev-idl-10-convert-allrows
+out: va-noro.vp2rev.idl.10.minfo
+out: va-noro.vp2rev.idl.10.exc.tsv
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.10.minfo
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.10.exc.tsv
 rmdir: va-noro.vp2rev.idl.1
 #
 # 4: --out_idl, no exceptions: every indel is reported

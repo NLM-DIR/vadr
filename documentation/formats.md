@@ -858,7 +858,7 @@ header section.
 ### Explanation of `.idl`-suffixed output files<a name="idl"></a>
 
 `.idl` files are only created if `v-annotate.pl` is run with `--out_idl`.
-`.idl` data lines have 14 fields, the names of which appear in the first two
+`.idl` data lines have 16 fields, the names of which appear in the first two
 comment lines in each file. There is one data line for each insertion
 or deletion in a CDS that is longer than the default maximum length
 for its alert (`--xmaxins`, `--xmaxdel`, `--nmaxins`, `--nmaxdel`,
@@ -868,7 +868,11 @@ exception](annotate.md#exceptions) exempts it. Nucleotide-based
 protein-based (*insertnp*, *deletinp*) lines come from the `blastx`
 protein validation and are given for every stored `blastx` hit of the
 CDS (field 8), not only for the hit whose alerts are reported, so
-there may be several lines for the same insertion or deletion. The
+there may be several lines for the same insertion or deletion. Lines
+are also given for every feature of an `alternative_ftr_set`, not only
+the one picked. Fields 15 and 16 say whether a line reaches the output
+(the feature was picked and, for *insertnp*/*deletinp*, the hit was
+selected). The
 file is the input for the `convert` mode of
 `vadr-propose-indel-exc.pl` ([see here](annotate.md#exceptionspropose)).
 [Example file](../testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.1.vadr.idl).
@@ -888,7 +892,9 @@ file is the input for the `convert` mode of
 |  11 | `exact mdlpos`        | exact (alignment-derived) model position that an `insertn_mdl_exc`/`deletin_mdl_exc` value is matched on, and that a legacy value is matched on for *insertnn*/*deletinn*: the model position after which an insertion occurs, or the first deleted model position; `-` if the sequence was not aligned |
 |  12 | `max len`             | maximum allowed length that applied: the default, or the exception value |
 |  13 | `exc key`             | exception key that set `max len`, `-` if the default applied |
-|  14 | `alert if_rep`        | `yes` if the alert is raised for this insertion or deletion (`indel len` > `max len`), `no` if not; a raised protein-based alert is only reported if its `blastx` hit is the one selected for the CDS |
+|  14 | `alert if_rep`        | `yes` if the alert is raised for this insertion or deletion (`indel len` > `max len`), `no` if not; a raised alert is only reported if fields 15 and 16 are not `no` |
+|  15 | `ftr picked`          | `yes` if the feature is annotated in the output, `no` if it is in an `alternative_ftr_set` and another feature of the set was picked for this sequence |
+|  16 | `pv sel`              | for *insertnp*/*deletinp*, `yes` if `pv hit` is the `blastx` hit selected for the CDS (the one whose alerts are reported), `no` if not; `-` for *insertnn*/*deletinn* |
 
 
 `.scn` data lines have 19 fields, the names of which appear in the first two

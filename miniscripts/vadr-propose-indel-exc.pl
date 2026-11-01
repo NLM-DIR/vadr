@@ -12,15 +12,19 @@
 #           values (matched on the exact, alignment-derived model
 #           position). Needs v-annotate.pl --out_idl output on
 #           sequences annotated with the input model info file.
-#           For each feature with a legacy value:
+#           Only .idl lines that reach the output are used: those of
+#           the feature picked from an alternative_ftr_set and, for
+#           insertnp/deletinp, of the selected blastx hit (--allrows
+#           uses all lines). For each feature with a legacy value:
 #            - a point value at each exact position of a protein-based
 #              indel that a legacy value exempted, with that legacy
 #              value's maximum;
 #            - every legacy segment that exempted a nucleotide-based
 #              (insertnn/deletinn) indel, kept as is (these alerts
 #              always matched on the exact position);
-#            - every legacy segment that exempted nothing in the input,
-#              kept as is (unless --drop_unused).
+#            - with --keep_unused, every legacy segment that exempted
+#              nothing in the lines used, kept as is (by default these
+#              are dropped).
 #           Where two of these set the same position, the larger
 #           maximum is used.
 #
@@ -59,7 +63,9 @@ $usage .= "                          <out root>.exc.tsv (one line per value: ori
 $usage .= "  Output (compare):        <out root>.flips.tsv\n\n";
 $usage .= "  OPTIONS:\n";
 $usage .= "    --seqlist <f>   : only use sequences listed in <f> (the trusted set; one name per line)\n";
-$usage .= "    --drop_unused   : convert: drop legacy values that exempted nothing in the input\n";
+$usage .= "    --allrows       : convert: use all .idl lines, including those of alternative features that were\n";
+$usage .= "                      not picked and of blastx hits that were not selected\n";
+$usage .= "    --keep_unused   : convert: keep legacy values that exempted nothing (at their legacy positions)\n";
 $usage .= "    --allseqs       : extend: also use sequences with fatal alerts other than insertnp/deletinp\n";
 $usage .= "    --xmaxins <n>   : default maximum insertnp length used by v-annotate.pl [27]\n";
 $usage .= "    --xmaxdel <n>   : default maximum deletinp length used by v-annotate.pl [27]\n";
@@ -71,14 +77,16 @@ $usage .= "    --seed <n>      : with --cv, seed for assigning sequences to fold
 $usage .= "    --folds <f>     : with --cv, read fold assignments from <f> (<seqname> <fold> per line) instead\n";
 
 my $opt_seqlist     = undef;
-my $opt_drop_unused = 0;
+my $opt_allrows     = 0;
+my $opt_keep_unused = 0;
 my $opt_allseqs     = 0;
 my %dflt_H          = ("insertnp" => 27, "deletinp" => 27, "insertnn" => 27, "deletinn" => 27);
 my $opt_cv          = undef;
 my $opt_seed        = 181;
 my $opt_folds       = undef;
 &GetOptions("seqlist=s"   => \$opt_seqlist,
-            "drop_unused" => \$opt_drop_unused,
+            "allrows"     => \$opt_allrows,
+            "keep_unused" => \$opt_keep_unused,
             "allseqs"     => \$opt_allseqs,
             "xmaxins=i"   => \$dflt_H{"insertnp"},
             "xmaxdel=i"   => \$dflt_H{"deletinp"},
@@ -236,8 +244,10 @@ sub read_runs {
       while(my $line = <$fh>) {
         if($line =~ /^\#/ || $line !~ /\S/) { next; }
         my @el_A = split(/\s+/, $line);
-        if(scalar(@el_A) != 14) { die "ERROR, unable to parse line in $idl_file (expected 14 fields):\n$line"; }
-        my (undef, $seq, $mdl, undef, undef, $ftr_idx, $code, $hit, $len, $apos, $epos, $max, $key, $if_rep) = @el_A;
+        if(scalar(@el_A) != 16) { die "ERROR, unable to parse line in $idl_file (expected 16 fields):\n$line"; }
+        my (undef, $seq, $mdl, undef, undef, $ftr_idx, $code, $hit, $len, $apos, $epos, $max, $key, $if_rep, $ftr_picked, $hit_sel) = @el_A;
+        # by default only use lines that reach the output: picked feature and, for insertnp/deletinp, selected hit
+        if((! $opt_allrows) && (($ftr_picked ne "yes") || ($hit_sel eq "no"))) { next; }
         push(@{$run_HR->{"idl_A"}}, [$seq, $mdl, $ftr_idx-1, $code, $hit, $len, $apos, $epos, $max, $key, $if_rep]);
       }
       close($fh);
@@ -348,8 +358,8 @@ sub derive {
           my $origin = undef;
           if(defined $ntkeep_H{"$mf:$c:$sgm"})  { $origin = "nt_kept"; $counts_H{"legacy segments kept for insertnn/deletinn"}++; }
           elsif(! defined $used_H{"$mf:$c:$sgm"}) {
-            $counts_H{"legacy segments unused in input"}++;
-            if(! $opt_drop_unused) { $origin = "unused_kept"; }
+            $counts_H{"legacy segments unused in lines used (" . (($opt_keep_unused) ? "kept" : "dropped") . ")"}++;
+            if($opt_keep_unused) { $origin = "unused_kept"; }
           }
           if(defined $origin) {
             my %posn_H = ();

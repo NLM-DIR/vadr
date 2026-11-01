@@ -1665,13 +1665,17 @@ the report before using the new file. It has three modes:
   `--out_idl` and the current model info file on the trusted
   sequences, then 
   `vadr-propose-indel-exc.pl convert <in.minfo> <out root> <v-annotate output dir(s)>`.
-  For each feature with a legacy value, the new value has a point
-  at each exact model position of an `insertnp`/`deletinp` insertion
-  or deletion that a legacy value exempted, with that legacy value's
-  maximum length. Legacy ranges that exempted an `insertnn`/`deletinn`
-  alert (which always matched on the exact position) are kept as
-  they are, and so are legacy ranges that exempted nothing in the
-  input (use `--drop_unused` to remove them).
+  It uses the `.idl` lines that reach the output: those of the
+  feature picked from an `alternative_ftr_set`, and for
+  `insertnp`/`deletinp` those of the selected `blastx` hit
+  (`--allrows` uses all lines). For each feature with a legacy value,
+  the new value has a point at each exact model position of an
+  `insertnp`/`deletinp` insertion or deletion that a legacy value
+  exempted, with that legacy value's maximum length. Legacy ranges
+  that exempted an `insertnn`/`deletinn` alert (which always matched
+  on the exact position) are kept as they are. Legacy ranges that
+  exempted nothing are dropped (`--keep_unused` keeps them, at their
+  legacy positions).
 
 - **`extend`**: add values for the fatal `insertnp`/`deletinp` alerts
   reported for the trusted sequences: a point at each alert's model

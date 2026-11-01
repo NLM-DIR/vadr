@@ -2474,7 +2474,7 @@ my ($zero_cls, $zero_alt) = output_tabular(\@mdl_info_AH, \%mdl_cls_ct_H, \%mdl_
                                            ((opt_IsUsed("--msub", \%opt_HH)) ? \%mdl_sub_H : undef),
                                            \%opt_HH, \%ofile_info_HH);
 if((! $do_clsonly) && (opt_Get("--out_idl", \%opt_HH))) { 
-  output_idl_file(\@mdl_info_AH, \@seq_name_A, \%ftr_info_HAH, \%idl_HHHA, \%opt_HH, \%ofile_info_HH);
+  output_idl_file(\@mdl_info_AH, \@seq_name_A, \%ftr_info_HAH, \%ftr_results_HHAH, \%idl_HHHA, \%opt_HH, \%ofile_info_HH);
 }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -9201,6 +9201,10 @@ sub add_protein_validation_alerts {
 
             # pick the stored hit whose alerts we report (the one with the fewest fatal alerts)
             my $winning_prefix = helper_protein_validation_select_hit($ftr_results_HR, \%alt_str_HH, \@ftr_results_prefix_A, $ftr_info_AHR, $alt_info_HHR, $ftr_idx, $FH_HR);
+            # mark which stored .idl lines are from the selected hit (brief 26_0602-055)
+            if(($do_idl) && (defined $ftr_results_HR->{"idl_AA"})) { 
+              helper_idl_rows_mark_selected_hit($ftr_results_HR->{"idl_AA"}, $winning_prefix);
+            }
             # if a hit other than p_ won, overwrite all p_ values in ftr_results_HR with its values (including ones
             # it does not have), so future subroutines use correct values
             if($winning_prefix ne "p_") { 
@@ -13435,7 +13439,9 @@ sub helper_tabular_sgm_results_trunc_string {
 #             it. Protein-based lines are reported for every stored
 #             blastx hit of a CDS, not only the hit selected for
 #             output, and for every feature of an alternative_ftr_set,
-#             not only the picked one. Lines were stored by
+#             not only the picked one; two final fields say whether
+#             the feature was picked and the hit selected. Lines were
+#             stored by
 #             helper_idl_row_add() and moved to %{$idl_HHHAR} by
 #             helper_idl_rows_move() (brief 26_0602-055).
 #
@@ -13443,6 +13449,8 @@ sub helper_tabular_sgm_results_trunc_string {
 #  $mdl_info_AHR:       REF to array of hashes with model info
 #  $seq_name_AR:        REF to array of sequence names
 #  $ftr_info_HAHR:      REF to hash of arrays with information on the features
+#  $ftr_results_HHAHR:  REF to feature results HHAH, after features not picked
+#                       from alternative_ftr_sets were removed
 #  $idl_HHHAR:          REF to .idl lines: model name, sequence name, feature index
 #  $opt_HHR:            REF to 2D hash of option values
 #  $ofile_info_HHR:     REF to the 2D hash of output file information
@@ -13452,10 +13460,10 @@ sub helper_tabular_sgm_results_trunc_string {
 #################################################################
 sub output_idl_file { 
   my $sub_name = "output_idl_file";
-  my $nargs_exp = 6;
+  my $nargs_exp = 7;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($mdl_info_AHR, $seq_name_AR, $ftr_info_HAHR, $idl_HHHAR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($mdl_info_AHR, $seq_name_AR, $ftr_info_HAHR, $ftr_results_HHAHR, $idl_HHHAR, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
   my $sidx_offset = opt_Get("--sidx", $opt_HHR) - 1;
@@ -13479,14 +13487,17 @@ sub output_idl_file {
         my $nftr = scalar(@{$ftr_info_AHR});
         for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
           if(defined $idl_HHHAR->{$mdl_name}{$seq_name}{$ftr_idx}) { 
+            # a feature not picked from its alternative_ftr_set has had its results removed
+            my $ftr_picked = ((defined $ftr_results_HHAHR->{$mdl_name}) && (defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}) && 
+                              (defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx])) ? "yes" : "no";
             foreach my $idl_AR (@{$idl_HHHAR->{$mdl_name}{$seq_name}{$ftr_idx}}) { 
-              my ($alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key) = @{$idl_AR};
+              my ($alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key, $hit_sel) = @{$idl_AR};
               $seq_nidl++;
               push(@data_idl_AA, [$seq_idx2print . "." . $seq_nidl, $seq_name, $mdl_name, 
                                   vdr_FeatureOutType($ftr_info_AHR, $ftr_idx), 
                                   helper_tabular_replace_spaces($ftr_info_AHR->[$ftr_idx]{"outname"}), 
                                   ($ftr_idx+1), $alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key, 
-                                  ($len > $max) ? "yes" : "no"]);
+                                  ($len > $max) ? "yes" : "no", $ftr_picked, $hit_sel]);
             }
           }
         }
@@ -13535,7 +13546,40 @@ sub helper_idl_row_add {
 
   my $pv_hit = $ftr_results_prefix;
   $pv_hit =~ s/\_$//; # "p_" -> "p"
-  push(@{$ftr_results_HAHR->{$seq_name}[$ftr_idx]{"idl_AA"}}, [$alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key]);
+  # final element: whether the line is from the selected blastx hit, set by
+  # helper_idl_rows_mark_selected_hit(), "-" for insertnn/deletinn
+  push(@{$ftr_results_HAHR->{$seq_name}[$ftr_idx]{"idl_AA"}}, [$alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key, ($pv_hit eq "-") ? "-" : "no"]);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  helper_idl_rows_mark_selected_hit
+# Incept:      EPN, Sun Nov  1 2026 (w/Claude)
+#
+# Purpose:    Mark the protein-based .idl lines (--out_idl) of one
+#             feature that are from the blastx hit selected by
+#             helper_protein_validation_select_hit() (brief 26_0602-055).
+#
+# Arguments:
+#  $idl_AAR:        REF to the feature's array of .idl lines, UPDATED HERE
+#  $winning_prefix: prefix of the selected hit ("p_", "pl_", "pc_" or "pcl_")
+#
+# Returns:    void
+#
+#################################################################
+sub helper_idl_rows_mark_selected_hit { 
+  my $sub_name = "helper_idl_rows_mark_selected_hit";
+  my $nargs_exp = 2;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($idl_AAR, $winning_prefix) = @_;
+
+  my $winning_hit = $winning_prefix;
+  $winning_hit =~ s/\_$//; # "p_" -> "p"
+  foreach my $idl_AR (@{$idl_AAR}) { 
+    if($idl_AR->[1] ne "-") { $idl_AR->[7] = ($idl_AR->[1] eq $winning_hit) ? "yes" : "no"; }
+  }
 
   return;
 }
@@ -17832,9 +17876,9 @@ sub helper_tabular_fill_header_and_justification_arrays {
     @{$clj_AR  }      = (1,     1,      1,       1,      1,      0,     1,       1,      1,          0,        0,     0,        0,     1);
   }
   elsif($ofile_key eq "idl") {
-    @{$head_AAR->[0]} = ("",    "seq",  "",      "ftr",  "ftr",  "ftr", "alert", "pv",  "indel", "approx", "exact",  "max", "exc", "alert");
-    @{$head_AAR->[1]} = ("idx", "name", "model", "type", "name", "idx", "code",  "hit", "len",   "mdlpos", "mdlpos", "len", "key", "if_rep");
-    @{$clj_AR}        = (1,     1,      1,       1,      1,      0,     1,       1,     0,       0,        0,        0,     1,     1);
+    @{$head_AAR->[0]} = ("",    "seq",  "",      "ftr",  "ftr",  "ftr", "alert", "pv",  "indel", "approx", "exact",  "max", "exc", "alert",  "ftr",    "pv");
+    @{$head_AAR->[1]} = ("idx", "name", "model", "type", "name", "idx", "code",  "hit", "len",   "mdlpos", "mdlpos", "len", "key", "if_rep", "picked", "sel");
+    @{$clj_AR}        = (1,     1,      1,       1,      1,      0,     1,       1,     0,       0,        0,        0,     1,     1,        1,        1);
   }
   elsif($ofile_key eq "alc") {
     @{$head_AAR->[0]} = ("",    "alert",  "causes",  "short",       "per",  "num",   "num",  "non-",  "seqs", "seqs",  "long");

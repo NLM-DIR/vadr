@@ -1,28 +1,28 @@
-#     seq                               ftr   ftr   ftr  alert     pv   indel  approx   exact  max  exc          alert 
-#idx  name           model              type  name  idx  code      hit    len  mdlpos  mdlpos  len  key          if_rep
-#---  -------------  -----------------  ----  ----  ---  --------  ---  -----  ------  ------  ---  -----------  ------
-1.1   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinn  -       36       -    7250   40  deletin_exc  no    
-1.2   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  p       36    7250    7250   40  deletin_exc  no    
-1.3   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  pl      36    7250    7250   40  deletin_exc  no    
-1.4   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  pc      36    7250    7250   40  deletin_exc  no    
-1.5   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  pcl     36    7250    7250   40  deletin_exc  no    
-2.1   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinn  -       36       -    6965   40  deletin_exc  no    
-2.2   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  p       36    6965    6965   40  deletin_exc  no    
-2.3   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  pl      36    6965    6965   40  deletin_exc  no    
-2.4   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  pc      36    6965    6965   40  deletin_exc  no    
-2.5   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  pcl     36    6965    6965   40  deletin_exc  no    
-3.1   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnn  -       33       -    7399   40  insertn_exc  no    
-3.2   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  p       33    7399    7399   40  insertn_exc  no    
-3.3   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  pl      33    7399    7399   40  insertn_exc  no    
-3.4   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  pc      33    7399    7399   40  insertn_exc  no    
-3.5   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  pcl     33    7399    7399   40  insertn_exc  no    
-4.1   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnn  -       33       -    6964   40  insertn_exc  no    
-4.2   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  p       33    6964    6964   40  insertn_exc  no    
-4.3   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  pl      33    6964    6964   40  insertn_exc  no    
-4.4   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  pc      33    6964    6964   40  insertn_exc  no    
-4.5   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  pcl     33    6964    6964   40  insertn_exc  no    
-5.1   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnn  -       33       -    7114   40  insertn_exc  no    
-5.2   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  p       33    7114    7114   40  insertn_exc  no    
-5.3   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  pl      33    7114    7114   40  insertn_exc  no    
-5.4   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  pc      33    7114    7114   40  insertn_exc  no    
-5.5   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  pcl     33    7114    7114   40  insertn_exc  no    
+#     seq                               ftr   ftr   ftr  alert     pv   indel  approx   exact  max  exc          alert   ftr     pv 
+#idx  name           model              type  name  idx  code      hit    len  mdlpos  mdlpos  len  key          if_rep  picked  sel
+#---  -------------  -----------------  ----  ----  ---  --------  ---  -----  ------  ------  ---  -----------  ------  ------  ---
+1.1   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinn  -       36       -    7250   40  deletin_exc  no      yes     -  
+1.2   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  p       36    7250    7250   40  deletin_exc  no      yes     yes
+1.3   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  pl      36    7250    7250   40  deletin_exc  no      yes     no 
+1.4   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  pc      36    7250    7250   40  deletin_exc  no      yes     no 
+1.5   vp2fwd-del     NC_001959-vp2only  CDS   VP2     1  deletinp  pcl     36    7250    7250   40  deletin_exc  no      yes     no 
+2.1   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinn  -       36       -    6965   40  deletin_exc  no      yes     -  
+2.2   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  p       36    6965    6965   40  deletin_exc  no      yes     yes
+2.3   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  pl      36    6965    6965   40  deletin_exc  no      yes     no 
+2.4   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  pc      36    6965    6965   40  deletin_exc  no      yes     no 
+2.5   vp2fwd-del5p   NC_001959-vp2only  CDS   VP2     1  deletinp  pcl     36    6965    6965   40  deletin_exc  no      yes     no 
+3.1   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnn  -       33       -    7399   40  insertn_exc  no      yes     -  
+3.2   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  p       33    7399    7399   40  insertn_exc  no      yes     yes
+3.3   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  pl      33    7399    7399   40  insertn_exc  no      yes     no 
+3.4   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  pc      33    7399    7399   40  insertn_exc  no      yes     no 
+3.5   vp2fwd-ins3p   NC_001959-vp2only  CDS   VP2     1  insertnp  pcl     33    7399    7399   40  insertn_exc  no      yes     no 
+4.1   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnn  -       33       -    6964   40  insertn_exc  no      yes     -  
+4.2   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  p       33    6964    6964   40  insertn_exc  no      yes     yes
+4.3   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  pl      33    6964    6964   40  insertn_exc  no      yes     no 
+4.4   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  pc      33    6964    6964   40  insertn_exc  no      yes     no 
+4.5   vp2fwd-ins5p   NC_001959-vp2only  CDS   VP2     1  insertnp  pcl     33    6964    6964   40  insertn_exc  no      yes     no 
+5.1   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnn  -       33       -    7114   40  insertn_exc  no      yes     -  
+5.2   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  p       33    7114    7114   40  insertn_exc  no      yes     yes
+5.3   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  pl      33    7114    7114   40  insertn_exc  no      yes     no 
+5.4   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  pc      33    7114    7114   40  insertn_exc  no      yes     no 
+5.5   vp2fwd-insrow  NC_001959-vp2only  CDS   VP2     1  insertnp  pcl     33    7114    7114   40  insertn_exc  no      yes     no 
