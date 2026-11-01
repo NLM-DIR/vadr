@@ -2407,6 +2407,12 @@ for($mdl_idx = 0; $mdl_idx < $nmdl; $mdl_idx++) {
     }
   }
 }
+# with --out_idl, record which features were picked, now, because later
+# output code can recreate empty results for features that were not
+# (brief 26_0602-055)
+if(opt_Get("--out_idl", \%opt_HH)) { 
+  helper_idl_rows_mark_picked(\%ftr_results_HHAH, \%idl_HHHA);
+}
 
 ################################
 # Output annotations and alerts
@@ -2474,7 +2480,7 @@ my ($zero_cls, $zero_alt) = output_tabular(\@mdl_info_AH, \%mdl_cls_ct_H, \%mdl_
                                            ((opt_IsUsed("--msub", \%opt_HH)) ? \%mdl_sub_H : undef),
                                            \%opt_HH, \%ofile_info_HH);
 if((! $do_clsonly) && (opt_Get("--out_idl", \%opt_HH))) { 
-  output_idl_file(\@mdl_info_AH, \@seq_name_A, \%ftr_info_HAH, \%ftr_results_HHAH, \%idl_HHHA, \%opt_HH, \%ofile_info_HH);
+  output_idl_file(\@mdl_info_AH, \@seq_name_A, \%ftr_info_HAH, \%idl_HHHA, \%opt_HH, \%ofile_info_HH);
 }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -13449,8 +13455,6 @@ sub helper_tabular_sgm_results_trunc_string {
 #  $mdl_info_AHR:       REF to array of hashes with model info
 #  $seq_name_AR:        REF to array of sequence names
 #  $ftr_info_HAHR:      REF to hash of arrays with information on the features
-#  $ftr_results_HHAHR:  REF to feature results HHAH, after features not picked
-#                       from alternative_ftr_sets were removed
 #  $idl_HHHAR:          REF to .idl lines: model name, sequence name, feature index
 #  $opt_HHR:            REF to 2D hash of option values
 #  $ofile_info_HHR:     REF to the 2D hash of output file information
@@ -13460,10 +13464,10 @@ sub helper_tabular_sgm_results_trunc_string {
 #################################################################
 sub output_idl_file { 
   my $sub_name = "output_idl_file";
-  my $nargs_exp = 7;
+  my $nargs_exp = 6;
   if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($mdl_info_AHR, $seq_name_AR, $ftr_info_HAHR, $ftr_results_HHAHR, $idl_HHHAR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($mdl_info_AHR, $seq_name_AR, $ftr_info_HAHR, $idl_HHHAR, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
   my $sidx_offset = opt_Get("--sidx", $opt_HHR) - 1;
@@ -13487,11 +13491,8 @@ sub output_idl_file {
         my $nftr = scalar(@{$ftr_info_AHR});
         for(my $ftr_idx = 0; $ftr_idx < $nftr; $ftr_idx++) { 
           if(defined $idl_HHHAR->{$mdl_name}{$seq_name}{$ftr_idx}) { 
-            # a feature not picked from its alternative_ftr_set has had its results removed
-            my $ftr_picked = ((defined $ftr_results_HHAHR->{$mdl_name}) && (defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}) && 
-                              (defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx])) ? "yes" : "no";
             foreach my $idl_AR (@{$idl_HHHAR->{$mdl_name}{$seq_name}{$ftr_idx}}) { 
-              my ($alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key, $hit_sel) = @{$idl_AR};
+              my ($alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key, $hit_sel, $ftr_picked) = @{$idl_AR};
               $seq_nidl++;
               push(@data_idl_AA, [$seq_idx2print . "." . $seq_nidl, $seq_name, $mdl_name, 
                                   vdr_FeatureOutType($ftr_info_AHR, $ftr_idx), 
@@ -13549,6 +13550,43 @@ sub helper_idl_row_add {
   # final element: whether the line is from the selected blastx hit, set by
   # helper_idl_rows_mark_selected_hit(), "-" for insertnn/deletinn
   push(@{$ftr_results_HAHR->{$seq_name}[$ftr_idx]{"idl_AA"}}, [$alt_code, $pv_hit, $len, $apos, $epos, $max, $exc_key, ($pv_hit eq "-") ? "-" : "no"]);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  helper_idl_rows_mark_picked
+# Incept:      EPN, Sun Nov  1 2026 (w/Claude)
+#
+# Purpose:    Set the final element of each .idl line (--out_idl) in
+#             %{$idl_HHHAR} to "yes" if its feature still has results
+#             (it was picked from its alternative_ftr_set, or is in
+#             none) and "no" if not. Must be called right after
+#             pick_features_from_all_alternatives() (brief 26_0602-055).
+#
+# Arguments:
+#  $ftr_results_HHAHR:  REF to feature results HHAH
+#  $idl_HHHAR:          REF to .idl lines: model name, sequence name, feature index, UPDATED HERE
+#
+# Returns:    void
+#
+#################################################################
+sub helper_idl_rows_mark_picked { 
+  my $sub_name = "helper_idl_rows_mark_picked";
+  my $nargs_exp = 2;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_results_HHAHR, $idl_HHHAR) = @_;
+
+  foreach my $mdl_name (keys %{$idl_HHHAR}) { 
+    foreach my $seq_name (keys %{$idl_HHHAR->{$mdl_name}}) { 
+      foreach my $ftr_idx (keys %{$idl_HHHAR->{$mdl_name}{$seq_name}}) { 
+        my $picked = ((exists $ftr_results_HHAHR->{$mdl_name}) && (exists $ftr_results_HHAHR->{$mdl_name}{$seq_name}) && 
+                      (defined $ftr_results_HHAHR->{$mdl_name}{$seq_name}[$ftr_idx])) ? "yes" : "no";
+        foreach my $idl_AR (@{$idl_HHHAR->{$mdl_name}{$seq_name}{$ftr_idx}}) { $idl_AR->[8] = $picked; }
+      }
+    }
+  }
 
   return;
 }
