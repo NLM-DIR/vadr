@@ -48,6 +48,7 @@ for t in \
     do-glsearch-tests.sh \
     do-split-tests.sh \
     do-split-fail-tests.sh \
+    do-split-origfa-tests.sh \
     do-af-tests.sh \
     do-indfstrn-tests.sh \
     do-dupregin-tests.sh \
