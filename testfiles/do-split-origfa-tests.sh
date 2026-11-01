@@ -64,6 +64,14 @@ sed "s:@MDIR@:$MDIR:" $VADRSCRIPTSDIR/testfiles/vscan-m.config > $TMPROOT/vscan-
 (cd $TMPROOT && perl $VADRSCRIPTSDIR/v-scan.pl -f -m --cpu 2 -c vscan-m.config $VADRSCRIPTSDIR/testfiles/vscan-m1.fa vscan > vscan.stdout 2> vscan.stderr)
 [ $? -eq 0 ]; check "vscan: v-scan.pl -m --cpu 2 on 3 sequences with 2 libraries exits with zero status" $?
 
+# 5. v-scan.pl -m --cpu 2 on 6 sequences: one sequence matches no library
+#    and is rescanned with HMMs against both libraries, with v-annotate.pl
+#    --split --origfa on the same one-sequence rescan file each time
+(cd $TMPROOT && perl $VADRSCRIPTSDIR/v-scan.pl -f -m --cpu 2 -c vscan-m.config $VADRSCRIPTSDIR/testfiles/vscan-m.fa vscanfb > vscanfb.stdout 2> vscanfb.stderr)
+[ $? -eq 0 ]; check "vscanfb: v-scan.pl -m --cpu 2 HMM rescan of 1 sequence with 2 libraries exits with zero status" $?
+grep -q '^# Rescanning 1 unmatched seq against noro.3' $TMPROOT/vscanfb.stdout
+check "vscanfb: HMM rescan ran against the second library" $?
+
 if [ "$RETVAL" -eq 0 ]; then
     rm -rf $TMPROOT
     echo "Success: all tests passed [do-split-origfa-tests.sh]"
