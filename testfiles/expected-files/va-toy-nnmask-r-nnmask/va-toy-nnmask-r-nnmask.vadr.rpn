@@ -1,6 +1,0 @@
-#seq  seq                  seq                                num_Ns  num_Ns  fract_Ns  nregs  nregs  nregs    nregs    nregs      nnt      nnt  detail_on_regions[S:seq,M:mdl,D:lendiff,N:#Ns,                
-#idx  name                 len  model                   p/f      tot      rp        rp    tot    int     rp  rp-full  rp-part  rp-full  rp-part  E:#non_N_match_expected,F:flush_direction,R:region_replaced?];
-#---  -------------------  ---  ----------------------  ----  ------  ------  --------  -----  -----  -----  -------  -------  -------  -------  --------------------------------------------------------------
-1     seq1_A_Ns_in_region  200  ref_B:MODEL:toy-nnmask  PASS      40      40     1.000      1      1      1        0        1        0       40  [S:61..103,M:61..103,D:0,N:40/43,E:2/3,F:-,R:Y];              
-2     seq2_A_region_all_N  200  ref_B:MODEL:toy-nnmask  PASS      80      80     1.000      1      1      1        1        0       80        0  [S:61..140,M:61..140,D:0,N:80/80,E:?/?,F:-,R:Y];              
-3     seq3_A_no_Ns         200  ref_B:MODEL:toy-nnmask  PASS       0       0         -      0      0      0        0        0        0        0  -                                                             
