@@ -1,0 +1,74 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+#
+# Tests that the legacy insertn_exc key matches on the approximate
+# (protein-position-derived) model position and the recommended
+# insertn_mdl_exc key matches on the exact (alignment-derived) model
+# position, in a case where the two differ (brief 26_0602-057).
+#
+# noro.mdlexc.fa holds two real norovirus GII sequences (PZ823410.1 and
+# PQ740347.1) with a 36 nt insertion in VP1 that blastx places at
+# approximate model position 5975 of NC_029646 and the nucleotide
+# alignment places at exact model position 5966. The insertion is
+# reported as an insertnp alert unless an exception covers it.
+# The four model info files differ only in the VP1 exception:
+#   noro.3.minfo                insertn_exc:"5975..5975:+:36"      both PASS
+#   noro.3.insexc-5966.minfo    insertn_exc:"5966..5966:+:36"      both FAIL (insertnp)
+#   noro.3.insmdlexc-5975.minfo insertn_mdl_exc:"5975..5975:+:36"  both FAIL (insertnp)
+#   noro.3.insmdlexc-5966.minfo insertn_mdl_exc:"5966..5966:+:36"  both PASS
+#
+# 1: legacy key at the approximate position: insertion is exempted
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -m $VADRSCRIPTSDIR/testfiles/models/noro.3.cm -i $VADRSCRIPTSDIR/testfiles/models/noro.3.minfo -x $VADRSCRIPTSDIR/testfiles/models -n $VADRSCRIPTSDIR/testfiles/models/noro.3.fa $VADRSCRIPTSDIR/testfiles/noro.mdlexc.fa va-noro.mdlexc.1 > va-noro.mdlexc.1.out
+desc: annotate-noro-mdlexc-1-insexc-approx
+out: va-noro.mdlexc.1/va-noro.mdlexc.1.vadr.sqc
+out: va-noro.mdlexc.1/va-noro.mdlexc.1.vadr.alt
+out: va-noro.mdlexc.1/va-noro.mdlexc.1.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.1.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.1.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.1.vadr.alt.list
+rmdir: va-noro.mdlexc.1
+#
+# 2: legacy key at the exact position: insertion is not exempted
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -m $VADRSCRIPTSDIR/testfiles/models/noro.3.cm -i $VADRSCRIPTSDIR/testfiles/models/noro.3.insexc-5966.minfo -x $VADRSCRIPTSDIR/testfiles/models -n $VADRSCRIPTSDIR/testfiles/models/noro.3.fa $VADRSCRIPTSDIR/testfiles/noro.mdlexc.fa va-noro.mdlexc.2 > va-noro.mdlexc.2.out
+desc: annotate-noro-mdlexc-2-insexc-exact
+out: va-noro.mdlexc.2/va-noro.mdlexc.2.vadr.sqc
+out: va-noro.mdlexc.2/va-noro.mdlexc.2.vadr.alt
+out: va-noro.mdlexc.2/va-noro.mdlexc.2.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.2.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.2.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.2.vadr.alt.list
+rmdir: va-noro.mdlexc.2
+#
+# 3: recommended key at the approximate position: insertion is not exempted
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -m $VADRSCRIPTSDIR/testfiles/models/noro.3.cm -i $VADRSCRIPTSDIR/testfiles/models/noro.3.insmdlexc-5975.minfo -x $VADRSCRIPTSDIR/testfiles/models -n $VADRSCRIPTSDIR/testfiles/models/noro.3.fa $VADRSCRIPTSDIR/testfiles/noro.mdlexc.fa va-noro.mdlexc.3 > va-noro.mdlexc.3.out
+desc: annotate-noro-mdlexc-3-insmdlexc-approx
+out: va-noro.mdlexc.3/va-noro.mdlexc.3.vadr.sqc
+out: va-noro.mdlexc.3/va-noro.mdlexc.3.vadr.alt
+out: va-noro.mdlexc.3/va-noro.mdlexc.3.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.3.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.3.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.3.vadr.alt.list
+rmdir: va-noro.mdlexc.3
+#
+# 4: recommended key at the exact position: insertion is exempted
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -m $VADRSCRIPTSDIR/testfiles/models/noro.3.cm -i $VADRSCRIPTSDIR/testfiles/models/noro.3.insmdlexc-5966.minfo -x $VADRSCRIPTSDIR/testfiles/models -n $VADRSCRIPTSDIR/testfiles/models/noro.3.fa $VADRSCRIPTSDIR/testfiles/noro.mdlexc.fa va-noro.mdlexc.4 > va-noro.mdlexc.4.out
+desc: annotate-noro-mdlexc-4-insmdlexc-exact
+out: va-noro.mdlexc.4/va-noro.mdlexc.4.vadr.sqc
+out: va-noro.mdlexc.4/va-noro.mdlexc.4.vadr.alt
+out: va-noro.mdlexc.4/va-noro.mdlexc.4.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.4.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.4.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.mdlexc/va-noro.mdlexc.4.vadr.alt.list
+rmdir: va-noro.mdlexc.4

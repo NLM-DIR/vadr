@@ -1,0 +1,3 @@
+#sequence	model	feature-type	feature-name	error	seq-coords	mdl-coords	error-description
+PZ823410.1	NC_029646	CDS	VP1	INSERTION_OF_NT	892..927:+	5966..5966:+	too large of an insertion in protein-based alignment [36>27]
+PQ740347.1	NC_029646	CDS	VP1	INSERTION_OF_NT	2405..2440:+	5966..5966:+	too large of an insertion in protein-based alignment [36>27]
