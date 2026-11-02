@@ -1,6 +1,7 @@
-#seq  seq                  seq                               sub                   seq    mdl         num                     sub   score  diff/  seq   
-#idx  name                 len  p/f   ant  model1      grp1  grp1  score  sc/nt    cov    cov  bias  hits  str  model2  grp2  grp2   diff     nt  alerts
-#---  -------------------  ---  ----  ---  ----------  ----  ----  -----  -----  -----  -----  ----  ----  ---  ------  ----  ----  -----  -----  ------
-1     seq1_A_Ns_in_region  200  PASS  yes  toy-nnmask  TOY   A     197.3  0.987  1.000  1.000     0     1    +  -       TOY   B         -      -  -     
-2     seq2_A_region_all_N  200  PASS  yes  toy-nnmask  TOY   A     195.2  0.976  1.000  1.000     0     1    +  -       TOY   B         -      -  INDEFINITE_CLASSIFICATION_NN(nnindfcl),ALT_REGION_CLASSIFICATION_NN(nnalrgcl)
-3     seq3_A_no_Ns         200  PASS  yes  toy-nnmask  TOY   A     201.8  1.009  1.000  1.000     0     1    +  -       TOY   B         -      -  -     
+#seq  seq                             seq                               sub                   seq    mdl         num                     sub   score  diff/  seq   
+#idx  name                            len  p/f   ant  model1      grp1  grp1  score  sc/nt    cov    cov  bias  hits  str  model2  grp2  grp2   diff     nt  alerts
+#---  ------------------------------  ---  ----  ---  ----------  ----  ----  -----  -----  -----  -----  ----  ----  ---  ------  ----  ----  -----  -----  ------
+1     seq1_A_Ns_in_region             200  PASS  yes  toy-nnmask  TOY   A     197.3  0.987  1.000  1.000     0     1    +  -       TOY   B         -      -  -     
+2     seq2_A_region_all_N             200  PASS  yes  toy-nnmask  TOY   A     195.2  0.976  1.000  1.000     0     1    +  -       TOY   B         -      -  INDEFINITE_CLASSIFICATION_NN(nnindfcl),ALT_REGION_CLASSIFICATION_NN(nnalrgcl)
+3     seq3_A_no_Ns                    200  PASS  yes  toy-nnmask  TOY   A     201.8  1.009  1.000  1.000     0     1    +  -       TOY   B         -      -  -     
+4     seq4_A_region_all_N_unreplaced  185  FAIL  yes  toy-nnmask  TOY   A     110.0  0.595  0.670  0.620     0     2    +  -       TOY   B         -      -  N_RICH_REGION_NOT_REPLACED(ambgntrp),INDEFINITE_CLASSIFICATION_NN(nnindfcl),LOW_ID_CLASSIFICATION_NN(nnloidcl),ALT_REGION_CLASSIFICATION_NN(nnalrgcl),LOW_COVERAGE(lowcovrg)

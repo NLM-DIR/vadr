@@ -25,6 +25,10 @@
 #        --nn_regionlen unreplaced positions remain in the region, so the
 #        full sequence is used (A and B tie, nnindfcl and nnalrgcl)
 #  seq3: no Ns, classified as A
+#  seq4: Ns over the entire region and a 15 nt deletion in it, so -r 
+#        does not replace them (ambgntrp); the region has no observed
+#        residues, so the full sequence is used (nnalrgcl) rather than
+#        classifying on Ns alone
 #
 command: perl $VADRSCRIPTSDIR/v-annotate.pl -f -r --r_file $VADRSCRIPTSDIR/testfiles/models/toy-nnmask.rpn.fa --mdir $VADRSCRIPTSDIR/testfiles/models --mkey toy-nnmask $VADRSCRIPTSDIR/testfiles/toy-nnmask-seqs.fa va-toy-nnmask-r > va-toy-nnmask-r.out
 desc: annotate-toy-nnmask-r
