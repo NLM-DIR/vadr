@@ -18686,10 +18686,14 @@ sub classify_based_on_alignment {
       $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
       $using_defined_nn_region = 0; # if we were trying to, not enough sequence was within the region
     }
-    if(($do_mask) && ($using_defined_nn_region)) { 
+    if((defined $rpn_pos_HHR) && ($using_defined_nn_region)) { 
       # with --r_nnmask, also revert to full sequence if the region has less than
-      # $min_nnregion_length positions that were not replaced
-      my $nres = ($possibly_subseq_sqstring =~ tr/A-Z//);
+      # $min_nnregion_length observed residues. Replaced positions are '*' and
+      # Ns that were not replaced are excluded, so a region that is all N is
+      # not classified on Ns alone. Done for all sequences, not only those with
+      # replaced Ns, because a region that -r could not fill has no replaced
+      # positions (brief 26_0602-060).
+      my $nres = ($possibly_subseq_sqstring =~ tr/A-MO-Z//);
       if($nres < $min_nnregion_length) { 
         $apos_start = $seq_rf_start;
         $apos_stop  = $seq_rf_stop;
