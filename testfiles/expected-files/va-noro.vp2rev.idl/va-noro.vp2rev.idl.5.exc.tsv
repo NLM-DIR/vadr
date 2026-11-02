@@ -1,0 +1,4 @@
+model	ftr_idx	ftr_name	key	value	origin	idl_lines_exempt	idl_seqs_exempt	longest_exempt	fatal_alerts_removed	seqs_alerts_removed	example_seqs
+NC_001959-vp2rev	1	VP2	deletin_mdl_exc	690..690:-:36	new	2	1	36	1	1	vp2rev-del5p
+NC_001959-vp2rev	1	VP2	deletin_mdl_exc	405..405:-:36	new	1	1	36	1	1	vp2rev-del
+NC_001959-vp2rev	1	VP2	insertn_mdl_exc	256..256:-:33	new	2	1	33	1	1	vp2rev-ins3p

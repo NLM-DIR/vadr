@@ -1,0 +1,18 @@
+#     seq                             ftr   ftr   ftr  alert     pv   indel  approx   exact  max  exc  alert   ftr     pv 
+#idx  name          model             type  name  idx  code      hit    len  mdlpos  mdlpos  len  key  if_rep  picked  sel
+#---  ------------  ----------------  ----  ----  ---  --------  ---  -----  ------  ------  ---  ---  ------  ------  ---
+1.1   vp2rev-del    NC_001959-vp2rev  CDS   VP2     1  deletinn  -       36       -     404   27  -    yes     yes     -  
+1.2   vp2rev-del    NC_001959-vp2rev  CDS   VP2     1  deletinp  p       36     405     405   27  -    yes     yes     yes
+1.3   vp2rev-del    NC_001959-vp2rev  CDS   VP2     1  deletinp  pl      36     405     405   27  -    yes     yes     no 
+1.4   vp2rev-del    NC_001959-vp2rev  CDS   VP2     1  deletinp  pc      36     405     405   27  -    yes     yes     no 
+1.5   vp2rev-del    NC_001959-vp2rev  CDS   VP2     1  deletinp  pcl     36     405     405   27  -    yes     yes     no 
+2.1   vp2rev-del5p  NC_001959-vp2rev  CDS   VP2     1  deletinn  -       36       -     690   27  -    yes     yes     -  
+2.2   vp2rev-del5p  NC_001959-vp2rev  CDS   VP2     1  deletinp  p       36     690     690   27  -    yes     yes     yes
+2.3   vp2rev-del5p  NC_001959-vp2rev  CDS   VP2     1  deletinp  pl      36     690     690   27  -    yes     yes     no 
+2.4   vp2rev-del5p  NC_001959-vp2rev  CDS   VP2     1  deletinp  pc      36     690     690   27  -    yes     yes     no 
+2.5   vp2rev-del5p  NC_001959-vp2rev  CDS   VP2     1  deletinp  pcl     36     690     690   27  -    yes     yes     no 
+3.1   vp2rev-ins3p  NC_001959-vp2rev  CDS   VP2     1  insertnn  -       33       -     256   27  -    yes     yes     -  
+3.2   vp2rev-ins3p  NC_001959-vp2rev  CDS   VP2     1  insertnp  p       33     256     256   27  -    yes     yes     yes
+3.3   vp2rev-ins3p  NC_001959-vp2rev  CDS   VP2     1  insertnp  pl      33     256     256   27  -    yes     yes     no 
+3.4   vp2rev-ins3p  NC_001959-vp2rev  CDS   VP2     1  insertnp  pc      33     256     256   27  -    yes     yes     no 
+3.5   vp2rev-ins3p  NC_001959-vp2rev  CDS   VP2     1  insertnp  pcl     33     256     256   27  -    yes     yes     no 

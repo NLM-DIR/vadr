@@ -1,0 +1,80 @@
+# v-annotate.pl --out_idl (.idl per-indel file) and
+# miniscripts/vadr-propose-indel-exc.pl, using the noro VP2 fixtures of
+# noro.vp2rev.pvcoords.testin (brief 26_0602-055)
+#
+# 1: --out_idl, negative strand CDS, legacy insertn_exc/deletin_exc
+# values that exempt every indel
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --out_idl --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.exc.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.1.fa va-noro.vp2rev.idl.1 > va-noro.vp2rev.idl.1.out
+desc: annotate-noro-vp2rev-idl-1-legacy-exc
+out: va-noro.vp2rev.idl.1/va-noro.vp2rev.idl.1.vadr.idl
+out: va-noro.vp2rev.idl.1/va-noro.vp2rev.idl.1.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.1.vadr.idl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.1.vadr.alt
+#
+# 2: as 1, with --split --cpu 2: the merged .idl is the same
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --out_idl --split --cpu 2 --nkb 1 --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.exc.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.1.fa va-noro.vp2rev.idl.2 > va-noro.vp2rev.idl.2.out
+desc: annotate-noro-vp2rev-idl-2-split
+out: va-noro.vp2rev.idl.2/va-noro.vp2rev.idl.2.vadr.idl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.1.vadr.idl
+rmdir: va-noro.vp2rev.idl.2
+#
+# 3: convert the legacy values of 1 to insertn_mdl_exc/deletin_mdl_exc
+command: perl $VADRSCRIPTSDIR/miniscripts/vadr-propose-indel-exc.pl convert $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.exc.minfo va-noro.vp2rev.idl.3 va-noro.vp2rev.idl.1 > va-noro.vp2rev.idl.3.out
+desc: propose-noro-vp2rev-idl-3-convert
+out: va-noro.vp2rev.idl.3.minfo
+out: va-noro.vp2rev.idl.3.exc.tsv
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.3.minfo
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.3.exc.tsv
+#
+# 10: as 3, using all .idl lines (also non-selected blastx hits) and keeping unused values
+command: perl $VADRSCRIPTSDIR/miniscripts/vadr-propose-indel-exc.pl --allrows --keep_unused convert $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.exc.minfo va-noro.vp2rev.idl.10 va-noro.vp2rev.idl.1 > va-noro.vp2rev.idl.10.out
+desc: propose-noro-vp2rev-idl-10-convert-allrows
+out: va-noro.vp2rev.idl.10.minfo
+out: va-noro.vp2rev.idl.10.exc.tsv
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.10.minfo
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.10.exc.tsv
+rmdir: va-noro.vp2rev.idl.1
+#
+# 4: --out_idl, no exceptions: every indel is reported
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --out_idl --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.1.fa va-noro.vp2rev.idl.4 > va-noro.vp2rev.idl.4.out
+desc: annotate-noro-vp2rev-idl-4-no-exc
+out: va-noro.vp2rev.idl.4/va-noro.vp2rev.idl.4.vadr.idl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.4.vadr.idl
+#
+# 5: extend: propose values for the 3 sequences whose only fatal alerts
+# are insertnp/deletinp (the 2 others have other fatal alerts)
+command: perl $VADRSCRIPTSDIR/miniscripts/vadr-propose-indel-exc.pl extend $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.minfo va-noro.vp2rev.idl.5 va-noro.vp2rev.idl.4 > va-noro.vp2rev.idl.5.out
+desc: propose-noro-vp2rev-idl-5-extend
+out: va-noro.vp2rev.idl.5.minfo
+out: va-noro.vp2rev.idl.5.exc.tsv
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.5.minfo
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.5.exc.tsv
+#
+# 6: the values proposed in 5 make those 3 sequences pass
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2rev.fa -i va-noro.vp2rev.idl.5.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2rev.pvcoords.1.fa va-noro.vp2rev.idl.6 > va-noro.vp2rev.idl.6.out
+desc: annotate-noro-vp2rev-idl-6-extended
+out: va-noro.vp2rev.idl.6/va-noro.vp2rev.idl.6.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.6.vadr.sqc
+#
+# 7: compare 4 and 6: 3 FAIL->PASS
+command: perl $VADRSCRIPTSDIR/miniscripts/vadr-propose-indel-exc.pl compare va-noro.vp2rev.idl.7 va-noro.vp2rev.idl.4 va-noro.vp2rev.idl.6 > va-noro.vp2rev.idl.7.out
+desc: propose-noro-vp2rev-idl-7-compare
+out: va-noro.vp2rev.idl.7.flips.tsv
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.7.flips.tsv
+rmdir: va-noro.vp2rev.idl.4
+rmdir: va-noro.vp2rev.idl.6
+#
+# 8: convert, positive strand CDS
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --out_idl --glsearch -s -n $VADRSCRIPTSDIR/testfiles/models/NC_001959-vp2only.fa -i $VADRSCRIPTSDIR/testfiles/models/NC_001959.pvcoords.exc.vp2only.minfo -x $VADRSCRIPTSDIR/testfiles/models $VADRSCRIPTSDIR/testfiles/noro.vp2only.pvcoords.4.fa va-noro.vp2rev.idl.8 > va-noro.vp2rev.idl.8.out
+desc: annotate-noro-vp2only-idl-8-legacy-exc
+out: va-noro.vp2rev.idl.8/va-noro.vp2rev.idl.8.vadr.idl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.8.vadr.idl
+#
+# 9: convert the legacy values of 8
+command: perl $VADRSCRIPTSDIR/miniscripts/vadr-propose-indel-exc.pl convert $VADRSCRIPTSDIR/testfiles/models/NC_001959.pvcoords.exc.vp2only.minfo va-noro.vp2rev.idl.9 va-noro.vp2rev.idl.8 > va-noro.vp2rev.idl.9.out
+desc: propose-noro-vp2only-idl-9-convert
+out: va-noro.vp2rev.idl.9.minfo
+out: va-noro.vp2rev.idl.9.exc.tsv
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.9.minfo
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-noro.vp2rev.idl/va-noro.vp2rev.idl.9.exc.tsv
+rmdir: va-noro.vp2rev.idl.8

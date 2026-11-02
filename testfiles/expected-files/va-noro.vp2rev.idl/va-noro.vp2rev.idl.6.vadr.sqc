@@ -1,0 +1,8 @@
+#seq  seq              seq                                          sub                    seq    mdl         num                     sub   score  diff/  seq   
+#idx  name             len  p/f   ant  model1            grp1       grp1   score  sc/nt    cov    cov  bias  hits  str  model2  grp2  grp2   diff     nt  alerts
+#---  --------------  ----  ----  ---  ----------------  ---------  ----  ------  -----  -----  -----  ----  ----  ---  ------  ----  ----  -----  -----  ------
+1     vp2rev-del      1118  PASS  yes  NC_001959-vp2rev  Norovirus  GI    2010.0  1.798  1.000  1.000     0     1    +  -       -     -         -      -  -     
+2     vp2rev-del5p    1118  PASS  yes  NC_001959-vp2rev  Norovirus  GI    2010.0  1.798  1.000  1.000     0     1    +  -       -     -         -      -  -     
+3     vp2rev-ins3p    1187  PASS  yes  NC_001959-vp2rev  Norovirus  GI    2083.0  1.755  1.000  1.000     0     1    +  -       -     -         -      -  -     
+4     vp2rev-trunc3p  1154  FAIL  yes  NC_001959-vp2rev  Norovirus  GI    1966.0  1.704  1.000  1.000     0     1    +  -       -     -         -      -  -     
+5     vp2rev-trunc5p  1154  FAIL  yes  NC_001959-vp2rev  Norovirus  GI    1971.0  1.708  1.000  1.000     0     1    +  -       -     -         -      -  -     

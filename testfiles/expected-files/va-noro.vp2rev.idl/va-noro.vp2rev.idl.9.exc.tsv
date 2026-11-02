@@ -1,0 +1,6 @@
+model	ftr_idx	ftr_name	key	value	origin	idl_lines_exempt	idl_seqs_exempt	longest_exempt	fatal_alerts_removed	seqs_alerts_removed	example_seqs
+NC_001959-vp2only	1	VP2	deletin_mdl_exc	6965..6965:+:40	converted,nt_kept	2	1	36	0	0	vp2fwd-del5p
+NC_001959-vp2only	1	VP2	deletin_mdl_exc	7250..7250:+:40	converted,nt_kept	2	1	36	0	0	vp2fwd-del
+NC_001959-vp2only	1	VP2	insertn_mdl_exc	6964..6964:+:40	converted,nt_kept	2	1	33	0	0	vp2fwd-ins5p
+NC_001959-vp2only	1	VP2	insertn_mdl_exc	7114..7114:+:40	converted,nt_kept	2	1	33	0	0	vp2fwd-insrow
+NC_001959-vp2only	1	VP2	insertn_mdl_exc	7399..7399:+:40	converted,nt_kept	2	1	33	0	0	vp2fwd-ins3p
