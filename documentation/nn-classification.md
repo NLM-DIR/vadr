@@ -145,7 +145,7 @@ To restrict classification to a specific model region (recommended for viruses w
 **Key points:**
 - Positions are 1-based model reference (RF) positions
 - If specified, only these positions are used for calculating percent identity
-- Sequences with fewer than 40nt (default) in this region will use the full sequence instead
+- Sequences with fewer than 40nt (default) in this region will use the full sequence instead (gaps and Ns are not counted)
 - You can change the minimum length with `--nn_regionlen <n>`
 - You can ignore region specifications with `--ignore_nnregion`
 

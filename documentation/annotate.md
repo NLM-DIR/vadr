@@ -927,12 +927,13 @@ file), positions in which Ns were replaced are not used in
 nearest-neighbor classification. The replacement nucleotides come from
 a sequence in the `-r` blastn DB, which is usually also in the
 classification alignment, so counting them would bias the
-classification toward that sequence. If fewer than `--nn_regionlen`
-nucleotides that are neither replaced positions nor Ns remain in the
-classification region, the full sequence is used for classification
-instead, and an *nnalrgcl* alert is reported. In VADR 1.7.3 and
-earlier, replaced positions were used in nearest-neighbor
-classification and Ns were counted toward `--nn_regionlen`.
+classification toward that sequence. As in runs without `-r`, if
+fewer than `--nn_regionlen` observed nucleotides (not gaps, not Ns, and
+with `-r` not replaced positions) remain in the classification region,
+the full sequence is used for classification instead, and an
+*nnalrgcl* alert is reported. In VADR 1.7.3 and earlier, replaced
+positions were used in nearest-neighbor classification, and gaps and
+Ns were counted toward `--nn_regionlen`.
 
 | ...........option...........  | explanation |
 |---------------------|--------------------|
@@ -1033,7 +1034,7 @@ explained more [here](#memory).
 | `--forcedcrins`  | force insert type alignment doctoring, requires `--cmindi`, mainly useful for debugging/testing |
 | `--xnoid`        | ignore blastx hits that are full length and 100% identical, mainly useful for testing |
 | `--intlen <n>`   | define intron as any gap >= `<n>` nucleotides between segments in a CDS, only relevant for identifying canonical splice sites, the default value for `<n>` is `40` |
-| `--nn_regionlen <n>`| define minimum length for region-specific NN-based classification to `<n>` nucleotides. If a sequence has fewer than `<n>` nucleotides spanning the region, NN-based classification will use the entire sequence instead. The default value for `<n>` is `40`, if the user-defined region length is `<m>` with `<m> < <n>`, then `<m>` will be used |
+| `--nn_regionlen <n>`| define minimum length for region-specific NN-based classification to `<n>` nucleotides. If a sequence has fewer than `<n>` nucleotides in the region (gaps, Ns and, with `-r`, replaced positions are not counted), NN-based classification will use the entire sequence instead. The default value for `<n>` is `40`, if the user-defined region length is `<m>` with `<m> < <n>`, then `<m>` will be used |
 
 ## Information on `v-annotate.pl` alerts <a name="alerts"></a>
 
