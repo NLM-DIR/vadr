@@ -312,7 +312,7 @@ AAAAAACGGGGNNNNNNNNNNAAAAGGGGGGGG
 - `seq2`: Identical to refseq_E18 in all RF positions → should classify as E18
 - `seq3`: One mismatch from refseq_CVB5 in classification region (G vs A at RF position 12) → should classify as CV-B5
 - `seq4`: Identical to refseq_E30 in RF positions but has different inserts (TT at insert positions 25-26) - inserts are ignored so should classify as E30 with 100% identity
-- `seq5`: Has Ns in classification region → may trigger `nnptrgcl` or `nnalrgcl` alert
+- `seq5`: Has Ns in classification region → too few observed nucleotides in the region, so the full sequence is used (`nnalrgcl` alert)
 
 ### Step 5: Run `v-annotate.pl`
 
@@ -368,7 +368,7 @@ And look at `va-nn/va-nn.vadr.scn`:
 2     seq2_should_be_E18       32  PASS  yes  toy-nn  EVB   E18    1.0000  refseq_E18   EVB   E30   0.5833  refseq_E30  0.4167           7..18:+     7..18:+    1.0000  -     
 3     seq3_closest_to_CVB5     32  PASS  yes  toy-nn  EVB   CV-B5  0.9167  refseq_CVB5  EVB   E30   0.5833  refseq_E30  0.3334           7..18:+     7..18:+    1.0000  -     
 4     seq4_different_inserts   36  PASS  yes  toy-nn  EVB   E30    1.0000  refseq_E30   EVB   E18   0.5833  refseq_E18  0.4167           7..18:+     7..18:+    1.0000  -     
-5     seq5_partial_region      32  PASS  yes  toy-nn  EVB   E30    0.3333  refseq_E30   EVB   E18   0.3333  refseq_E18  0.0000           7..18:+     7..18:+    1.0000  INDEFINITE_CLASSIFICATION_NN(nnindfcl),LOW_ID_CLASSIFICATION_NN(nnloidcl)
+5     seq5_partial_region      32  PASS  yes  toy-nn  EVB   E30    0.6875  refseq_E30   EVB   E18   0.6875  refseq_E18  0.0000           1..32:+     1..32:+    1.0000  INDEFINITE_CLASSIFICATION_NN(nnindfcl),LOW_ID_CLASSIFICATION_NN(nnloidcl),ALT_REGION_CLASSIFICATION_NN(nnalrgcl)
 ```
 
 **Interpretation:**
@@ -376,7 +376,7 @@ And look at `va-nn/va-nn.vadr.scn`:
 - `seq2`: 100% identity (12/12 RF positions) to refseq_E18 → classified as E18  
 - `seq3`: 91.67% (11/12) identity to refseq_CVB5 (one mismatch at RF position 12) → classified as CV-B5
 - `seq4`: **100% identity to refseq_E30 despite different inserts** (gg at insert positions after RF position 9) - demonstrates that insert columns are completely ignored in identity calculation
-- `seq5`: Used partial sequence for classification due to Ns, classified as E30 with low difference to E18 (triggers `nnindfcl` and `nnloidcl` alerts)
+- `seq5`: The classification region has fewer observed nucleotides (not N, not gap) than its length (12, which is less than the `--nn_regionlen` default of 40), so the full sequence is used (`nnalrgcl`); classified as E30 with no difference to E18 (triggers `nnindfcl` and `nnloidcl` alerts)
 
 ### Step 7: Understanding the results
 
