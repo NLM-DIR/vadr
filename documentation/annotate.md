@@ -1685,7 +1685,10 @@ the report before using the new file. It has three modes:
   `insertnp`/`deletinp` are used, since they would pass if those
   alerts were exempted (`--allseqs` uses all sequences). A feature
   with a legacy key is skipped; `convert` it first. `--out_idl` is not
-  needed for this mode.
+  needed for this mode. The new values cover exactly the insertion and
+  deletion lengths seen at exactly the positions seen, so they are not
+  expected to cover new sequences: rerun `extend` on each new set of
+  trusted sequences.
 
 - **`compare`**: 
   `vadr-propose-indel-exc.pl compare <out root> <dir A>[,<dir A2>...] <dir B>[,<dir B2>...]`
