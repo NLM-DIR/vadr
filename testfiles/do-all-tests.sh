@@ -61,6 +61,7 @@ for t in \
     do-noannotn-tests.sh \
     do-vscan-tests.sh \
     do-nnclass-tests.sh \
+    do-nnmask-tests.sh \
     do-mdlexc-tests.sh \
     do-idl-tests.sh \
     github-issues/do-issue-tests.sh \

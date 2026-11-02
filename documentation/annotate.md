@@ -921,6 +921,19 @@ potentially replaced if the following criteria are met:
 When `-r` is used, an additional output file with suffix `.rpn` is created,
 with format described [here](formats.md#rpn).
 
+When `-r` is used with a model that has a nearest-neighbor
+classification alignment (a `:FILE:` group/subgroup in the model info
+file), positions in which Ns were replaced are not used in
+nearest-neighbor classification. The replacement nucleotides come from
+a sequence in the `-r` blastn DB, which is usually also in the
+classification alignment, so counting them would bias the
+classification toward that sequence. If fewer than `--nn_regionlen`
+nucleotides that are neither replaced positions nor Ns remain in the
+classification region, the full sequence is used for classification
+instead, and an *nnalrgcl* alert is reported. In VADR 1.7.3 and
+earlier, replaced positions were used in nearest-neighbor
+classification and Ns were counted toward `--nn_regionlen`.
+
 | ...........option...........  | explanation |
 |---------------------|--------------------|
 | `-r`                | turn on the replace-N strategy: replace stretches of Ns with expected nucleotides, where possible |

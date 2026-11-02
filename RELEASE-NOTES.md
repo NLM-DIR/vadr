@@ -1,6 +1,17 @@
 # VADR 1.x release notes 
 
 ### Unreleased changes (draft)
+  * `v-annotate.pl`: changed default behavior of `-r`: positions in
+    which Ns were replaced no longer count toward nearest-neighbor
+    (group/subgroup) classification, because they come from a sequence
+    in the `-r` blastn DB and biased the classification toward it. If
+    fewer than `--nn_regionlen` nucleotides that are neither replaced
+    positions nor Ns remain in the classification region, the full
+    sequence is used and an `nnalrgcl` alert is reported. Only
+    group/subgroup values and the non-fatal `nn*cl` alerts can change,
+    and only for sequences with Ns in models with a nearest-neighbor
+    classification alignment; pass/fail and feature tables are
+    unchanged. See [`annotate.md`](documentation/annotate.md#options-replace).
   * `v-annotate.pl`: new `--ncf <s>` option sets the policy for
     non-coding feature (ncf) type features (`stem_loop`, `ncRNA`,
     `regulatory`, `primer_bind`, `misc_feature`, `repeat_region` and
