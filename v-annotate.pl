@@ -19018,30 +19018,20 @@ sub classify_based_on_alignment {
       $apos_stop  = ($seq_rf_stop  < $rf_stop_pos)  ? $seq_rf_stop  : $rf_stop_pos;
     }
     my $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
-    my $possibly_subseq_sqstring_nongap = $possibly_subseq_sqstring;
-    $possibly_subseq_sqstring_nongap =~ s/\.\-\~//g;
-    my $nongap_len = length($possibly_subseq_sqstring_nongap);
-    if($nongap_len < $min_nnregion_length) {
-      # region defined by rf_start_pos..rf_stop_pos has less than $min_nnregion_length nongap chars
-      # revert to full sequence (seq_rf_start..seq_rf_stop includes all nongap chars, and excludes terminal gaps)
-      $apos_start = $seq_rf_start;
-      $apos_stop  = $seq_rf_stop;
-      $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
-      $using_defined_nn_region = 0; # if we were trying to, not enough sequence was within the region
-    }
-    if((defined $rpn_pos_HHR) && ($using_defined_nn_region)) { 
-      # with -r, also revert to full sequence if the region has less than
-      # $min_nnregion_length observed residues. Replaced positions are '*' and
-      # Ns that were not replaced are excluded, so a region that is all N is
-      # not classified on Ns alone. Done for all sequences, not only those with
-      # replaced Ns, because a region that -r could not fill has no replaced
-      # positions (brief 26_0602-060).
+    if($using_defined_nn_region) { 
+      # if the region has less than $min_nnregion_length observed residues, 
+      # revert to full sequence (seq_rf_start..seq_rf_stop includes all nongap
+      # chars, and excludes terminal gaps). Gaps, Ns and, with -r, positions
+      # in which Ns were replaced ('*') are not observed residues, so a region
+      # that is all N or mostly gap is not classified on what little remains.
+      # (Before brief 26_0602-062 this check counted alignment columns, and
+      # with -r a second check counted residues as here, brief 26_0602-060.)
       my $nres = ($possibly_subseq_sqstring =~ tr/A-MO-Z//);
       if($nres < $min_nnregion_length) { 
         $apos_start = $seq_rf_start;
         $apos_stop  = $seq_rf_stop;
         $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
-        $using_defined_nn_region = 0;
+        $using_defined_nn_region = 0; # if we were trying to, not enough sequence was within the region
       }
     }
     my @seq_sqstring_A = split("", $possibly_subseq_sqstring);
