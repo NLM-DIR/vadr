@@ -1,0 +1,6 @@
+#seq  seq                           seq                               sub    fract               sub    fract            fid  nnregion_seqspan    nnregion  nnregion  seq   
+#idx  name                          len  p/f   ant  model       grp1  grp1     id1  seq1   grp2  grp2     id2  seq2     diff        mdl_coords  mdl_coords     covrg  alerts
+#---  ----------------------------  ---  ----  ---  ----------  ----  ----  ------  -----  ----  ----  ------  -----  ------  ----------------  ----------  --------  ------
+1     seq1_A_region_all_N           200  FAIL  yes  toy-nnmask  TOY   A     0.6000  ref_A  TOY   B     0.6000  ref_B  0.0000          1..200:+    1..200:+    1.0000  INDEFINITE_CLASSIFICATION_NN(nnindfcl),LOW_ID_CLASSIFICATION_NN(nnloidcl),ALT_REGION_CLASSIFICATION_NN(nnalrgcl),LOW_COVERAGE(lowcovrg)
+2     seq2_A_region_mostly_deleted  150  FAIL  yes  toy-nnmask  TOY   A     0.9933  ref_A  TOY   B     0.9667  ref_B  0.0266          1..200:+    1..200:+    1.0000  INDEFINITE_CLASSIFICATION_NN(nnindfcl),ALT_REGION_CLASSIFICATION_NN(nnalrgcl)
+3     seq3_A_no_Ns                  200  PASS  yes  toy-nnmask  TOY   A     1.0000  ref_A  TOY   B     0.8000  ref_B  0.2000         61..140:+   61..140:+    1.0000  -     
