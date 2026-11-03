@@ -3523,7 +3523,7 @@ sub vdr_AlertInfoInitialize {
                    $FH_HR); 
   vdr_AlertInfoAdd($alt_info_HHR, "nnalrgcl", "sequence",
                    "ALT_REGION_CLASSIFICATION_NN", # short description
-                   "alternative alignment region used to find nearest neighbor b/c sequence does not include specified region", # long description
+                   "alternative alignment region used to find nearest neighbor b/c sequence has too few nucleotides in specified region", # long description
                    0, 0, 0, 0, undef, undef, # always_fails, causes_failure, prevents_annot, misc_not_failure, exc_key, exc_type
                    $FH_HR); 
   vdr_AlertInfoAdd($alt_info_HHR, "nnptrgcl", "sequence",

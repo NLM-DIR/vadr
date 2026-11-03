@@ -202,7 +202,7 @@ VADR reports several alerts specific to nearest-neighbor classification:
 |------------|-----------|-------------|----------------|
 | `nnindfcl` | INDEFINITE_CLASSIFICATION_NN | Low difference between fractional identity of sequence and its nearest neighbor vs. 2nd nearest neighbor | never |
 | `nnloidcl` | LOW_ID_CLASSIFICATION_NN | Low fractional identity of sequence and its nearest neighbor | never |
-| `nnalrgcl` | ALT_REGION_CLASSIFICATION_NN | Alternative alignment region used to find nearest neighbor because sequence doesn't include specified region | never |
+| `nnalrgcl` | ALT_REGION_CLASSIFICATION_NN | Alternative alignment region used to find nearest neighbor because sequence has too few nucleotides (not gaps, not Ns) in specified region | never |
 | `nnptrgcl` | PARTIAL_REGION_CLASSIFICATION_NN | Only part of the specified alignment region used to find nearest neighbor | never |
 
 ### Adjusting alert thresholds:

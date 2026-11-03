@@ -1157,7 +1157,7 @@ coords`); only one of the pair may be used per feature (or `MODEL` line).
 | [*ambgcd3c*](#ambgcd3c2)  | feature  | no    | AMBIGUITY_IN_STOP_CODON         | <a name="ambgcd3c1"></a> 3' complete CDS ends with canonical nt but includes ambiguous nt in its stop codon | - | - |
 | [*nnindfcl*](#nnindfcl2)  | sequence | never | INDEFINITE_CLASSIFICATION_NN    | <a name="nnindfcl1"></a> low difference between fractional identity of sequence and its nearest neighbor and sequence and its 2nd nearest neighbor | - | - |
 | [*nnloidcl*](#nnloidcl2)  | sequence | never | LOW_ID_CLASSIFICATION_NN        | <a name="nnloidcl1"></a> low fractional identity of sequence and its nearest neighbor model sequence | - | - 
-| [*nnalrgcl*](#nnalrgcl2)  | sequence | never | ALT_REGION_CLASSIFICATION_NN    | <a name="nnalrgcl1"></a> alternative alignment region used to find nearest neighbor b/c sequence does not include specified region | - | - |
+| [*nnalrgcl*](#nnalrgcl2)  | sequence | never | ALT_REGION_CLASSIFICATION_NN    | <a name="nnalrgcl1"></a> alternative alignment region used to find nearest neighbor b/c sequence has too few nucleotides in specified region | - | - |
 | [*nnptrgcl*](#nnptrgcl2)  | sequence | never | PARTIAL_REGION_CLASSIFICATION_NN| <a name="nnptrgcl1"></a> only part of the specified alignment region used to find nearest neighbor b/c sequence doesn't span full region | - | - |
 | [*recombin*](#recombin2)  | sequence | never | POSSIBLE_RECOMBINATION          | <a name="recombin1"></a> possible recombination detected: nearest-neighbor switches subgroup at some breakpoint position (only reported with `--do_rc`) | - | - |
 
