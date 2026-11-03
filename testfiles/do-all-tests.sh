@@ -64,6 +64,7 @@ for t in \
     do-nnmask-tests.sh \
     do-mdlexc-tests.sh \
     do-idl-tests.sh \
+    do-insseg-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do
     sh $VADRSCRIPTSDIR/testfiles/$t
