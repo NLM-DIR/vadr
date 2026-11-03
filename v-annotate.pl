@@ -18964,13 +18964,15 @@ sub classify_based_on_alignment {
     }
   }
   
-  # determine minimum allowed length for nn region, use --nnregion_len but if region is specified 
-  # and specified region length is below that minimum, use that
+  # determine minimum number of observed nucleotides required in nn region: use --nn_regionlen,
+  # but if half the specified region length (rounded up) is below that, use that, so that 
+  # in a short region a few Ns or gaps do not force use of the full sequence (brief 26_0602-062)
   my $specified_defined_nn_region = (($rf_start_pos == 1) && ($rf_stop_pos == $alen)) ? 0 : 1; # is there a specified nn region?
   my $specified_defined_nn_region_coords = vdr_CoordsSegmentCreate( $rf_start_pos, $rf_stop_pos, "+", $FH_HR );
   my $min_nnregion_length = opt_Get("--nn_regionlen", $opt_HHR);
-  if(vdr_CoordsLength($specified_defined_nn_region_coords, $FH_HR) < $min_nnregion_length) { 
-    $min_nnregion_length = vdr_CoordsLength($specified_defined_nn_region_coords, $FH_HR);
+  my $half_nnregion_length = int((vdr_CoordsLength($specified_defined_nn_region_coords, $FH_HR) + 1) / 2);
+  if($half_nnregion_length < $min_nnregion_length) { 
+    $min_nnregion_length = $half_nnregion_length;
   }
 
   for(my $sidx = 0; $sidx < $seq_nseq; $sidx++) {

@@ -332,7 +332,7 @@ v-annotate.pl -f --out_stk \
 - `$VADRSCRIPTSDIR/documentation/nn-files/test-nn.fa`: Input sequences to classify
 - `va-nn`: Output directory to create
 
-**Note on classification region length**: Our classification region (RF positions 7-18) is 12 nucleotides long, which is less than the default minimum of 40 nucleotides. However, `v-annotate.pl` automatically adjusts the minimum length threshold to match the specified region length when it is less than 40nt, so no additional options are needed.
+**Note on classification region length**: Our classification region (RF positions 7-18) is 12 nucleotides long, which is less than the default minimum of 40 nucleotides. However, `v-annotate.pl` automatically lowers the minimum to half the region length, rounded up (6 here), when that is less than 40nt, so no additional options are needed.
 
 ### Step 6: Examine the alignment and .scn output
 
@@ -376,7 +376,7 @@ And look at `va-nn/va-nn.vadr.scn`:
 - `seq2`: 100% identity (12/12 RF positions) to refseq_E18 → classified as E18  
 - `seq3`: 91.67% (11/12) identity to refseq_CVB5 (one mismatch at RF position 12) → classified as CV-B5
 - `seq4`: **100% identity to refseq_E30 despite different inserts** (gg at insert positions after RF position 9) - demonstrates that insert columns are completely ignored in identity calculation
-- `seq5`: The classification region has fewer observed nucleotides (not N, not gap) than its length (12, which is less than the `--nn_regionlen` default of 40), so the full sequence is used (`nnalrgcl`); classified as E30 with no difference to E18 (triggers `nnindfcl` and `nnloidcl` alerts)
+- `seq5`: The classification region has fewer observed nucleotides (not N, not gap) than the minimum (6, half the 12-nt region length, because that is less than the `--nn_regionlen` default of 40), so the full sequence is used (`nnalrgcl`); classified as E30 with no difference to E18 (triggers `nnindfcl` and `nnloidcl` alerts)
 
 ### Step 7: Understanding the results
 
@@ -452,7 +452,7 @@ This uses the full sequence for classification even if region boundaries are spe
 ```bash
 v-annotate.pl --nn_regionlen 60 test-seqs.fa output-dir
 ```
-Sets minimum subsequence length for region-based classification to 60nt. By default, if a classification region is specified in the alignment file, the minimum length is automatically set to the region length (if less than 40nt) or 40nt (if the region is 40nt or longer). Use this option to override the automatic behavior and set a different threshold.
+Sets minimum subsequence length for region-based classification to 60nt. By default, if a classification region is specified in the alignment file, the minimum is 40nt, or half the region length (rounded up) if that is less than 40nt. This option replaces 40 with `<n>`; the half-region-length limit still applies. Gaps and Ns are not counted toward the minimum.
 
 ---
 
