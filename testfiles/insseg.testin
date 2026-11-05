@@ -1,0 +1,37 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+#
+# Tests a CDS segment whose aligned nucleotides are all inserts: every
+# model position of the segment is a deletion, but nucleotides are
+# inserted between two of them. Such a segment gives no frame
+# information. v-annotate.pl 1.7.3 and earlier died with 'unable to parse
+# frame_stok' on these. Seen with long runs of Ns; the toy-insseg model's
+# transitions were edited to force this alignment (see
+# models/make-toy-insseg.sh). In seqs 2 and 3, model positions 61..90
+# (all of CDS one, and the second segment of CDS two) align to gaps,
+# with 2 nt inserted after position 75:
+#  seq1: seed reference sequence, CDS one intact
+#  seq2: 61..90 replaced by 20 Ns
+#  seq3: 61..90 replaced by 20 random nt
+#
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/toy-insseg.cm -i $VADRSCRIPTSDIR/testfiles/models/toy-insseg.minfo $VADRSCRIPTSDIR/testfiles/toy-insseg-seqs.fa va-toy-insseg > va-toy-insseg.out
+desc: annotate-toy-insseg
+out: va-toy-insseg/va-toy-insseg.vadr.sqc
+out: va-toy-insseg/va-toy-insseg.vadr.ftr
+out: va-toy-insseg/va-toy-insseg.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-insseg/va-toy-insseg.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-insseg/va-toy-insseg.vadr.ftr
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-insseg/va-toy-insseg.vadr.alt
+rmdir: va-toy-insseg

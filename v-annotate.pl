@@ -6502,10 +6502,16 @@ sub add_frameshift_alerts_for_one_sequence {
               if($strand eq "+") { $rfpos++; } 
               else               { $rfpos--; }
             }
-            # complete final frame token
-            my $nterm_del = (abs($rfpos - $rfpos_prv) - 1);
-            $frame_stok_str .= $uapos . "," . "D" . $nterm_del . ",1;"; # the '1' indicates the end of a segment
-            $frame_mtok_str .= sprintf("%d,1;", (($strand eq "+") ? ($rfpos - $nterm_del - 1) : ($rfpos + $nterm_del + 1))); # we already incremented/decremented rfpos for next segment
+            # complete final frame token, if we began one; we did not if no RF position
+            # in this segment aligned to a nt, which happens if all of the segment's
+            # nt are inserts (e.g. a long run of Ns aligned as deletions around an insert);
+            # such a segment gives no frame information so it gets no frame tokens
+            # (brief 26_0602-061)
+            if(defined $F_prv) { 
+              my $nterm_del = (abs($rfpos - $rfpos_prv) - 1);
+              $frame_stok_str .= $uapos . "," . "D" . $nterm_del . ",1;"; # the '1' indicates the end of a segment
+              $frame_mtok_str .= sprintf("%d,1;", (($strand eq "+") ? ($rfpos - $nterm_del - 1) : ($rfpos + $nterm_del + 1))); # we already incremented/decremented rfpos for next segment
+            }
 
             $nsgm++;
             push(@gr_frame_str_A, $gr_frame_str);
@@ -6877,6 +6883,14 @@ sub add_frameshift_alerts_for_one_sequence {
           } # end of 'for(my $f = 0; $f < $nframe_stok; $f++) {'
         } # end of 'if($nframe_stok > 1)'
       } # end of 'if($nframe_stok >= 1)'
+      elsif(defined $F_0) { 
+        # this CDS has results but no frame tokens because no RF position in any of its
+        # segments aligned to a nt (see above), so we have no frame information; set
+        # expected and dominant frame to $F_0, the frame implied by the first model
+        # position of the CDS that the alignment spans (brief 26_0602-061)
+        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_expected"} = $F_0;
+        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_dominant"} = $F_0;
+      }
 
       if(scalar(@cds_alt_str_A) > 0) { 
         # create and output a stockholm file for each segment of this seq/CDS 
