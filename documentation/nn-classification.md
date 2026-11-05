@@ -145,7 +145,7 @@ To restrict classification to a specific model region (recommended for viruses w
 **Key points:**
 - Positions are 1-based model reference (RF) positions
 - If specified, only these positions are used for calculating percent identity
-- Sequences with fewer than 40nt (default) in this region will use the full sequence instead
+- Sequences with fewer than 40nt (default) in this region will use the full sequence instead (gaps and Ns are not counted)
 - You can change the minimum length with `--nn_regionlen <n>`
 - You can ignore region specifications with `--ignore_nnregion`
 
@@ -202,7 +202,7 @@ VADR reports several alerts specific to nearest-neighbor classification:
 |------------|-----------|-------------|----------------|
 | `nnindfcl` | INDEFINITE_CLASSIFICATION_NN | Low difference between fractional identity of sequence and its nearest neighbor vs. 2nd nearest neighbor | never |
 | `nnloidcl` | LOW_ID_CLASSIFICATION_NN | Low fractional identity of sequence and its nearest neighbor | never |
-| `nnalrgcl` | ALT_REGION_CLASSIFICATION_NN | Alternative alignment region used to find nearest neighbor because sequence doesn't include specified region | never |
+| `nnalrgcl` | ALT_REGION_CLASSIFICATION_NN | Alternative alignment region used to find nearest neighbor because sequence has too few nucleotides (not gaps, not Ns) in specified region | never |
 | `nnptrgcl` | PARTIAL_REGION_CLASSIFICATION_NN | Only part of the specified alignment region used to find nearest neighbor | never |
 
 ### Adjusting alert thresholds:
@@ -312,7 +312,7 @@ AAAAAACGGGGNNNNNNNNNNAAAAGGGGGGGG
 - `seq2`: Identical to refseq_E18 in all RF positions → should classify as E18
 - `seq3`: One mismatch from refseq_CVB5 in classification region (G vs A at RF position 12) → should classify as CV-B5
 - `seq4`: Identical to refseq_E30 in RF positions but has different inserts (TT at insert positions 25-26) - inserts are ignored so should classify as E30 with 100% identity
-- `seq5`: Has Ns in classification region → may trigger `nnptrgcl` or `nnalrgcl` alert
+- `seq5`: Has Ns in classification region → too few observed nucleotides in the region, so the full sequence is used (`nnalrgcl` alert)
 
 ### Step 5: Run `v-annotate.pl`
 
@@ -332,7 +332,7 @@ v-annotate.pl -f --out_stk \
 - `$VADRSCRIPTSDIR/documentation/nn-files/test-nn.fa`: Input sequences to classify
 - `va-nn`: Output directory to create
 
-**Note on classification region length**: Our classification region (RF positions 7-18) is 12 nucleotides long, which is less than the default minimum of 40 nucleotides. However, `v-annotate.pl` automatically adjusts the minimum length threshold to match the specified region length when it is less than 40nt, so no additional options are needed.
+**Note on classification region length**: Our classification region (RF positions 7-18) is 12 nucleotides long, which is less than the default minimum of 40 nucleotides. However, `v-annotate.pl` automatically lowers the minimum to half the region length, rounded up (6 here), when that is less than 40nt, so no additional options are needed.
 
 ### Step 6: Examine the alignment and .scn output
 
@@ -368,7 +368,7 @@ And look at `va-nn/va-nn.vadr.scn`:
 2     seq2_should_be_E18       32  PASS  yes  toy-nn  EVB   E18    1.0000  refseq_E18   EVB   E30   0.5833  refseq_E30  0.4167           7..18:+     7..18:+    1.0000  -     
 3     seq3_closest_to_CVB5     32  PASS  yes  toy-nn  EVB   CV-B5  0.9167  refseq_CVB5  EVB   E30   0.5833  refseq_E30  0.3334           7..18:+     7..18:+    1.0000  -     
 4     seq4_different_inserts   36  PASS  yes  toy-nn  EVB   E30    1.0000  refseq_E30   EVB   E18   0.5833  refseq_E18  0.4167           7..18:+     7..18:+    1.0000  -     
-5     seq5_partial_region      32  PASS  yes  toy-nn  EVB   E30    0.3333  refseq_E30   EVB   E18   0.3333  refseq_E18  0.0000           7..18:+     7..18:+    1.0000  INDEFINITE_CLASSIFICATION_NN(nnindfcl),LOW_ID_CLASSIFICATION_NN(nnloidcl)
+5     seq5_partial_region      32  PASS  yes  toy-nn  EVB   E30    0.6875  refseq_E30   EVB   E18   0.6875  refseq_E18  0.0000           1..32:+     1..32:+    1.0000  INDEFINITE_CLASSIFICATION_NN(nnindfcl),LOW_ID_CLASSIFICATION_NN(nnloidcl),ALT_REGION_CLASSIFICATION_NN(nnalrgcl)
 ```
 
 **Interpretation:**
@@ -376,7 +376,7 @@ And look at `va-nn/va-nn.vadr.scn`:
 - `seq2`: 100% identity (12/12 RF positions) to refseq_E18 → classified as E18  
 - `seq3`: 91.67% (11/12) identity to refseq_CVB5 (one mismatch at RF position 12) → classified as CV-B5
 - `seq4`: **100% identity to refseq_E30 despite different inserts** (gg at insert positions after RF position 9) - demonstrates that insert columns are completely ignored in identity calculation
-- `seq5`: Used partial sequence for classification due to Ns, classified as E30 with low difference to E18 (triggers `nnindfcl` and `nnloidcl` alerts)
+- `seq5`: The classification region has fewer observed nucleotides (not N, not gap) than the minimum (6, half the 12-nt region length, because that is less than the `--nn_regionlen` default of 40), so the full sequence is used (`nnalrgcl`); classified as E30 with no difference to E18 (triggers `nnindfcl` and `nnloidcl` alerts)
 
 ### Step 7: Understanding the results
 
@@ -452,7 +452,7 @@ This uses the full sequence for classification even if region boundaries are spe
 ```bash
 v-annotate.pl --nn_regionlen 60 test-seqs.fa output-dir
 ```
-Sets minimum subsequence length for region-based classification to 60nt. By default, if a classification region is specified in the alignment file, the minimum length is automatically set to the region length (if less than 40nt) or 40nt (if the region is 40nt or longer). Use this option to override the automatic behavior and set a different threshold.
+Sets minimum subsequence length for region-based classification to 60nt. By default, if a classification region is specified in the alignment file, the minimum is 40nt, or half the region length (rounded up) if that is less than 40nt. This option replaces 40 with `<n>`; the half-region-length limit still applies. Gaps and Ns are not counted toward the minimum.
 
 ---
 

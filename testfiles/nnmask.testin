@@ -39,3 +39,20 @@ exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r/va-toy-nnmask-r.v
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r/va-toy-nnmask-r.vadr.scn
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnmask-r/va-toy-nnmask-r.vadr.rpn
 rmdir: va-toy-nnmask-r
+# Tests that without -r, the classification region must contain at least
+# --nn_regionlen observed residues (not gaps, not Ns), or the full
+# sequence is used (nnalrgcl). All three test sequences are identical to
+# the subgroup A sequence apart from Ns or a deletion:
+#  seq1: Ns at 61..140 (the entire region), no observed residues in the
+#        region, so the full sequence is used (A and B tie)
+#  seq2: 61..110 deleted, so only 30 residues remain in the 80-column
+#        region, and the full sequence is used
+#  seq3: no Ns, classified as A on the region
+#
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --mdir $VADRSCRIPTSDIR/testfiles/models --mkey toy-nnmask $VADRSCRIPTSDIR/testfiles/toy-nnfallback-seqs.fa va-toy-nnfallback > va-toy-nnfallback.out
+desc: annotate-toy-nnfallback
+out: va-toy-nnfallback/va-toy-nnfallback.vadr.sqc
+out: va-toy-nnfallback/va-toy-nnfallback.vadr.scn
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnfallback/va-toy-nnfallback.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nnfallback/va-toy-nnfallback.vadr.scn
+rmdir: va-toy-nnfallback

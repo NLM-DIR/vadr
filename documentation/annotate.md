@@ -704,7 +704,7 @@ In the table below, `<n>` represents a positive interger argument and
 | `--indefclass <x>`  | [*indfclas*](#indfclas1)                             | INDEFINITE_CLASSIFICATION              | < 0.03 | <a name="options-alerts-indefclass"></a> set bits per nt difference threshold for alert between top two models (not in same subgroup) to `<x>` |
 | `--nn_indefclass <x>`| [*nnindfcl*](#nnindfcl1)                            | INDEFINITE_CLASSIFICATION_NN           | < 0.05 | <a name="options-alerts-nn_indefclass"></a> set fractional difference threshold for alert between top two nearest neighbors (not in same subgroup) to `<x>`, only relevant in nearest-neighbor classification mode when model info file specifies an alignment file for group and subgroup definition |
 | `--nn_lowidclass <x>`| [*nnloidcl*](#nnloidcl1)                            | LOW_ID_CLASSIFICATION_NN               | < 0.75 | <a name="options-alerts-nn_lowidclass"></a> set fractional identity threshold for alert to `<x>`, only relevant in nearest-neighbor classification mode when model info file specifies an alignment file for group and subgroup definition |
-| `--nn_partregclass <x>`| [*nnptrgcl*](#nnptrgcl1)                          | PARTIAL_REGION_CLASSIFICATION_NN       | < 0.5   | <a name="options-alerts-nn_partregclass"></a> set threshold for fractional length within pre-specified NN region for alert to `<x>`, only relevant in nearest-neighbor classification mode when model info file specifies an alignment file for group and subgroup definition |
+| `--nn_partclass <x>`| [*nnptrgcl*](#nnptrgcl1)                          | PARTIAL_REGION_CLASSIFICATION_NN       | < 0.5   | <a name="options-alerts-nn_partclass"></a> set threshold for fractional length within pre-specified NN region for alert to `<x>`, only relevant in nearest-neighbor classification mode when model info file specifies an alignment file for group and subgroup definition |
 | `--incspec <x>`     | [*incgroup*](#incgroup1), [*incsbgrp*](#incsbgrp1) | INCORRECT_SPECIFIED_GROUP, INCORRECT_SPECIFIED_SUBGROUP | < 0.2   | <a name="options-alerts-incspec"></a> set bits per nt difference threshold for alert between best-matching model `<m>` and highest-scoring model in specified group `<s1>` (from `--group <s1>`) or subgroup `<s2>` (from `--subgroup <s2>`), where `<m>` is not in group/subgroup `<s1>`/`<s2>` to `<x>` |
 | `--lowcov <x>`      | [*lowcovrg*](#lowcovrg1)                             | LOW_COVERAGE                           | < 0.9  | <a name="options-alerts-lowcov"></a> set fractional coverage threshold for alert to `<x>` |
 | `--dupregolp <n>`   | [*dupregin*](#dupregin1)                             | DUPLICATE_REGIONS                      | >= 20  | <a name="options-alerts-dupreg"></a>set min number of model position overlap for alert to  `<n>` positions | 
@@ -927,12 +927,13 @@ file), positions in which Ns were replaced are not used in
 nearest-neighbor classification. The replacement nucleotides come from
 a sequence in the `-r` blastn DB, which is usually also in the
 classification alignment, so counting them would bias the
-classification toward that sequence. If fewer than `--nn_regionlen`
-nucleotides that are neither replaced positions nor Ns remain in the
-classification region, the full sequence is used for classification
-instead, and an *nnalrgcl* alert is reported. In VADR 1.7.3 and
-earlier, replaced positions were used in nearest-neighbor
-classification and Ns were counted toward `--nn_regionlen`.
+classification toward that sequence. As in runs without `-r`, if
+fewer than `--nn_regionlen` observed nucleotides (not gaps, not Ns, and
+with `-r` not replaced positions) remain in the classification region,
+the full sequence is used for classification instead, and an
+*nnalrgcl* alert is reported. In VADR 1.7.3 and earlier, replaced
+positions were used in nearest-neighbor classification, and gaps and
+Ns were counted toward `--nn_regionlen`.
 
 | ...........option...........  | explanation |
 |---------------------|--------------------|
@@ -1033,7 +1034,7 @@ explained more [here](#memory).
 | `--forcedcrins`  | force insert type alignment doctoring, requires `--cmindi`, mainly useful for debugging/testing |
 | `--xnoid`        | ignore blastx hits that are full length and 100% identical, mainly useful for testing |
 | `--intlen <n>`   | define intron as any gap >= `<n>` nucleotides between segments in a CDS, only relevant for identifying canonical splice sites, the default value for `<n>` is `40` |
-| `--nn_regionlen <n>`| define minimum length for region-specific NN-based classification to `<n>` nucleotides. If a sequence has fewer than `<n>` nucleotides spanning the region, NN-based classification will use the entire sequence instead. The default value for `<n>` is `40`, if the user-defined region length is `<m>` with `<m> < <n>`, then `<m>` will be used |
+| `--nn_regionlen <n>`| define minimum length for region-specific NN-based classification to `<n>` nucleotides. If a sequence has fewer than `<n>` nucleotides in the region (gaps, Ns and, with `-r`, replaced positions are not counted), NN-based classification will use the entire sequence instead. The default value for `<n>` is `40`; if half the user-defined region length (rounded up) is less than `<n>`, that value is used instead |
 
 ## Information on `v-annotate.pl` alerts <a name="alerts"></a>
 
@@ -1156,7 +1157,7 @@ coords`); only one of the pair may be used per feature (or `MODEL` line).
 | [*ambgcd3c*](#ambgcd3c2)  | feature  | no    | AMBIGUITY_IN_STOP_CODON         | <a name="ambgcd3c1"></a> 3' complete CDS ends with canonical nt but includes ambiguous nt in its stop codon | - | - |
 | [*nnindfcl*](#nnindfcl2)  | sequence | never | INDEFINITE_CLASSIFICATION_NN    | <a name="nnindfcl1"></a> low difference between fractional identity of sequence and its nearest neighbor and sequence and its 2nd nearest neighbor | - | - |
 | [*nnloidcl*](#nnloidcl2)  | sequence | never | LOW_ID_CLASSIFICATION_NN        | <a name="nnloidcl1"></a> low fractional identity of sequence and its nearest neighbor model sequence | - | - 
-| [*nnalrgcl*](#nnalrgcl2)  | sequence | never | ALT_REGION_CLASSIFICATION_NN    | <a name="nnalrgcl1"></a> alternative alignment region used to find nearest neighbor b/c sequence does not include specified region | - | - |
+| [*nnalrgcl*](#nnalrgcl2)  | sequence | never | ALT_REGION_CLASSIFICATION_NN    | <a name="nnalrgcl1"></a> alternative alignment region used to find nearest neighbor b/c sequence has too few nucleotides in specified region | - | - |
 | [*nnptrgcl*](#nnptrgcl2)  | sequence | never | PARTIAL_REGION_CLASSIFICATION_NN| <a name="nnptrgcl1"></a> only part of the specified alignment region used to find nearest neighbor b/c sequence doesn't span full region | - | - |
 | [*recombin*](#recombin2)  | sequence | never | POSSIBLE_RECOMBINATION          | <a name="recombin1"></a> possible recombination detected: nearest-neighbor switches subgroup at some breakpoint position (only reported with `--do_rc`) | - | - |
 
@@ -1274,7 +1275,7 @@ user, this is "-" for alerts that are never omitted from those files.
 | [*nnindfcl*](#nnindfcl1)  | INDEFINITE_CLASSIFICATION_NN    | [`--nn_indefclass`](#options-alerts-nn_indefclass) | - | - <a name="nnindfcl2"></a> | 
 | [*nnloidcl*](#nnloidcl1)  | LOW_ID_CLASSIFICATION_NN        | [`--nn_lowidclass`](#options-alerts-nn_lowidclass) | - | - <a name="nnloidcl2"></a> | 
 | [*nnalrgcl*](#nnalrgcl1)  | ALT_REGION_CLASSIFICATION_NN    | none | - | - <a name="nnalrgcl2"></a> | 
-| [*nnptrgcl*](#nnptrgcl1)  | PARTIAL_REGION_CLASSIFICATION_NN| [`--nn_partregclass`](#options-alerts-nn_partregclass) | - | - <a name="nnptrgcl2"></a> |
+| [*nnptrgcl*](#nnptrgcl1)  | PARTIAL_REGION_CLASSIFICATION_NN| [`--nn_partclass`](#options-alerts-nn_partclass) | - | - <a name="nnptrgcl2"></a> |
 | [*recombin*](#recombin1)  | POSSIBLE_RECOMBINATION          | [`--rc_thresh`, `--rc_match`, `--rc_minlen`, `--rc_igself`, `--rc_iglist`](#options-recomb) | - | - <a name="recombin2"></a> |
 
 ---

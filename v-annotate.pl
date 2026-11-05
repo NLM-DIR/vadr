@@ -18964,13 +18964,15 @@ sub classify_based_on_alignment {
     }
   }
   
-  # determine minimum allowed length for nn region, use --nnregion_len but if region is specified 
-  # and specified region length is below that minimum, use that
+  # determine minimum number of observed nucleotides required in nn region: use --nn_regionlen,
+  # but if half the specified region length (rounded up) is below that, use that, so that 
+  # in a short region a few Ns or gaps do not force use of the full sequence (brief 26_0602-062)
   my $specified_defined_nn_region = (($rf_start_pos == 1) && ($rf_stop_pos == $alen)) ? 0 : 1; # is there a specified nn region?
   my $specified_defined_nn_region_coords = vdr_CoordsSegmentCreate( $rf_start_pos, $rf_stop_pos, "+", $FH_HR );
   my $min_nnregion_length = opt_Get("--nn_regionlen", $opt_HHR);
-  if(vdr_CoordsLength($specified_defined_nn_region_coords, $FH_HR) < $min_nnregion_length) { 
-    $min_nnregion_length = vdr_CoordsLength($specified_defined_nn_region_coords, $FH_HR);
+  my $half_nnregion_length = int((vdr_CoordsLength($specified_defined_nn_region_coords, $FH_HR) + 1) / 2);
+  if($half_nnregion_length < $min_nnregion_length) { 
+    $min_nnregion_length = $half_nnregion_length;
   }
 
   for(my $sidx = 0; $sidx < $seq_nseq; $sidx++) {
@@ -19018,30 +19020,20 @@ sub classify_based_on_alignment {
       $apos_stop  = ($seq_rf_stop  < $rf_stop_pos)  ? $seq_rf_stop  : $rf_stop_pos;
     }
     my $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
-    my $possibly_subseq_sqstring_nongap = $possibly_subseq_sqstring;
-    $possibly_subseq_sqstring_nongap =~ s/\.\-\~//g;
-    my $nongap_len = length($possibly_subseq_sqstring_nongap);
-    if($nongap_len < $min_nnregion_length) {
-      # region defined by rf_start_pos..rf_stop_pos has less than $min_nnregion_length nongap chars
-      # revert to full sequence (seq_rf_start..seq_rf_stop includes all nongap chars, and excludes terminal gaps)
-      $apos_start = $seq_rf_start;
-      $apos_stop  = $seq_rf_stop;
-      $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
-      $using_defined_nn_region = 0; # if we were trying to, not enough sequence was within the region
-    }
-    if((defined $rpn_pos_HHR) && ($using_defined_nn_region)) { 
-      # with -r, also revert to full sequence if the region has less than
-      # $min_nnregion_length observed residues. Replaced positions are '*' and
-      # Ns that were not replaced are excluded, so a region that is all N is
-      # not classified on Ns alone. Done for all sequences, not only those with
-      # replaced Ns, because a region that -r could not fill has no replaced
-      # positions (brief 26_0602-060).
+    if($using_defined_nn_region) { 
+      # if the region has less than $min_nnregion_length observed residues, 
+      # revert to full sequence (seq_rf_start..seq_rf_stop includes all nongap
+      # chars, and excludes terminal gaps). Gaps, Ns and, with -r, positions
+      # in which Ns were replaced ('*') are not observed residues, so a region
+      # that is all N or mostly gap is not classified on what little remains.
+      # (Before brief 26_0602-062 this check counted alignment columns, and
+      # with -r a second check counted residues as here, brief 26_0602-060.)
       my $nres = ($possibly_subseq_sqstring =~ tr/A-MO-Z//);
       if($nres < $min_nnregion_length) { 
         $apos_start = $seq_rf_start;
         $apos_stop  = $seq_rf_stop;
         $possibly_subseq_sqstring = substr($seq_sqstring, ($apos_start - 1), ($apos_stop - $apos_start + 1));
-        $using_defined_nn_region = 0;
+        $using_defined_nn_region = 0; # if we were trying to, not enough sequence was within the region
       }
     }
     my @seq_sqstring_A = split("", $possibly_subseq_sqstring);

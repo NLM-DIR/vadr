@@ -1,6 +1,19 @@
 # VADR 1.x release notes 
 
 ### Unreleased changes (draft)
+  * `v-annotate.pl`: changed default behavior of nearest-neighbor
+    (group/subgroup) classification: the classification region is now
+    used only if it contains at least `--nn_regionlen` observed
+    nucleotides (not gaps, not Ns, not `-r` replaced positions), in
+    every run. Previously, without `-r`, alignment columns were
+    counted, so a region that was all N or mostly gap was classified
+    on almost nothing; now the full sequence is used and an `nnalrgcl`
+    alert is reported. If half the classification region length
+    (rounded up) is less than `--nn_regionlen`, that is the minimum
+    (previously the region length). Only group/subgroup values and
+    the non-fatal `nn*cl` alerts can change, and only in models with
+    a nearest-neighbor classification alignment; pass/fail and feature
+    tables are unchanged.
   * `v-annotate.pl`: changed default behavior of `-r`: positions in
     which Ns were replaced no longer count toward nearest-neighbor
     (group/subgroup) classification, because they come from a sequence

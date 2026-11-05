@@ -1,0 +1,5 @@
+#seq  seq                          seq                           sub    fract                    sub    fract                 fid  nnregion_seqspan    nnregion  nnregion  seq   
+#idx  name                         len  p/f   ant  model   grp1  grp1     id1  seq1        grp2  grp2     id2  seq2          diff        mdl_coords  mdl_coords     covrg  alerts
+#---  ---------------------------  ---  ----  ---  ------  ----  ----  ------  ----------  ----  ----  ------  ----------  ------  ----------------  ----------  --------  ------
+1     seq1_E30_one_N_in_region      32  PASS  yes  toy-nn  EVB   E30   0.9167  refseq_E30  EVB   E18   0.5833  refseq_E18  0.3334           7..18:+     7..18:+    1.0000  -     
+2     seq2_E30_eight_Ns_in_region   32  PASS  yes  toy-nn  EVB   E30   0.7500  refseq_E30  EVB   E18   0.7500  refseq_E18  0.0000           1..32:+     1..32:+    1.0000  INDEFINITE_CLASSIFICATION_NN(nnindfcl),ALT_REGION_CLASSIFICATION_NN(nnalrgcl)

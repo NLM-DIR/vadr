@@ -41,3 +41,16 @@ exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nn-ignore-nnclass/va-toy-n
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nn-ignore-nnclass/va-toy-nn-ignore-nnclass.vadr.sqc
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nn-ignore-nnclass/va-toy-nn-ignore-nnclass.vadr.mdl
 rmdir: va-toy-nn-ignore-nnclass
+# Tests that when the classification region (12 nt) is shorter than 
+# --nn_regionlen (40), the minimum number of observed nucleotides in the 
+# region is half the region length, rounded up (6):
+#  seq1: one N in the region (11 observed), classified on the region
+#  seq2: eight Ns in the region (4 observed), full sequence used (nnalrgcl)
+#
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --mdir $VADRSCRIPTSDIR/testfiles/models --mkey toy-nn $VADRSCRIPTSDIR/testfiles/toy-nn-shortregion.fa va-toy-nn-shortregion > va-toy-nn-shortregion.out
+desc: annotate-toy-nn-shortregion
+out: va-toy-nn-shortregion/va-toy-nn-shortregion.vadr.sqc
+out: va-toy-nn-shortregion/va-toy-nn-shortregion.vadr.scn
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nn-shortregion/va-toy-nn-shortregion.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-toy-nn-shortregion/va-toy-nn-shortregion.vadr.scn
+rmdir: va-toy-nn-shortregion
