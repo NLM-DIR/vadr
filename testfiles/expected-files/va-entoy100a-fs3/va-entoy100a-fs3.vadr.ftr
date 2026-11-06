@@ -149,7 +149,7 @@
 14.6   ENTOY100A-3-fs13   70  FAIL  ENTOY100A  CDS          protein_four        15    9   -1    -      68    54        -  no       0    0       -     -        -     -    1    0                    68..54:-                    98..84:-  -     
 #
 15.1   ENTOY100A-3-fs14   69  FAIL  ENTOY100A  gene         one                  1    1   -1    +       1     1        -  5'       0    0       -     -        -     -    1    0                      1..1:+                    33..33:+  -     
-15.2   ENTOY100A-3-fs14   69  FAIL  ENTOY100A  CDS          protein_two         42    5   -1    +       1    42        -  5'       0    0       -     -        -     -    3    0   1..16:+,16..33:+,35..42:+  33..47:+,47..64:+,66..73:+  POSSIBLE_FRAMESHIFT_HIGH_CONF(fsthicft)
+15.2   ENTOY100A-3-fs14   69  FAIL  ENTOY100A  CDS          protein_two         42    5   -1    +       1    42        3  5'       0    0       -     -        -     -    3    0   1..16:+,16..33:+,35..42:+  33..47:+,47..64:+,66..73:+  CDS_HAS_STOP_CODON(cdsstopn),POSSIBLE_FRAMESHIFT_HIGH_CONF(fsthicft)
 15.3   ENTOY100A-3-fs14   69  FAIL  ENTOY100A  CDS          protein_three       24    6   -1    +      36    64        -  no       0    0       -     -        -     -    2    0           36..48:+,54..64:+           67..79:+,85..95:+  -     
 15.4   ENTOY100A-3-fs14   69  FAIL  ENTOY100A  mat_peptide  protein_three_mp1    9    7    6    +      36    44        -  no       0    0       -     -        -     -    1    0                    36..44:+                    67..75:+  -     
 15.5   ENTOY100A-3-fs14   69  FAIL  ENTOY100A  mat_peptide  protein_three_mp2   12    8    6    +      45    61        -  no       0    0       -     -        -     -    2    0           45..48:+,54..61:+           76..79:+,85..92:+  -     
@@ -231,7 +231,7 @@
 26.4   ENTOY100A-3-fs25   40  FAIL  ENTOY100A  mat_peptide  protein_three_mp1    4    7    6    +      37    40        -  3'       0    0       -     -        -     -    1    0                    37..40:+                    67..70:+  -     
 #
 27.1   ENTOY100A-3-fs26   38  FAIL  ENTOY100A  gene         one                  1    1   -1    +       1     1        -  5'       0    0       -     -        -     -    1    0                      1..1:+                    33..33:+  -     
-27.2   ENTOY100A-3-fs26   38  FAIL  ENTOY100A  CDS          protein_two         38    5   -1    +       1    38        -  5'&3'    0    0       -     -        -     -    3    0   1..16:+,16..33:+,35..38:+  33..47:+,47..64:+,66..69:+  POSSIBLE_FRAMESHIFT_HIGH_CONF(fsthicft)
+27.2   ENTOY100A-3-fs26   38  FAIL  ENTOY100A  CDS          protein_two         38    5   -1    +       1    38        3  5'&3'    0    0       -     -        -     -    3    0   1..16:+,16..33:+,35..38:+  33..47:+,47..64:+,66..69:+  CDS_HAS_STOP_CODON(cdsstopn),POSSIBLE_FRAMESHIFT_HIGH_CONF(fsthicft)
 27.3   ENTOY100A-3-fs26   38  FAIL  ENTOY100A  CDS          protein_three        3    6   -1    +      36    38        -  3'       0    0       -     -        -     -    1    1                    36..38:+                    67..69:+  -     
 27.4   ENTOY100A-3-fs26   38  FAIL  ENTOY100A  mat_peptide  protein_three_mp1    3    7    6    +      36    38        -  3'       0    0       -     -        -     -    1    0                    36..38:+                    67..69:+  -     
 #

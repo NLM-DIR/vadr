@@ -6255,6 +6255,8 @@ sub add_frameshift_alerts_for_one_sequence {
   my $do_idl         = opt_Get("--out_idl",     $opt_HHR); # store long indels for the .idl file
   my $small_value = 0.000001; # for checking if PPs are below threshold
   my $nftr = scalar(@{$ftr_info_AHR});
+  my @children_AA = (); # children feature indices of each feature, used when choosing a CDS's annotated frame
+  vdr_FeatureInfoChildrenArrayOfArrays($ftr_info_AHR, undef, undef, \@children_AA, $FH_HR);
   my $ftr_idx;
   my $alert_scoords = undef; # sequence coords string for an alert
   my $alert_mcoords = undef; # model coords string for an alert
@@ -6612,8 +6614,37 @@ sub add_frameshift_alerts_for_one_sequence {
           ofile_FAIL("ERROR, in $sub_name, (seq:$seq_name) unable to parse frame_stok, internal coding error: $frame_stok_A[0]", 1, $FH_HR);
         }
         my $expected_frame = (($is_5p_trunc) && (defined $initial_nondominant_span_slen) && ($initial_nondominant_span_slen < $fst_min_nti)) ? $dominant_frame : $initial_frame;
-        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_expected"} = $expected_frame;
-        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_dominant"} = $dominant_frame;
+        # determine annotated frame, the frame we report as codon_start and check for
+        # stops in: the expected frame unless the CDS is 5' truncated and the expected
+        # and dominant frames differ, in which case it is the dominant frame. Without a
+        # start codon, the frame most of the CDS is in is a better estimate than the
+        # frame of a first region long enough to be called a frameshift; that first
+        # region is often misaligned (brief 26_0602-063). Frameshift alerts are still
+        # reported relative to the expected frame.
+        # Exception: if a child feature (e.g. a mat_peptide) has a non-truncated start or
+        # stop within that first region, its coordinates come from the same alignment as the
+        # expected frame and would be out of frame with the dominant frame, so we keep the
+        # expected frame (the stop check then tests it for in-frame stops).
+        my $annotated_frame = $expected_frame;
+        if(($is_5p_trunc) && ($expected_frame != $dominant_frame)) { 
+          $annotated_frame = $dominant_frame;
+          # determine first sequence position in the dominant frame
+          my $dom_sstart = undef;
+          for(my $f2 = 0; $f2 < $nframe_stok; $f2++) { 
+            if(($frame_stok_A[$f2] =~ /^([123]),I\d+,(\d+)\.\.\d+,D\d+\,[01]$/) && ($1 == $dominant_frame)) { 
+              $dom_sstart = $2; 
+              last;
+            }
+          }
+          if((defined $dom_sstart) && 
+             (helper_child_boundary_in_region($ftr_info_AHR, $sgm_results_HAHR->{$seq_name}, $children_AA[$ftr_idx], 
+                                               $ftr_sstart, (($ftr_strand eq "+") ? ($dom_sstart - 1) : ($dom_sstart + 1)), $ftr_strand, $FH_HR))) { 
+            $annotated_frame = $expected_frame;
+          }
+        }
+        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_expected"}  = $expected_frame;
+        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_dominant"}  = $dominant_frame;
+        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_annotated"} = $annotated_frame;
 
         if($nframe_stok > 1) { # if there's only one frame_stok, we can't have a frameshift
           my $prv_sstop   = undef; # last sequence position in the previous frame token
@@ -6784,6 +6815,7 @@ sub add_frameshift_alerts_for_one_sequence {
                       $alt_str .= sprintf(" frame:%s;", $frame_sum_str);
                       $alt_str .= sprintf(" length:%s;", $length_sum_str);
                       if(defined $intermediate_indel_str) { $alt_str .= sprintf(" intermediate:%s",   $intermediate_indel_str); }
+                      $alt_str .= sprintf(" annotated_frame:%d;", $annotated_frame); # frame reported as codon_start (before any trimming of 5' ambiguities)
                       alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, $alt_code, $seq_name, $ftr_idx, $alt_str, $FH_HR);
                       push(@cds_alt_str_A, $alt_str);
                     }
@@ -6825,6 +6857,7 @@ sub add_frameshift_alerts_for_one_sequence {
                         $alt_str .= sprintf(" shifted_avgpp:%.3f;", $shifted_span_avgpp);
                         $alt_str .= sprintf(" exp_avgpp:%.3f;", $exp_span_avgpp);
                         if(defined $intermediate_indel_str) { $alt_str .= sprintf(" intermediate:%s",   $intermediate_indel_str); }
+                        $alt_str .= sprintf(" annotated_frame:%d;", $annotated_frame); # frame reported as codon_start (before any trimming of 5' ambiguities)
                         my $is_hicnf = ($min_span_avgpp > ($fst_high_ppthr - $small_value)) ? 1 : 0;
                         alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, 
                                                    ($is_hicnf) ? $hi_alt_code : $lo_alt_code,
@@ -6888,8 +6921,9 @@ sub add_frameshift_alerts_for_one_sequence {
         # segments aligned to a nt (see above), so we have no frame information; set
         # expected and dominant frame to $F_0, the frame implied by the first model
         # position of the CDS that the alignment spans (brief 26_0602-061)
-        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_expected"} = $F_0;
-        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_dominant"} = $F_0;
+        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_expected"}  = $F_0;
+        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_dominant"}  = $F_0;
+        $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_annotated"} = $F_0;
       }
 
       if(scalar(@cds_alt_str_A) > 0) { 
@@ -7620,15 +7654,14 @@ sub fetch_features_and_add_cds_and_mp_alerts_for_one_sequence {
 
       # if CDS: look for all valid in-frame stops 
       if($ftr_is_cds) { 
-        if(! defined $ftr_results_HR->{"n_codon_start_expected"}) { 
+        if(! defined $ftr_results_HR->{"n_codon_start_annotated"}) { 
           ofile_FAIL("ERROR in $sub_name, sequence $seq_name CDS feature (ftr_idx: $ftr_idx) has no codon_start info", 1, $FH_HR);
         }
-        my $cds_codon_start = (defined $ftr_results_HR->{"n_codon_start_expected"}) ? $ftr_results_HR->{"n_codon_start_expected"} : 1;
+        my $cds_codon_start = $ftr_results_HR->{"n_codon_start_annotated"};
         # make a new sqstring $ftr_sqstring_alt_stops from $ftr_sqstring_alt to search for stops in that:
         # - is identical to $ftr_sqstring_alt                   if codon_start == 1
         # - has the first     nt removed from $ftr_sqstring_alt if codon_start == 2
         # - has the first two nt removed from $ftr_sqstring_alt if codon_start == 3
-        #my $n_nt_skipped_at_5p_end = ($ftr_is_5trunc) ? ($ftr_results_HR->{"n_codon_start_expected"} - 1) : 0;
         my $n_nt_skipped_at_5p_end = $cds_codon_start - 1;
         my $ftr_sqstring_alt_stops = substr($ftr_sqstring_alt, $n_nt_skipped_at_5p_end);
         my $ftr_len_stops = length($ftr_sqstring_alt_stops);
@@ -7641,13 +7674,11 @@ sub fetch_features_and_add_cds_and_mp_alerts_for_one_sequence {
             $alt_codon =~ tr/a-z/A-Z/;
             $alt_str_H{"mutendcd"} = sprintf("%s%s%s", $alt_scoords, $alt_mcoords, $alt_codon);
           }
-          # look for cdsstopn, mutendex and mutendns ONLY IF 
-          # CDS is NOT 5' truncated OR 
-          # n_codon_start_expected == n_codon_start_dominant
-          if((! $ftr_is_5trunc) || 
-             ((defined $ftr_results_HR->{"n_codon_start_expected"}) && 
-              (defined $ftr_results_HR->{"n_codon_start_dominant"}) && 
-              ($ftr_results_HR->{"n_codon_start_expected"} == $ftr_results_HR->{"n_codon_start_dominant"}))) { 
+          # look for cdsstopn, mutendex and mutendns, always in the frame we
+          # report as codon_start (until brief 26_0602-063 this was skipped for
+          # 5' truncated CDS whose expected and dominant frames differ, which
+          # let a codon_start with internal stops pass unchecked)
+          { 
             my @ftr_nxt_stp_A = ();
             sqstring_find_stops($ftr_sqstring_alt_stops, $mdl_tt, \@ftr_nxt_stp_A, $FH_HR);
             if(($ftr_nxt_stp_A[1] != $ftr_len_stops) || 
@@ -7744,7 +7775,7 @@ sub fetch_features_and_add_cds_and_mp_alerts_for_one_sequence {
                 }
               } # end of 'elsif($ftr_nxt_stp_A[1] != 0)'
             } # end of 'if($ftr_nxt_stp_A[1] != $ftr_len_stops) {' 
-          } # end of big if entered if CDS is not truncated or dominant frame and expected frame are identical
+          } # end of block that looks for cdsstopn, mutendex and mutendns
         } # end of 'if($ftr_len_stops >= 3)'
       } # end of 'if($ftr_is_cds) {' 
 
@@ -7857,6 +7888,55 @@ sub sqstring_check_start {
   $start_codon =~ tr/U/T/;     # convert to DNA
 
   return seq_CodonValidateStartCapDna($start_codon, $tt, $atg_only);
+}
+
+#################################################################
+# Subroutine: helper_child_boundary_in_region()
+# Incept:     EPN, Fri Nov  6 2026 (w/Claude)
+#
+# Purpose:    Return '1' if any child feature in @{$child_idx_AR} has a
+#             start or stop within the sequence region $rstart..$rstop
+#             on strand $strand, not counting a start of a child that is
+#             5' truncated or a stop of a child that is 3' truncated.
+#             Else return '0'. Used to decide if a 5' truncated CDS can
+#             be annotated in its dominant frame (brief 26_0602-063).
+#
+# Arguments:
+#   $ftr_info_AHR:    REF to array of hashes with information on the features
+#   $sgm_results_AHR: REF to segment results for one sequence
+#   $child_idx_AR:    REF to array of feature indices of the children
+#   $rstart:          first position of region (5' end on $strand)
+#   $rstop:           final position of region (3' end on $strand)
+#   $strand:          strand of region, "+" or "-"
+#   $FH_HR:           REF to hash of file handles
+#
+# Returns:    '1' or '0'
+#
+#################################################################
+sub helper_child_boundary_in_region { 
+  my $sub_name = "helper_child_boundary_in_region";
+  my $nargs_exp = 7;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_info_AHR, $sgm_results_AHR, $child_idx_AR, $rstart, $rstop, $strand, $FH_HR) = @_;
+
+  my ($lo, $hi) = ($strand eq "+") ? ($rstart, $rstop) : ($rstop, $rstart);
+  if($lo > $hi) { return 0; } # empty region
+  foreach my $child_idx (@{$child_idx_AR}) { 
+    my $sgm_5p_idx = $ftr_info_AHR->[$child_idx]{"5p_sgm_idx"};
+    my $sgm_3p_idx = $ftr_info_AHR->[$child_idx]{"3p_sgm_idx"};
+    if((defined $sgm_results_AHR->[$sgm_5p_idx]) && (defined $sgm_results_AHR->[$sgm_5p_idx]{"sstart"}) && 
+       (! $sgm_results_AHR->[$sgm_5p_idx]{"5trunc"})) { 
+      my $pos = $sgm_results_AHR->[$sgm_5p_idx]{"sstart"};
+      if(($pos >= $lo) && ($pos <= $hi)) { return 1; }
+    }
+    if((defined $sgm_results_AHR->[$sgm_3p_idx]) && (defined $sgm_results_AHR->[$sgm_3p_idx]{"sstop"}) && 
+       (! $sgm_results_AHR->[$sgm_3p_idx]{"3trunc"})) { 
+      my $pos = $sgm_results_AHR->[$sgm_3p_idx]{"sstop"};
+      if(($pos >= $lo) && ($pos <= $hi)) { return 1; }
+    }
+  }
+  return 0;
 }
 
 #################################################################
@@ -14004,12 +14084,12 @@ sub output_feature_table {
                 $cds_codon_start = 1; # protein only prediction, codon start must be 1
               }
               else { 
-                # n_start is defined, we have a nt prediction, we should have n_codon_start_expected
+                # n_start is defined, we have a nt prediction, we should have n_codon_start_annotated
                 # sanity check
-                if(! defined $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_expected"}) { 
+                if(! defined $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_annotated"}) { 
                   ofile_FAIL("ERROR in $sub_name, sequence $seq_name CDS feature (ftr_idx: $ftr_idx) has no codon_start info", 1, $FH_HR);
                 }
-                $cds_codon_start = $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_expected"};
+                $cds_codon_start = $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_annotated"};
                 # if we trimmed the CDS start due to ambiguities update frame for that
 
                 if(($ftr_is_trimmable) &&

@@ -1,0 +1,7 @@
+#      seq                    ftr          ftr           ftr  alert           alert                              seq  seq           mdl  mdl  alert 
+#idx   name        model      type         name          idx  code      fail  description                     coords  len        coords  len  detail
+#----  ----------  ---------  -----------  ------------  ---  --------  ----  ----------------------------  --------  ---  ------------  ---  ------
+1.1.1  PZ727740.1  NC_009823  CDS          polyprotein     3  fstlocft  no    POSSIBLE_FRAMESHIFT_LOW_CONF  7..453:+  447  6273..6721:+  449  low confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:6,M:6273..6274(2); frame:<3(1)>; length:<6:(447)>; shifted_avgpp:0.971; exp_avgpp:0.775; annotated_frame:3;]
+1.1.2  PZ727740.1  NC_009823  CDS          polyprotein     3  cdsstopn  yes   CDS_HAS_STOP_CODON            57..59:+    3  6325..6327:+    3  in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted M:3115]
+1.2.1  PZ727740.1  NC_009823  mat_peptide  NS4B_protein   12  peptrans  yes   PEPTIDE_TRANSLATION_PROBLEM          -    -             -    -  mat_peptide may not be translated because its parent CDS has a problem [-]
+1.3.1  PZ727740.1  NC_009823  mat_peptide  NS5A_protein   13  peptrans  yes   PEPTIDE_TRANSLATION_PROBLEM          -    -             -    -  mat_peptide may not be translated because its parent CDS has a problem [-]
