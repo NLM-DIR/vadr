@@ -1,0 +1,4 @@
+#seq  seq         seq                              sub                   seq    mdl         num                     sub   score  diff/  seq   
+#idx  name        len  p/f   ant  model1     grp1  grp1  score  sc/nt    cov    cov  bias  hits  str  model2  grp2  grp2   diff     nt  alerts
+#---  ----------  ---  ----  ---  ---------  ----  ----  -----  -----  -----  -----  ----  ----  ---  ------  ----  ----  -----  -----  ------
+1     PZ727740.1  453  FAIL  yes  NC_009823  HCV   2     256.3  0.566  0.991  0.046     0     1    +  -       -     -         -      -  -     

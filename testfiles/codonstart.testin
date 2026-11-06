@@ -23,3 +23,20 @@ exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-cox1.codonstart/va-cox1.codons
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-cox1.codonstart/va-cox1.codonstart.vadr.alt
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-cox1.codonstart/va-cox1.codonstart.vadr.sqc
 rmdir: va-cox1.codonstart
+#
+# hcv.codonstart.fa: GenBank PZ727740.1, NS5A region of an HCV genotype 2 polyprotein. Its first 6 nt are
+# aligned 2 model positions upstream of their true place (expected frame 3, dominant frame 1), and the
+# NS5A mat_peptide start maps into those 6 nt. Because a mat_peptide boundary lies in that region,
+# codon_start stays the expected frame (3), which has 10 internal stops, so the stop check must report
+# cdsstopn (before this was added, the sequence passed with codon_start 3).
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --mdir $VADRSCRIPTSDIR/testfiles/models --mkey hcv.1 $VADRSCRIPTSDIR/testfiles/hcv.codonstart.fa va-hcv.codonstart > va-hcv.codonstart.out
+desc: annotate-hcv-codonstart
+out: va-hcv.codonstart/va-hcv.codonstart.vadr.pass.tbl
+out: va-hcv.codonstart/va-hcv.codonstart.vadr.fail.tbl
+out: va-hcv.codonstart/va-hcv.codonstart.vadr.alt
+out: va-hcv.codonstart/va-hcv.codonstart.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-hcv.codonstart/va-hcv.codonstart.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-hcv.codonstart/va-hcv.codonstart.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-hcv.codonstart/va-hcv.codonstart.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-hcv.codonstart/va-hcv.codonstart.vadr.sqc
+rmdir: va-hcv.codonstart

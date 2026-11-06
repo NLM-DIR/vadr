@@ -1,0 +1,9 @@
+>Feature PZ727740.1
+<1	>453	gene
+			gene	POLY
+<1	>453	misc_feature
+			note	similar to polyprotein
+
+Additional note(s) to submitter:
+ERROR: CDS_HAS_STOP_CODON: (CDS:polyprotein) in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted M:3115]; seq-coords:57..59:+; mdl-coords:6325..6327:+; mdl:NC_009823;
+ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:NS5A protein) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:NC_009823;
