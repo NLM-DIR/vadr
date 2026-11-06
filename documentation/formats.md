@@ -280,7 +280,7 @@ FEATURE NC_039897 type:"mat_peptide" coords:"3872..5401:+" parent_idx_str:"1" pr
 |---------|-----------|-----------|---------|-----------|
 | `type`  | feature type, e.g. `CDS` | **yes** | `type:"CDS"` | some alerts are type-specific and some types are handled differently than others; e.g. coding potential of `CDS` and `mat_peptide` features is verified |
 | `coords` | coordinate string that defines model positions and strand for this feature in [this format](#coords) | **yes** | `coords:"26..51:+,740..1007:+" | "used to map/annotate features on sequences via alignment to model |
-| `parent_idx_str` | comma-delimited string that lists *parent* feature indices (in range `[0..<nftr-1>]`) for this feature, `nftr` is the total number of features for this model | no | `parent_idx_str:1` | some alerts are propagated from parent features to children | 
+| `parent_idx_str` | comma-delimited string that lists *parent* feature indices (in range `[0..<nftr-1>]`) for this feature, `nftr` is the total number of features for this model | no | `parent_idx_str:1` | some alerts are propagated from parent features to children; the parent of a `mat_peptide` must be a `CDS` | 
 | `product` | product name for this feature | no | `product:"neuraminidase" | used as name of feature in `.tbl` output files, if present |
 | `gene` | gene name for this feature | no | `gene:"NA"` | used as name of feature in `.tbl` output files, if present and `product` not present |
 | `canon_splice_sites` | must be `1` or `0` | no | `canon_splice_site:"1" | if `1` `v-annotate.pl` will verify GT/AG splice sites, only relevant for `CDS` features |
