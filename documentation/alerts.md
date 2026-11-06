@@ -184,7 +184,7 @@ formats")
 #      seq               ftr          ftr              ftr  alert           alert                               seq  seq       mdl  mdl  alert 
 #idx   name       model  type         name             idx  code      fail  description                      coords  len    coords  len  detail
 #----  ---------  -----  -----------  ---------------  ---  --------  ----  -----------------------------  --------  ---  --------  ---  ------
-1.1.2  TOY50-FS1  toy50  CDS          protein_one        1  fsthicfi  yes   POSSIBLE_FRAMESHIFT_HIGH_CONF  13..25:+   13  14..23:+   10  high confidence possible frameshift in CDS (frame restored before end) [cause:insert,S:13..17(5),M:13; restore:delete,S:25,M:22..23(2); frame:1(3)1; length:3:(13):8; shifted_avgpp:0.825; exp_avgpp:0.892;]
+1.1.2  TOY50-FS1  toy50  CDS          protein_one        1  fsthicfi  yes   POSSIBLE_FRAMESHIFT_HIGH_CONF  13..25:+   13  14..23:+   10  high confidence possible frameshift in CDS (frame restored before end) [cause:insert,S:13..17(5),M:13; restore:delete,S:25,M:22..23(2); frame:1(3)1; length:3:(13):8; shifted_avgpp:0.825; exp_avgpp:0.892; annotated_frame:1;]
 ```
 
   **Alignment of `TOY50-FS1` sequence to the toy50 model:** The output file 
@@ -239,6 +239,34 @@ TOY50-FS1         -AAATCACCGATGcccccGTGATCGC--TACCATAAATGAGCATTCTACGTGCAT
   which usually means that those first nucleotides are misaligned, the
   expected frame is the dominant frame instead.
 
+  The frame that `v-annotate.pl` reports as `codon_start` for the CDS
+  in the `.tbl` output files, and in which it checks the CDS for stop
+  codons, is the *annotated frame*. It is given at the end of the alert
+  detail of every frameshift alert (`annotated_frame:1;` in the example
+  above). The annotated frame is the expected frame, except for a CDS
+  that is truncated at its 5' end and whose expected and dominant
+  frames differ. Then the annotated frame is the dominant frame,
+  because without a start codon the frame that most of the CDS is in
+  is a better estimate of the reading frame than the frame of its first
+  nucleotides. In that case the frameshift alert describes the CDS
+  relative to the expected frame, not relative to the annotated frame.
+  For example, the alert detail `frame:<3(1); length:<7:(29);
+  shifted_avgpp:0.904; exp_avgpp:0.739; annotated_frame:1;` describes a
+  5'-truncated CDS that begins with 7 nucleotides in the expected frame
+  (3) and continues for 29 nucleotides in frame 1. The alert calls that
+  29-nucleotide region *shifted*: it is shown in parentheses in the
+  `frame` string, its coordinates are the alert's sequence coordinates,
+  and its average posterior probability is `shifted_avgpp`. But frame 1
+  is the dominant frame and the annotated frame, so the CDS is reported
+  with `codon_start` 1. Here the lower average posterior probability of
+  the 7 nucleotides in the expected frame (`exp_avgpp:0.739`) suggests
+  that those first nucleotides are misaligned. The `codon_start` value
+  in the `.tbl` output can also differ from `annotated_frame` when
+  ambiguous nucleotides are trimmed from the start of the CDS: the
+  annotated frame refers to the untrimmed CDS, the coordinates used in
+  the alert, while `codon_start` refers to the trimmed CDS reported in
+  the `.tbl` output.
+
   This frameshift is a high confidence
   frameshift in that the average posterior probability of the aligned
   nucleotides in the frameshifted region is `0.825`
@@ -282,6 +310,7 @@ TOY50-FS1         ATGCCCCCGTGATCGC--TACCATAA
 | `1(2)`         | `10:(50)`       | no            | no            | 2 | frame 1 for 10 nt, frame 2 for 50 nt |
 | `<1(2)`        | `10:(50)`       | yes           | no            | 2 | frame 1 for 10 nt, frame 2 for 50 nt |
 | `<1(2)>`       | `10:(50)`       | yes           | yes           | 2 | frame 1 for 10 nt, frame 2 for 50 nt |
+| `<3(1)`        | `<7:(29)`       | yes           | no            | 1 | frame 3 for 7 nt, frame 1 for 29 nt; if 1 is the dominant frame it is also the annotated frame (`codon_start` 1), see above |
 | `1(23)131>`    | `10:(50:30)20:9:31` | no        | yes           | 2 then 3 | frame 1 for 10 nt, frame 2 for 50 nt, frame 3 for 30 nt, frame 1 for 20 nt, frame 3 for 9 nt, frame 1 for 31 nt |
 
 ---
