@@ -224,15 +224,26 @@ TOY50-FS1         -AAATCACCGATGcccccGTGATCGC--TACCATAAATGAGCATTCTACGTGCAT
   The CDS starts in frame 1 for 3 nt, shifts into frame 3 for the frameshifted region
   for 13 nt and restores to frame 1 for 8 nt before the end of the CDS (`frame:1(3)1` and
   `length:3:(13):8`). The [table below](#framelengths) show how to interpret different `frame` and `length`
-  strings. The frame that the CDS starts in is defined as the
-  'expected frame' (this will always be 1 unless the CDS is truncated
-  at the 5' end). 
+  strings.
+
+  The frame used as the reference for frameshift detection is called
+  the *expected frame*, and regions in any other frame are the
+  *shifted* regions reported in frameshift alerts. The expected frame
+  is usually the frame of the first nucleotide of the CDS. For a CDS
+  that is not truncated at its 5' end, this is 1 unless the alignment
+  places the first nucleotide of the CDS after the first position of
+  the CDS in the reference model (for example, when the start codon is
+  deleted). For a CDS that is truncated at its 5' end, if the CDS
+  begins with fewer than `--fstminnti` nucleotides in a frame that
+  differs from the frame most of the CDS is in (the *dominant frame*),
+  which usually means that those first nucleotides are misaligned, the
+  expected frame is the dominant frame instead.
 
   This frameshift is a high confidence
   frameshift in that the average posterior probability of the aligned
   nucleotides in the frameshifted region is `0.825`
-  (`shifted_frame:0.825`) and of the expected region prior to (5' of) the
-  frameshift is 0.892 (`exp_frame:0.892`) both of which exceed the
+  (`shifted_avgpp:0.825`) and of the expected region prior to (5' of) the
+  frameshift is 0.892 (`exp_avgpp:0.892`) both of which exceed the
   threshold for high confidence (`0.8` by default). (The PP of both
   the shifted and expected regions must exceed the high confidence threshold for a frameshift
   to be defined as high confidence.) Other possible
