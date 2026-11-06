@@ -6255,6 +6255,8 @@ sub add_frameshift_alerts_for_one_sequence {
   my $do_idl         = opt_Get("--out_idl",     $opt_HHR); # store long indels for the .idl file
   my $small_value = 0.000001; # for checking if PPs are below threshold
   my $nftr = scalar(@{$ftr_info_AHR});
+  my @children_AA = (); # children feature indices of each feature, used when choosing a CDS's annotated frame
+  vdr_FeatureInfoChildrenArrayOfArrays($ftr_info_AHR, undef, undef, \@children_AA, $FH_HR);
   my $ftr_idx;
   my $alert_scoords = undef; # sequence coords string for an alert
   my $alert_mcoords = undef; # model coords string for an alert
@@ -6619,7 +6621,27 @@ sub add_frameshift_alerts_for_one_sequence {
         # frame of a first region long enough to be called a frameshift; that first
         # region is often misaligned (brief 26_0602-063). Frameshift alerts are still
         # reported relative to the expected frame.
-        my $annotated_frame = (($is_5p_trunc) && ($expected_frame != $dominant_frame)) ? $dominant_frame : $expected_frame;
+        # Exception: if a child feature (e.g. a mat_peptide) has a non-truncated start or
+        # stop within that first region, its coordinates come from the same alignment as the
+        # expected frame and would be out of frame with the dominant frame, so we keep the
+        # expected frame (the stop check then tests it for in-frame stops).
+        my $annotated_frame = $expected_frame;
+        if(($is_5p_trunc) && ($expected_frame != $dominant_frame)) { 
+          $annotated_frame = $dominant_frame;
+          # determine first sequence position in the dominant frame
+          my $dom_sstart = undef;
+          for(my $f2 = 0; $f2 < $nframe_stok; $f2++) { 
+            if(($frame_stok_A[$f2] =~ /^([123]),I\d+,(\d+)\.\.\d+,D\d+\,[01]$/) && ($1 == $dominant_frame)) { 
+              $dom_sstart = $2; 
+              last;
+            }
+          }
+          if((defined $dom_sstart) && 
+             (helper_child_boundary_in_region($ftr_info_AHR, $sgm_results_HAHR->{$seq_name}, $children_AA[$ftr_idx], 
+                                               $ftr_sstart, (($ftr_strand eq "+") ? ($dom_sstart - 1) : ($dom_sstart + 1)), $ftr_strand, $FH_HR))) { 
+            $annotated_frame = $expected_frame;
+          }
+        }
         $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_expected"}  = $expected_frame;
         $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_dominant"}  = $dominant_frame;
         $ftr_results_HAHR->{$seq_name}[$ftr_idx]{"n_codon_start_annotated"} = $annotated_frame;
@@ -7866,6 +7888,55 @@ sub sqstring_check_start {
   $start_codon =~ tr/U/T/;     # convert to DNA
 
   return seq_CodonValidateStartCapDna($start_codon, $tt, $atg_only);
+}
+
+#################################################################
+# Subroutine: helper_child_boundary_in_region()
+# Incept:     EPN, Fri Nov  6 2026 (w/Claude)
+#
+# Purpose:    Return '1' if any child feature in @{$child_idx_AR} has a
+#             start or stop within the sequence region $rstart..$rstop
+#             on strand $strand, not counting a start of a child that is
+#             5' truncated or a stop of a child that is 3' truncated.
+#             Else return '0'. Used to decide if a 5' truncated CDS can
+#             be annotated in its dominant frame (brief 26_0602-063).
+#
+# Arguments:
+#   $ftr_info_AHR:    REF to array of hashes with information on the features
+#   $sgm_results_AHR: REF to segment results for one sequence
+#   $child_idx_AR:    REF to array of feature indices of the children
+#   $rstart:          first position of region (5' end on $strand)
+#   $rstop:           final position of region (3' end on $strand)
+#   $strand:          strand of region, "+" or "-"
+#   $FH_HR:           REF to hash of file handles
+#
+# Returns:    '1' or '0'
+#
+#################################################################
+sub helper_child_boundary_in_region { 
+  my $sub_name = "helper_child_boundary_in_region";
+  my $nargs_exp = 7;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_info_AHR, $sgm_results_AHR, $child_idx_AR, $rstart, $rstop, $strand, $FH_HR) = @_;
+
+  my ($lo, $hi) = ($strand eq "+") ? ($rstart, $rstop) : ($rstop, $rstart);
+  if($lo > $hi) { return 0; } # empty region
+  foreach my $child_idx (@{$child_idx_AR}) { 
+    my $sgm_5p_idx = $ftr_info_AHR->[$child_idx]{"5p_sgm_idx"};
+    my $sgm_3p_idx = $ftr_info_AHR->[$child_idx]{"3p_sgm_idx"};
+    if((defined $sgm_results_AHR->[$sgm_5p_idx]) && (defined $sgm_results_AHR->[$sgm_5p_idx]{"sstart"}) && 
+       (! $sgm_results_AHR->[$sgm_5p_idx]{"5trunc"})) { 
+      my $pos = $sgm_results_AHR->[$sgm_5p_idx]{"sstart"};
+      if(($pos >= $lo) && ($pos <= $hi)) { return 1; }
+    }
+    if((defined $sgm_results_AHR->[$sgm_3p_idx]) && (defined $sgm_results_AHR->[$sgm_3p_idx]{"sstop"}) && 
+       (! $sgm_results_AHR->[$sgm_3p_idx]{"3trunc"})) { 
+      my $pos = $sgm_results_AHR->[$sgm_3p_idx]{"sstop"};
+      if(($pos >= $lo) && ($pos <= $hi)) { return 1; }
+    }
+  }
+  return 0;
 }
 
 #################################################################

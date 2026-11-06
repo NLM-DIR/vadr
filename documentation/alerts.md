@@ -248,7 +248,12 @@ TOY50-FS1         -AAATCACCGATGcccccGTGATCGC--TACCATAAATGAGCATTCTACGTGCAT
   frames differ. Then the annotated frame is the dominant frame,
   because without a start codon the frame that most of the CDS is in
   is a better estimate of the reading frame than the frame of its first
-  nucleotides. In that case the frameshift alert describes the CDS
+  nucleotides. (The exception is when a feature whose parent is the CDS, such
+  as a `mat_peptide`, has a start or stop that is not truncated and that
+  lies within the nucleotides at the 5' end of the CDS that are in the
+  expected frame. The coordinates of that feature come from the same
+  alignment as the expected frame, so the annotated frame stays the
+  expected frame.) In that case the frameshift alert describes the CDS
   relative to the expected frame, not relative to the annotated frame.
   For example, the alert detail `frame:<3(1); length:<7:(29);
   shifted_avgpp:0.904; exp_avgpp:0.739; annotated_frame:1;` describes a
