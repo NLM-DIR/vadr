@@ -1,0 +1,14 @@
+>Feature MW682887.1
+<1	>368	gene
+			gene	COX1
+<1	>368	CDS
+			product	cytochrome c oxidase subunit I
+			codon_start	3
+			protein_id	MW682887.1_1
+>Feature MW611392.1
+<1	>352	gene
+			gene	COX1
+<1	>352	CDS
+			product	cytochrome c oxidase subunit I
+			codon_start	3
+			protein_id	MW611392.1_1
