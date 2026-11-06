@@ -1,0 +1,42 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# codon_start and stop checks for 5'-truncated CDS whose expected and dominant frames differ.
+# cox1.codonstart.fa: GenBank MW682887.1, MW611392.1 (2-3 nt at the 5' end aligned in another
+# frame: below --fstminnti, so expected frame = dominant frame; must PASS with no alerts) and
+# MT782419.1 (expected frame 3 != dominant frame 2; codon_start is the dominant frame, which has
+# internal stops, so the stop check must report cdsstopn).
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --mdir $VADRSCRIPTSDIR/testfiles/models --mkey cox1.arach $VADRSCRIPTSDIR/testfiles/cox1.codonstart.fa va-cox1.codonstart > va-cox1.codonstart.out
+desc: annotate-cox1-codonstart
+out: va-cox1.codonstart/va-cox1.codonstart.vadr.pass.tbl
+out: va-cox1.codonstart/va-cox1.codonstart.vadr.fail.tbl
+out: va-cox1.codonstart/va-cox1.codonstart.vadr.alt
+out: va-cox1.codonstart/va-cox1.codonstart.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-cox1.codonstart/va-cox1.codonstart.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-cox1.codonstart/va-cox1.codonstart.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-cox1.codonstart/va-cox1.codonstart.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-cox1.codonstart/va-cox1.codonstart.vadr.sqc
+rmdir: va-cox1.codonstart
+#
+# hcv.codonstart.fa: GenBank PZ727740.1, NS5A region of an HCV genotype 2 polyprotein. Its first 6 nt are
+# aligned 2 model positions upstream of their true place (expected frame 3, dominant frame 1), and the
+# NS5A mat_peptide start maps into those 6 nt. Because a mat_peptide boundary lies in that region,
+# codon_start stays the expected frame (3), which has 10 internal stops, so the stop check must report
+# cdsstopn (before this was added, the sequence passed with codon_start 3).
+command: perl $VADRSCRIPTSDIR/v-annotate.pl -f --mdir $VADRSCRIPTSDIR/testfiles/models --mkey hcv.1 $VADRSCRIPTSDIR/testfiles/hcv.codonstart.fa va-hcv.codonstart > va-hcv.codonstart.out
+desc: annotate-hcv-codonstart
+out: va-hcv.codonstart/va-hcv.codonstart.vadr.pass.tbl
+out: va-hcv.codonstart/va-hcv.codonstart.vadr.fail.tbl
+out: va-hcv.codonstart/va-hcv.codonstart.vadr.alt
+out: va-hcv.codonstart/va-hcv.codonstart.vadr.sqc
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-hcv.codonstart/va-hcv.codonstart.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-hcv.codonstart/va-hcv.codonstart.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-hcv.codonstart/va-hcv.codonstart.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-hcv.codonstart/va-hcv.codonstart.vadr.sqc
+rmdir: va-hcv.codonstart

@@ -3,7 +3,7 @@
 #=GF CC GR CS annotation indicates the codon_start value each nongap RF position implies.
 #=GF CC Changes from the expected codon_start value indicate possibly frameshifted regions.
 
-#=GS NC_029646/1000-1004,C,1005-2000 FS.1 seq_coords:6..1002:+; mdl_coords: 1005..2000:+; cause:insert,S:6(1),M:1004; frame:<2(3)>; length:<5:(997)>; shifted_avgpp:0.974; exp_avgpp:0.925;
+#=GS NC_029646/1000-1004,C,1005-2000 FS.1 seq_coords:6..1002:+; mdl_coords: 1005..2000:+; cause:insert,S:6(1),M:1004; frame:<2(3)>; length:<5:(997)>; shifted_avgpp:0.974; exp_avgpp:0.925; annotated_frame:3;
 
 NC_029646/1000-1004,C,1005-2000         CGAGGCACCTTGCAGTGGAACTCGTTCCAATAGTGATGGGGGGGATTGGTTTGGTGCTAGGGTTCACCAAAGAGAAGATCGGGAAAATGTTGTCATCTGCTGCATCCACCTTAAGAGCTTGTAAAGACCTTGGTGCATACGGACTGGAAATCTTAAAATTGGTCATGAAGTGGTTCTTCCCAAAGAGAGAGGAAGCAAAT
 #=GR NC_029646/1000-1004,C,1005-2000 PP ***986899***********************************************************************************************************************************************************************************************

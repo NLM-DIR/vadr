@@ -1,0 +1,10 @@
+>Feature MT782419.1
+<1	>474	gene
+			gene	COX1
+<1	>474	misc_feature
+			note	similar to cytochrome c oxidase subunit I
+
+Additional note(s) to submitter:
+ERROR: CDS_HAS_STOP_CODON: (CDS:cytochrome c oxidase subunit I) in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted M:1222]; seq-coords:17..19:+; mdl-coords:357..359:+; mdl:cox1.tt5.ar-ch-arachnida;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:cytochrome c oxidase subunit I) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:192,M:536(1); frame:<3(2)>; length:<192:(282)>; shifted_avgpp:0.962; exp_avgpp:0.923; annotated_frame:2;]; seq-coords:193..474:+; mdl-coords:536..818:+; mdl:cox1.tt5.ar-ch-arachnida;
+ERROR: INDEFINITE_ANNOTATION_START: (CDS:cytochrome c oxidase subunit I) protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint [181>5]; seq-coords:1..181:+; mdl-coords:1..1:+; mdl:cox1.tt5.ar-ch-arachnida;
