@@ -6793,6 +6793,7 @@ sub add_frameshift_alerts_for_one_sequence {
                       $alt_str .= sprintf(" frame:%s;", $frame_sum_str);
                       $alt_str .= sprintf(" length:%s;", $length_sum_str);
                       if(defined $intermediate_indel_str) { $alt_str .= sprintf(" intermediate:%s",   $intermediate_indel_str); }
+                      $alt_str .= sprintf(" annotated_frame:%d;", $annotated_frame); # frame reported as codon_start (before any trimming of 5' ambiguities)
                       alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, $alt_code, $seq_name, $ftr_idx, $alt_str, $FH_HR);
                       push(@cds_alt_str_A, $alt_str);
                     }
@@ -6834,6 +6835,7 @@ sub add_frameshift_alerts_for_one_sequence {
                         $alt_str .= sprintf(" shifted_avgpp:%.3f;", $shifted_span_avgpp);
                         $alt_str .= sprintf(" exp_avgpp:%.3f;", $exp_span_avgpp);
                         if(defined $intermediate_indel_str) { $alt_str .= sprintf(" intermediate:%s",   $intermediate_indel_str); }
+                        $alt_str .= sprintf(" annotated_frame:%d;", $annotated_frame); # frame reported as codon_start (before any trimming of 5' ambiguities)
                         my $is_hicnf = ($min_span_avgpp > ($fst_high_ppthr - $small_value)) ? 1 : 0;
                         alert_feature_instance_add($alt_ftr_instances_HHHR, $alt_info_HHR, 
                                                    ($is_hicnf) ? $hi_alt_code : $lo_alt_code,
