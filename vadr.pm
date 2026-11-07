@@ -1389,7 +1389,8 @@ sub vdr_FeatureInfoValidateCoords {
 # 
 # Purpose:    Validate "parent_idx_str" values are either "GBNULL"
 #             or a valid feature index [0..$nftr-1]. Also make sure that
-#             all parents are not themselves children of another feature.
+#             all parents are not themselves children of another feature,
+#             and that the parent of every mat_peptide is a CDS.
 #             This subroutine should probably be called after 
 #             vdr_FeatureInfoInitializeParentIndexStrings().
 #             
@@ -1402,6 +1403,7 @@ sub vdr_FeatureInfoValidateCoords {
 # Dies:       if $ftr_info_AHR is invalid upon entry
 #             if any feature that is a parent is also a child of a different feature
 #             if any feature is a child of itself
+#             if any mat_peptide has a parent that is not a CDS
 #################################################################
 sub vdr_FeatureInfoValidateParentIndexStrings {
   my $sub_name = "vdr_FeatureInfoValidateParentIndexStrings";
@@ -1431,6 +1433,11 @@ sub vdr_FeatureInfoValidateParentIndexStrings {
       }
       elsif($parent_idx_str == $ftr_idx) { 
         $fail_str .= "ftr_idx: $ftr_idx, is its own parent, this is not allowed\n";
+      }
+      elsif(($ftr_info_AHR->[$ftr_idx]{"type"} eq "mat_peptide") && 
+            ($ftr_info_AHR->[$parent_idx_str]{"type"} ne "CDS")) { 
+        # a mat_peptide's coordinates and translation are interpreted relative to its parent CDS
+        $fail_str .= "ftr_idx: $ftr_idx, is a mat_peptide whose parent (ftr_idx: $parent_idx_str) is a " . $ftr_info_AHR->[$parent_idx_str]{"type"} . ", not a CDS, this is not allowed\n";
       }
       else { # valid feature index
         # printf("in $sub_name, adding $parent_idx_str to parent_idx_A\n");

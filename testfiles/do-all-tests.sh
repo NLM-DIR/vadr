@@ -66,6 +66,7 @@ for t in \
     do-idl-tests.sh \
     do-insseg-tests.sh \
     do-codonstart-tests.sh \
+    do-parentguard-tests.sh \
     github-issues/do-issue-tests.sh \
     ; do
     sh $VADRSCRIPTSDIR/testfiles/$t
