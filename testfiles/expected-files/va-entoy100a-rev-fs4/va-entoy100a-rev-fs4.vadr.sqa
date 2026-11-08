@@ -1,0 +1,6 @@
+#seq  seq                  seq             best                sub                             seq   
+#idx  name                 len  p/f   ant  model          grp  grp  nfa  nfn  nf5  nf3  nfalt  alerts
+#---  -------------------  ---  ----  ---  -------------  ---  ---  ---  ---  ---  ---  -----  ------
+1     ENTOY100A-REV-4-fs1   99  FAIL  yes  ENTOY100A-REV  toy  A     11    0    0    0     13  -     
+2     ENTOY100A-REV-4-fs2   97  FAIL  yes  ENTOY100A-REV  toy  A     11    0    0    0     10  -     
+3     ENTOY100A-REV-4-fs3   93  FAIL  yes  ENTOY100A-REV  toy  A     11    0    0    0     11  -     

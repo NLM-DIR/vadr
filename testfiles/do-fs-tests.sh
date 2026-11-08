@@ -2,13 +2,13 @@
 
 RETVAL=0;
 
-# entoy100a-fs{1,2,3}
+# entoy100a-fs{1,2,3,4}
 $VADRSCRIPTSDIR/v-test.pl -f --rmout $VADRSCRIPTSDIR/testfiles/entoy100a-fs.testin entoy100a-fs
 if [ "$?" -ne 0 ]; then
    RETVAL=1;
 fi   
 
-# entoy100a-rev-fs{1,2,3}
+# entoy100a-rev-fs{1,2,3,4}
 $VADRSCRIPTSDIR/v-test.pl -f --rmout $VADRSCRIPTSDIR/testfiles/entoy100a-rev-fs.testin entoy100a-rev-fs
 if [ "$?" -ne 0 ]; then
    RETVAL=1;
