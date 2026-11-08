@@ -6328,6 +6328,9 @@ sub add_frameshift_alerts_for_one_sequence {
       my $rf_diff = 0;  # number of rf positions seen since first rf position aligned to a nt for current CDS
       my $ua_diff = 0;  # number of nt seen since first nt for current CDS
       my $F_0 = undef;  # frame of initial nongap RF position for current CDS
+      my %sgm_start_indel_AH = (); # key: frame token index, value: array of [indel string, length] for indels at the start of a non-first segment, before that token
+      my $ntok = 0;                # number of frame tokens begun so far
+      my $prv_sgm_mstop = undef;   # final model position walked in the previous segment, to avoid recording a deletion twice when segments overlap (e.g. ribosomal slippage)
       my $full_ppstr = undef; # unaligned posterior probability string for this sequence, only defined if nec (if frameshift alert is reported)
       my @cds_alt_str_A = ();
       my $first_sgm_idx = get_5p_most_sgm_idx_with_results($ftr_info_AHR, $sgm_results_HAHR, $ftr_idx, $seq_name);
@@ -6366,6 +6369,7 @@ sub add_frameshift_alerts_for_one_sequence {
             my $mstop  = ($sgm_idx == $final_sgm_idx) ? $sgm_results_HR->{"mstop"}  : $sgm_stop_rfpos; 
             my $strand = $sgm_results_HR->{"strand"};
             my $cur_delete_len = 0; # current length of deletion
+            my @sgm_start_indel_A = (); # indels before the first nongap RF position of a non-first segment: [type, model start, model stop (deletions) or model position the insert follows (inserts), length]
             if(! defined $ftr_sstart) { $ftr_sstart = $sstart; }
             if(! defined $ftr_mstart) { $ftr_mstart = $mstart; }
             $ftr_sstop = $sstop;
@@ -6429,6 +6433,38 @@ sub add_frameshift_alerts_for_one_sequence {
                     $nins = 0;
                   }
                   my $ins_str = "I" . $nins;
+                  # RF positions at the start of a non-first segment that are deleted in the sequence,
+                  # and nt inserted among them, change the frame (they are counted in $rf_diff and
+                  # $ua_diff) but are part of no frame token, so record them here, in order, to be
+                  # reported as a frameshift's cause, if nec (brief 26_0602-064)
+                  if((! defined $F_prv) && (! $is_first_sgm) && (scalar(@sgm_start_indel_A) > 0)) { 
+                    my $nlead_ins = 0;
+                    foreach my $indel_AR (@sgm_start_indel_A) { 
+                      if($indel_AR->[0] eq "insert") { $nlead_ins += $indel_AR->[3]; }
+                    }
+                    # $spos: sequence position just before the next indel, in the direction of the feature
+                    my $spos = ($strand eq "+") ? ($uapos - $nlead_ins - 1) : ($uapos + $nlead_ins + 1);
+                    @{$sgm_start_indel_AH{$ntok}} = ();
+                    foreach my $indel_AR (@sgm_start_indel_A) { 
+                      my ($indel_type, $indel_mstart, $indel_mstop, $indel_len) = @{$indel_AR};
+                      my $indel_str = undef;
+                      if($indel_type eq "delete") { 
+                        $indel_str = ($indel_len == 1) ? 
+                            sprintf("delete,S:%d,M:%d(%d);", $spos, $indel_mstart, $indel_len) : 
+                            sprintf("delete,S:%d,M:%d..%d(%d);", $spos, $indel_mstart, $indel_mstop, $indel_len);
+                      }
+                      else { 
+                        my $ins_sstart = ($strand eq "+") ? ($spos + 1)           : ($spos - 1);
+                        my $ins_sstop  = ($strand eq "+") ? ($spos + $indel_len) : ($spos - $indel_len);
+                        $indel_str = ($indel_len == 1) ? 
+                            sprintf("insert,S:%d(%d),M:%d;", $ins_sstart, $indel_len, $indel_mstart) : 
+                            sprintf("insert,S:%d..%d(%d),M:%d;", $ins_sstart, $ins_sstop, $indel_len, $indel_mstart);
+                        $spos = $ins_sstop;
+                      }
+                      push(@{$sgm_start_indel_AH{$ntok}}, [$indel_str, $indel_len]);
+                    }
+                  }
+                  $ntok++;
                   $frame_stok_str .= $F_cur . "," . $ins_str . "," . $uapos . "..";
                   $frame_mtok_str .= $F_cur . "," . $rfpos . "..";
                 }
@@ -6460,6 +6496,18 @@ sub add_frameshift_alerts_for_one_sequence {
                 if($strand eq "+") { $gr_frame_str .= "d"; }
                 else               { $gr_frame_str =  "d" . $gr_frame_str; } # prepend for negative strand
                 $cur_delete_len++;
+                if((! defined $F_prv) && (! $is_first_sgm) && 
+                   ((! defined $prv_sgm_mstop) || (($strand eq "+") && ($rfpos > $prv_sgm_mstop)) || (($strand eq "-") && ($rfpos < $prv_sgm_mstop)))) { 
+                  # positions that overlap the previous segment were already recorded as a deletion at its end
+                  my $nindel = scalar(@sgm_start_indel_A);
+                  if(($nindel > 0) && ($sgm_start_indel_A[($nindel-1)][0] eq "delete")) { 
+                    $sgm_start_indel_A[($nindel-1)][2] = $rfpos;
+                    $sgm_start_indel_A[($nindel-1)][3]++;
+                  }
+                  else { 
+                    push(@sgm_start_indel_A, ["delete", $rfpos, $rfpos, 1]);
+                  }
+                }
               }
               # add 'i' GR frame annotation for inserts that occur after (or before if neg strand) this rfpos, if any
               if($strand eq "+") { 
@@ -6476,6 +6524,15 @@ sub add_frameshift_alerts_for_one_sequence {
                     $gr_frame_str =  "i" . $gr_frame_str; # prepend for negative strand
                     $ua_diff++; # increment number of seq positions seen
                   }
+                }
+              }
+              # record inserts before the first nongap RF position of a non-first segment
+              if((! defined $F_prv) && (! $is_first_sgm)) { 
+                my $lead_ins_len = 0;
+                if   (($strand eq "+") && ($rfpos < $mstop) && ($rf2ilen_AR->[$rfpos]     > 0)) { $lead_ins_len = $rf2ilen_AR->[$rfpos]; }
+                elsif(($strand eq "-") && ($rfpos > $mstop) && ($rf2ilen_AR->[($rfpos-1)] > 0)) { $lead_ins_len = $rf2ilen_AR->[($rfpos-1)]; }
+                if($lead_ins_len > 0) { 
+                  push(@sgm_start_indel_A, ["insert", $rfpos, $rfpos, $lead_ins_len]);
                 }
               }
               # add insertnn alert, if nec
@@ -6504,6 +6561,7 @@ sub add_frameshift_alerts_for_one_sequence {
               if($strand eq "+") { $rfpos++; } 
               else               { $rfpos--; }
             }
+            $prv_sgm_mstop = $mstop;
             # complete final frame token, if we began one; we did not if no RF position
             # in this segment aligned to a nt, which happens if all of the segment's
             # nt are inserts (e.g. a long run of Ns aligned as deletions around an insert);
@@ -6690,6 +6748,16 @@ sub add_frameshift_alerts_for_one_sequence {
                 ofile_FAIL("ERROR, in $sub_name, (seq:$seq_name) unable to parse frame_mtok, internal coding error: $frame_mtok_A[$f]", 1, $FH_HR);
               }
 
+              # deal with indels at the start of a non-first segment, before this token; as for
+              # deletions at a segment end, only record those that are not a multiple of 3 in
+              # length and only if the frame changes across the segment boundary
+              if(($f > 0) && (defined $sgm_start_indel_AH{$f}) && ($cur_frame != $prv_frame)) { 
+                foreach my $indel_AR (@{$sgm_start_indel_AH{$f}}) { 
+                  if(($indel_AR->[1] % 3) != 0) { 
+                    push(@cur_indel_str_A, $indel_AR->[0]);
+                  }
+                }
+              }
               # deal with inserted positions between previous frame token and this one
               my $cur_insert_str = undef;
               if($f > 0) { 
@@ -6873,7 +6941,17 @@ sub add_frameshift_alerts_for_one_sequence {
               # deal with deleted positions, using an array, when we report a FS we determine which is 
               # causative, intermediate and restorative.
               my $cur_delete_str = undef;
-              if($f != ($nframe_stok-1)) { 
+              # a deletion at a segment end is only recorded if it is not a multiple of 3 in length
+              # and the frame changes across the segment boundary; otherwise it did not shift the
+              # frame and would be misreported as the cause of a later frameshift (brief 26_0602-064)
+              my $sgm_end_del_shifts = 1;
+              if(($cur_sgmend) && ($f != ($nframe_stok-1))) { 
+                my $nxt_frame = ($frame_stok_A[($f+1)] =~ /^([123]),/) ? $1 : $cur_frame;
+                if((($cur_ndelete % 3) == 0) || ($nxt_frame == $cur_frame)) { 
+                  $sgm_end_del_shifts = 0;
+                }
+              }
+              if(($f != ($nframe_stok-1)) && ($sgm_end_del_shifts)) { 
                 if($cur_ndelete > 0) { 
                   if($ftr_strand eq "+") { 
                     if($cur_ndelete == 1) { 
