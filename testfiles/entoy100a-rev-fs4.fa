@@ -7,3 +7,12 @@ GCTCATTTATGGTAAAGCGATCACCATCGGTGATTTC
 >ENTOY100A-REV-4-fs3 multi-segment, 6nt in-frame deletion at end of segment 2, then 1nt deletion in segment 3 that breaks frame, not fixed (CDS2, RFPOS42..37, RFPOS30)
 TGATGCTACGTACGTGAATGGCAATTTCTCCATTGACCGCAAGATGCACGTAGAATGCTC
 ATTTATGGTAAAGCGATCACCATCGGTGATTTC
+>ENTOY100A-REV-4-fs4 multi-segment, 3nt deletion at end of segment 1 that includes the position shared with segment 2 (ribosomal slippage), not fixed (CDS2, RFPOS56..54)
+TGATGCTACGTACGTGAATGGCAATTTCTACCATTGTATGGCACCGCAAGATGGTAGAAT
+GCTCATTTATGGTAAAGCGATCACCATCGGTGATTTC
+>ENTOY100A-REV-4-fs5 multi-segment, 4nt deletion across the position shared by segments 1 and 2 (ribosomal slippage), not fixed (CDS2, RFPOS57..54)
+TGATGCTACGTACGTGAATGGCAATTTCTACCATTGTATGGCACCGCAAGATGTAGAATG
+CTCATTTATGGTAAAGCGATCACCATCGGTGATTTC
+>ENTOY100A-REV-4-fs6 multi-segment, 3nt deletion at end of segment 1 that includes the position shared with segment 2 (ribosomal slippage), then 1nt deletion in segment 2, not fixed (CDS2, RFPOS56..54, RFPOS46)
+TGATGCTACGTACGTGAATGGCAATTTCTACCATTGTATGGCACCCAAGATGGTAGAATG
+CTCATTTATGGTAAAGCGATCACCATCGGTGATTTC

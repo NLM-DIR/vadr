@@ -117,3 +117,132 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein three) length of complete coding (CDS or 
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein three mp1) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A-REV;
 ERROR: UNEXPECTED_LENGTH: (mat_peptide:protein three mp1) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [8]; seq-coords:33..26:-; mdl-coords:34..26:-; mdl:ENTOY100A-REV;
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein three mp2) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A-REV;
+>Feature ENTOY100A-REV-4-fs4
+3	17	CDS
+			product	protein four
+			protein_id	ENTOY100A-REV-4-fs4_3
+34	22	CDS
+16	6
+			product	protein three
+			protein_id	ENTOY100A-REV-4-fs4_2
+25	22	mat_peptide
+16	9
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-4-fs4_2
+34	26	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-4-fs4_2
+66	54	misc_feature
+53	37
+35	28
+			note	similar to protein two
+90	65	gene
+			gene	one
+87	67	CDS
+			product	protein one
+			protein_id	ENTOY100A-REV-4-fs4_1
+75	70	mat_peptide
+			product	protein one mp2
+			protein_id	ENTOY100A-REV-4-fs4_1
+87	76	mat_peptide
+			product	protein one mp1
+			protein_id	ENTOY100A-REV-4-fs4_1
+93	76	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
+88	79	stem_loop
+			note	stem-loop 1
+
+Additional note(s) to submitter:
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:54,M:56..54(3); frame:1(3); length:13:(25); shifted_avgpp:0.972; exp_avgpp:0.969; annotated_frame:1;]; seq-coords:53..28:-; mdl-coords:56..28:-; mdl:ENTOY100A-REV;
+ERROR: INDEFINITE_ANNOTATION_END: (CDS:protein two) alignment to homology model is a gap at 3' boundary [segment 1 of 3]; seq-coords:54..54:-; mdl-coords:54..54:-; mdl:ENTOY100A-REV;
+ERROR: INDEFINITE_ANNOTATION_START: (CDS:protein two) alignment to homology model is a gap at 5' boundary [segment 2 of 3]; seq-coords:53..53:-; mdl-coords:54..54:-; mdl:ENTOY100A-REV;
+ERROR: MUTATION_AT_END: (CDS:protein two) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:8..6:-; mdl-coords:8..6:-; mdl:ENTOY100A-REV;
+ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [38]; seq-coords:66..54:-,53..37:-,35..28:-; mdl-coords:69..57:-,53..37:-,35..28:-; mdl:ENTOY100A-REV;
+>Feature ENTOY100A-REV-4-fs5
+3	17	CDS
+			product	protein four
+			protein_id	ENTOY100A-REV-4-fs5_3
+34	22	CDS
+16	6
+			product	protein three
+			protein_id	ENTOY100A-REV-4-fs5_2
+25	22	mat_peptide
+16	9
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-4-fs5_2
+34	26	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-4-fs5_2
+65	54	misc_feature
+53	37
+35	28
+			note	similar to protein two
+89	64	gene
+			gene	one
+86	66	CDS
+			product	protein one
+			protein_id	ENTOY100A-REV-4-fs5_1
+74	69	mat_peptide
+			product	protein one mp2
+			protein_id	ENTOY100A-REV-4-fs5_1
+86	75	mat_peptide
+			product	protein one mp1
+			protein_id	ENTOY100A-REV-4-fs5_1
+92	75	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
+87	78	stem_loop
+			note	stem-loop 1
+
+Additional note(s) to submitter:
+ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted S:7,M:7]; seq-coords:37..35:-; mdl-coords:37..35:-; mdl:ENTOY100A-REV;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:54,M:57..54(4); frame:1(2); length:12:(25); shifted_avgpp:0.947; exp_avgpp:0.954; annotated_frame:1;]; seq-coords:53..28:-; mdl-coords:57..28:-; mdl:ENTOY100A-REV;
+ERROR: INDEFINITE_ANNOTATION_END: (CDS:protein two) alignment to homology model is a gap at 3' boundary [segment 1 of 3]; seq-coords:54..54:-; mdl-coords:54..54:-; mdl:ENTOY100A-REV;
+ERROR: INDEFINITE_ANNOTATION_START: (CDS:protein two) alignment to homology model is a gap at 5' boundary [segment 2 of 3]; seq-coords:53..53:-; mdl-coords:54..54:-; mdl:ENTOY100A-REV;
+ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [37]; seq-coords:65..54:-,53..37:-,35..28:-; mdl-coords:69..58:-,53..37:-,35..28:-; mdl:ENTOY100A-REV;
+>Feature ENTOY100A-REV-4-fs6
+3	17	CDS
+			product	protein four
+			protein_id	ENTOY100A-REV-4-fs6_3
+34	22	CDS
+16	6
+			product	protein three
+			protein_id	ENTOY100A-REV-4-fs6_2
+25	22	mat_peptide
+16	9
+			product	protein three mp2
+			protein_id	ENTOY100A-REV-4-fs6_2
+34	26	mat_peptide
+			product	protein three mp1
+			protein_id	ENTOY100A-REV-4-fs6_2
+65	53	misc_feature
+52	37
+35	28
+			note	similar to protein two
+89	64	gene
+			gene	one
+86	66	CDS
+			product	protein one
+			protein_id	ENTOY100A-REV-4-fs6_1
+74	69	mat_peptide
+			product	protein one mp2
+			protein_id	ENTOY100A-REV-4-fs6_1
+86	75	mat_peptide
+			product	protein one mp1
+			protein_id	ENTOY100A-REV-4-fs6_1
+92	75	ncRNA
+			product	enRNA
+			ncRNA_class	lncRNA
+			note	ncRNA 1
+87	78	stem_loop
+			note	stem-loop 1
+
+Additional note(s) to submitter:
+ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted S:7,M:7]; seq-coords:37..35:-; mdl-coords:37..35:-; mdl:ENTOY100A-REV;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:53,M:56..54(3); frame:1(32); length:13:(7:17); shifted_avgpp:0.936; exp_avgpp:0.969; intermediate:delete,S:46,M:46(1); annotated_frame:1;]; seq-coords:52..28:-; mdl-coords:56..28:-; mdl:ENTOY100A-REV;
+ERROR: INDEFINITE_ANNOTATION_END: (CDS:protein two) alignment to homology model is a gap at 3' boundary [segment 1 of 3]; seq-coords:53..53:-; mdl-coords:54..54:-; mdl:ENTOY100A-REV;
+ERROR: INDEFINITE_ANNOTATION_START: (CDS:protein two) alignment to homology model is a gap at 5' boundary [segment 2 of 3]; seq-coords:52..52:-; mdl-coords:54..54:-; mdl:ENTOY100A-REV;
+ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [37]; seq-coords:65..53:-,52..37:-,35..28:-; mdl-coords:69..57:-,53..37:-,35..28:-; mdl:ENTOY100A-REV;
