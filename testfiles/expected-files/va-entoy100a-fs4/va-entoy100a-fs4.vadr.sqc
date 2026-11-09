@@ -1,0 +1,6 @@
+#seq  seq              seq                              sub                   seq    mdl         num                     sub   score  diff/  seq   
+#idx  name             len  p/f   ant  model1     grp1  grp1  score  sc/nt    cov    cov  bias  hits  str  model2  grp2  grp2   diff     nt  alerts
+#---  ---------------  ---  ----  ---  ---------  ----  ----  -----  -----  -----  -----  ----  ----  ---  ------  ----  ----  -----  -----  ------
+1     ENTOY100A-4-fs1   99  FAIL  yes  ENTOY100A  toy   A      86.7  0.876  1.000  1.000     0     1    +  -       -     -         -      -  -     
+2     ENTOY100A-4-fs2   97  FAIL  yes  ENTOY100A  toy   A      79.6  0.821  0.990  0.990     0     1    +  -       -     -         -      -  -     
+3     ENTOY100A-4-fs3   93  FAIL  yes  ENTOY100A  toy   A      71.9  0.773  1.000  1.000     0     1    +  -       -     -         -      -  -     

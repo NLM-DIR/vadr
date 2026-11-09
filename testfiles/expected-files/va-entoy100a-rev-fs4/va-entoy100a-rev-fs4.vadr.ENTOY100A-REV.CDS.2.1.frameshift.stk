@@ -1,0 +1,19 @@
+# STOCKHOLM 1.0
+#=GF AU Infernal 1.1.5
+#=GF CC Alignment of CDS 2 segment 1 of 3 for sequence ENTOY100A-REV-4-fs3 to model ENTOY100A-REV with at least one frameshift alert (possibly in a different segment for multi-segment CDS).
+#=GF CC GR CS annotation indicates the codon_start value each nongap RF position implies.
+#=GF CC Changes from the expected codon_start value indicate possibly frameshifted regions.
+
+#=GS ENTOY100A-REV-4-fs3 DE multi-segment, 6nt in-frame deletion at end of segment 2, then 1nt deletion in segment 3 that breaks frame, not fixed (CDS2, RFPOS42..37, RFPOS30)
+
+#=GS ENTOY100A-REV-4-fs3 FS.1 seq_coords:29..28:-; mdl_coords: 30..28:-; cause:delete,S:30,M:30(1); frame:1(3); length:33:(2); shifted_avgpp:0.887; exp_avgpp:0.760; annotated_frame:1;
+
+ENTOY100A-REV-4-fs3         CACGTAGAATGCTCAT
+#=GR ENTOY100A-REV-4-fs3 PP ****************
+#=GR ENTOY100A-REV-4-fs3 CS 1111111111111111
+#=GC SS_cons                ::::::::::::::::
+#=GC RF                     CACGTAGAATGCTCAT
+#=GC RFCOLX..               0000000000000000
+#=GC RFCOL.X.               5555556666666666
+#=GC RFCOL..X               4567890123456789
+//
