@@ -109,8 +109,9 @@ rmdir: va-entoy100a-rev-fs3
 # 
 # set 4, multi-segment CDS, indels at segment boundaries, negative strand:
 # deletion of the first position of a non-first segment that shifts the frame
-# (unrestored and restored), and an in-frame deletion at a segment end followed
-# by a deletion that shifts the frame
+# (unrestored and restored), an in-frame deletion at a segment end followed
+# by a deletion that shifts the frame, and deletions that include the position
+# shared by two segments (ribosomal slippage), which counts twice in the frame
 #
 command: perl $VADRSCRIPTSDIR/v-annotate.pl --alicheck --alt_fail fsthicft,fsthicfi --fsthighthr 0.300001 --fstminnti 1 --fstminntt 1 --minpvlen 3 --keep -v --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a-rev.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-rev.minfo -f $VADRSCRIPTSDIR/testfiles/entoy100a-rev-fs4.fa va-entoy100a-rev-fs4 > va-entoy100a-rev-fs4.out
 desc: annotate-entoy100a-rev-fs4
