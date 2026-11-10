@@ -25,7 +25,7 @@ ENTOY100A-4-fs3         AATGG-AG
 
 #=GS ENTOY100A-4-fs4 DE multi-segment, 3nt deletion at end of segment 1 that includes the position shared with segment 2 (ribosomal slippage), not fixed (CDS2, RFPOS45..47)
 
-#=GS ENTOY100A-4-fs4 FS.1 seq_coords:45..70:+; mdl_coords: 45..73:+; cause:delete,S:44,M:45..47(3); frame:1(3); length:13:(25); shifted_avgpp:0.972; exp_avgpp:0.969; annotated_frame:1;
+#=GS ENTOY100A-4-fs4 FS.1 seq_coords:45..61:+,63..70:+; mdl_coords: 45..64:+,66..73:+; cause:delete,S:44,M:45..47(3); frame:1(3); length:13:(25); shifted_avgpp:0.972; exp_avgpp:0.969; annotated_frame:1;
 
 ENTOY100A-4-fs4         AATGGTAG
 #=GR ENTOY100A-4-fs4 PP ********
@@ -44,7 +44,7 @@ ENTOY100A-4-fs4         AATGGTAG
 
 #=GS ENTOY100A-4-fs5 DE multi-segment, 4nt deletion across the position shared by segments 1 and 2 (ribosomal slippage), not fixed (CDS2, RFPOS45..48)
 
-#=GS ENTOY100A-4-fs5 FS.1 seq_coords:45..69:+; mdl_coords: 45..73:+; cause:delete,S:44,M:45..48(4); frame:1(2); length:13:(24); shifted_avgpp:0.965; exp_avgpp:0.919; annotated_frame:1;
+#=GS ENTOY100A-4-fs5 FS.1 seq_coords:45..60:+,62..69:+; mdl_coords: 45..64:+,66..73:+; cause:delete,S:44,M:45..48(4); frame:1(2); length:13:(24); shifted_avgpp:0.965; exp_avgpp:0.919; annotated_frame:1;
 
 ENTOY100A-4-fs5         AATGGTAG
 #=GR ENTOY100A-4-fs5 PP ********
@@ -63,7 +63,7 @@ ENTOY100A-4-fs5         AATGGTAG
 
 #=GS ENTOY100A-4-fs6 DE multi-segment, 3nt deletion at end of segment 1 that includes the position shared with segment 2 (ribosomal slippage), then 1nt deletion in segment 2, not fixed (CDS2, RFPOS45..47, RFPOS55)
 
-#=GS ENTOY100A-4-fs6 FS.1 seq_coords:45..69:+; mdl_coords: 45..73:+; cause:delete,S:44,M:45..47(3); frame:1(32); length:13:(7:17); shifted_avgpp:0.939; exp_avgpp:0.969; intermediate:delete,S:51,M:55(1); annotated_frame:1;
+#=GS ENTOY100A-4-fs6 FS.1 seq_coords:45..60:+,62..69:+; mdl_coords: 45..64:+,66..73:+; cause:delete,S:44,M:45..47(3); frame:1(32); length:13:(7:17); shifted_avgpp:0.938; exp_avgpp:0.969; intermediate:delete,S:51,M:55(1); annotated_frame:1;
 
 ENTOY100A-4-fs6         AATGGTAG
 #=GR ENTOY100A-4-fs6 PP ********

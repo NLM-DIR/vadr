@@ -6834,13 +6834,19 @@ sub add_frameshift_alerts_for_one_sequence {
                   $shifted_span_mstop = ($ftr_strand eq "+") ? $cur_mstart - 1 : $cur_mstart + 1;
                   $shifted_frame = $prv_frame;
                 }
-                $shifted_span_slen = abs($shifted_span_sstop - $shifted_span_sstart) + 1;
                 $shifted_span_mlen = abs($shifted_span_mstop - $shifted_span_mstart) + 1;
+                # restrict the shifted span to the CDS segments: if it begins at or crosses a segment boundary
+                # it would otherwise include the sequence and model positions between segments (e.g. an intron)
+                my ($shifted_span_scoords, $shifted_span_mcoords, $shifted_span_spiece_AR) = 
+                    helper_frameshift_span_in_sgms($sgm_results_HAHR->{$seq_name}, $sgm_info_AHR, \@sgm_idx_A, 
+                                                   $shifted_span_sstart, $shifted_span_sstop, abs($shifted_span_mstart), abs($shifted_span_mstop), $ftr_strand, $FH_HR);
+                $shifted_span_slen = 0;
+                foreach my $spiece_AR (@{$shifted_span_spiece_AR}) { $shifted_span_slen += abs($spiece_AR->[1] - $spiece_AR->[0]) + 1; }
                 
-                # check if this is an exempted region
+                # check if this is an exempted region (every segment of the shifted span must be spanned by an exception)
                 my $exempted_region = 0;
                 foreach my $exc_coords (@{$fst_exc_AA[$ftr_idx]}) { 
-                  if(vdr_CoordsCheckIfSpans($exc_coords, vdr_CoordsSegmentCreate($shifted_span_mstart, $shifted_span_mstop, $ftr_strand, $FH_HR), $FH_HR)) { 
+                  if(vdr_CoordsCheckIfSpans($exc_coords, $shifted_span_mcoords, $FH_HR)) { 
                     $exempted_region = 1;
                   }
                 }
@@ -6877,8 +6883,8 @@ sub add_frameshift_alerts_for_one_sequence {
 
                     if($do_glsearch) { # we don't have PP values, so all frameshifts are treated equally
                       my $alt_code = ($is_terminal) ? "fstukcft" : "fstukcfi";
-                      my $alt_scoords_tok =      vdr_CoordsSegmentCreate(    $shifted_span_sstart,      $shifted_span_sstop,  $ftr_strand, $FH_HR);
-                      my $alt_mcoords = "mdl:" . vdr_CoordsSegmentCreate(abs($shifted_span_mstart), abs($shifted_span_mstop), $ftr_strand, $FH_HR) . ";";
+                      my $alt_scoords_tok = $shifted_span_scoords;
+                      my $alt_mcoords = "mdl:" . $shifted_span_mcoords . ";";
                       my $alt_scoords = "seq:" . $alt_scoords_tok . ";";
                       my $alt_str  = sprintf("%s%s", $alt_scoords, $alt_mcoords);
                       $alt_str .= sprintf("cause:%s", $causative_indel_str);
@@ -6901,9 +6907,13 @@ sub add_frameshift_alerts_for_one_sequence {
                          (! defined $prv_exp_span_sstop)) { 
                         ofile_FAIL("ERROR, in $sub_name, (seq:$seq_name) trying to calculate PP for shifted/expected regions and previous expected span undefined, shifted region: $shifted_span_sstart..$shifted_span_sstop", 1, $FH_HR);
                       }
-                      my $shifted_span_ppstr = ($ftr_strand eq "+") ? 
-                          substr($full_ppstr, $shifted_span_sstart - 1, ($shifted_span_slen)) : 
-                          substr($full_ppstr, $shifted_span_sstop  - 1, ($shifted_span_slen));
+                      my $shifted_span_ppstr = "";
+                      foreach my $spiece_AR (@{$shifted_span_spiece_AR}) { 
+                        my $spiece_len = abs($spiece_AR->[1] - $spiece_AR->[0]) + 1;
+                        $shifted_span_ppstr .= ($ftr_strand eq "+") ? 
+                            substr($full_ppstr, $spiece_AR->[0] - 1, $spiece_len) : 
+                            substr($full_ppstr, $spiece_AR->[1] - 1, $spiece_len);
+                      }
                       my $exp_span_ppstr = ($ftr_strand eq "+") ? 
                           substr($full_ppstr, $prv_exp_span_sstart - 1, (abs($prv_exp_span_sstop - $prv_exp_span_sstart) + 1)) : 
                           substr($full_ppstr, $prv_exp_span_sstop  - 1, (abs($prv_exp_span_sstop - $prv_exp_span_sstart) + 1));
@@ -6917,8 +6927,8 @@ sub add_frameshift_alerts_for_one_sequence {
                       if($min_span_avgpp > ($fst_low_ppthr - $small_value)) { # we have a fstlocnf or fsthicnf alert
                         my $hi_alt_code = ($is_terminal) ? "fsthicft" : "fsthicfi";
                         my $lo_alt_code = ($is_terminal) ? "fstlocft" : "fstlocfi";
-                        my $alt_scoords_tok =      vdr_CoordsSegmentCreate(    $shifted_span_sstart,      $shifted_span_sstop,  $ftr_strand, $FH_HR);
-                        my $alt_mcoords = "mdl:" . vdr_CoordsSegmentCreate(abs($shifted_span_mstart), abs($shifted_span_mstop), $ftr_strand, $FH_HR) . ";";
+                        my $alt_scoords_tok = $shifted_span_scoords;
+                        my $alt_mcoords = "mdl:" . $shifted_span_mcoords . ";";
                         my $alt_scoords = "seq:" . $alt_scoords_tok . ";";
                         my $alt_str  = sprintf("%s%s", $alt_scoords, $alt_mcoords);
                         $alt_str .= sprintf("cause:%s", $causative_indel_str);
@@ -7961,6 +7971,115 @@ sub sqstring_check_start {
   $start_codon =~ tr/U/T/;     # convert to DNA
 
   return seq_CodonValidateStartCapDna($start_codon, $tt, $atg_only);
+}
+
+#################################################################
+# Subroutine: helper_frameshift_span_in_sgms()
+# Incept:     EPN, Tue Nov 10 2026 (w/Claude)
+#
+# Purpose:    Restrict a frameshifted span of a CDS to the CDS's
+#             segments. A span that begins at or crosses a segment
+#             boundary of a multi-segment CDS (e.g. a spliced CDS)
+#             otherwise includes the sequence and model positions
+#             between the segments (e.g. an intron), which are not part
+#             of the CDS. Pieces of the span in consecutive segments that
+#             overlap or are adjacent (e.g. ribosomal slippage) are
+#             merged, so a span with nothing between segments is
+#             returned unchanged (brief 26_0602-067).
+#
+# Arguments:
+#   $sgm_results_AHR: REF to array of segment results for this sequence
+#   $sgm_info_AHR:    REF to array of segment info
+#   $sgm_idx_AR:      REF to array of indices of the CDS's segments with results, in CDS order
+#   $sstart:          first sequence position of the span
+#   $sstop:           final sequence position of the span
+#   $mstart:          first model position of the span
+#   $mstop:           final model position of the span
+#   $strand:          strand of the CDS, "+" or "-"
+#   $FH_HR:           REF to hash of file handles
+#
+# Returns:    Three values:
+#             $scoords:     sequence coords string of the span within the segments
+#             $mcoords:     model coords string of the span within the segments
+#             $spiece_AAR:  REF to array of [start, stop] sequence positions of each
+#                           segment of $scoords, in CDS order
+#             If the span does not overlap any segment in the sequence (or model),
+#             the full span is returned for the sequence (or model).
+#
+#################################################################
+sub helper_frameshift_span_in_sgms { 
+  my $sub_name = "helper_frameshift_span_in_sgms";
+  my $nargs_exp = 9;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($sgm_results_AHR, $sgm_info_AHR, $sgm_idx_AR, $sstart, $sstop, $mstart, $mstop, $strand, $FH_HR) = @_;
+
+  my @spiece_AA = (); # [start, stop] of each sequence piece, in CDS order
+  my @mpiece_AA = (); # [start, stop] of each model piece, in CDS order
+  foreach my $sgm_idx (@{$sgm_idx_AR}) { 
+    helper_frameshift_span_add_piece(\@spiece_AA, $sstart, $sstop, $sgm_results_AHR->[$sgm_idx]{"sstart"}, $sgm_results_AHR->[$sgm_idx]{"sstop"}, $strand);
+    helper_frameshift_span_add_piece(\@mpiece_AA, $mstart, $mstop, $sgm_info_AHR->[$sgm_idx]{"start"},    $sgm_info_AHR->[$sgm_idx]{"stop"},    $strand);
+  }
+  if(scalar(@spiece_AA) == 0) { @spiece_AA = ([$sstart, $sstop]); }
+  if(scalar(@mpiece_AA) == 0) { @mpiece_AA = ([$mstart, $mstop]); }
+
+  my $scoords = join(",", map { vdr_CoordsSegmentCreate($_->[0], $_->[1], $strand, $FH_HR) } @spiece_AA);
+  my $mcoords = join(",", map { vdr_CoordsSegmentCreate($_->[0], $_->[1], $strand, $FH_HR) } @mpiece_AA);
+
+  return ($scoords, $mcoords, \@spiece_AA);
+}
+
+#################################################################
+# Subroutine: helper_frameshift_span_add_piece()
+# Incept:     EPN, Tue Nov 10 2026 (w/Claude)
+#
+# Purpose:    Intersect a span with one CDS segment and add the
+#             intersection, if any, to an array of pieces, merging it
+#             with the previous piece if they overlap or are adjacent.
+#             Helper for helper_frameshift_span_in_sgms().
+#
+# Arguments:
+#   $piece_AAR: REF to array of [start, stop] pieces, in CDS order, ADDED TO HERE
+#   $start:     first position of the span
+#   $stop:      final position of the span
+#   $sgm_start: first position of the segment
+#   $sgm_stop:  final position of the segment
+#   $strand:    strand, "+" or "-"
+#
+# Returns:    void
+#
+#################################################################
+sub helper_frameshift_span_add_piece { 
+  my $sub_name = "helper_frameshift_span_add_piece";
+  my $nargs_exp = 6;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($piece_AAR, $start, $stop, $sgm_start, $sgm_stop, $strand) = @_;
+
+  my ($lo,     $hi)     = ($start     < $stop)     ? ($start,     $stop)     : ($stop,     $start);
+  my ($sgm_lo, $sgm_hi) = ($sgm_start < $sgm_stop) ? ($sgm_start, $sgm_stop) : ($sgm_stop, $sgm_start);
+  my $piece_lo = ($lo > $sgm_lo) ? $lo : $sgm_lo;
+  my $piece_hi = ($hi < $sgm_hi) ? $hi : $sgm_hi;
+  if($piece_lo > $piece_hi) { return; } # no overlap
+
+  my $npiece = scalar(@{$piece_AAR});
+  if($strand eq "+") { 
+    if(($npiece > 0) && ($piece_lo <= ($piece_AAR->[($npiece-1)][1] + 1))) { 
+      if($piece_hi > $piece_AAR->[($npiece-1)][1]) { $piece_AAR->[($npiece-1)][1] = $piece_hi; }
+    }
+    else { 
+      push(@{$piece_AAR}, [$piece_lo, $piece_hi]);
+    }
+  }
+  else { 
+    if(($npiece > 0) && ($piece_hi >= ($piece_AAR->[($npiece-1)][1] - 1))) { 
+      if($piece_lo < $piece_AAR->[($npiece-1)][1]) { $piece_AAR->[($npiece-1)][1] = $piece_lo; }
+    }
+    else { 
+      push(@{$piece_AAR}, [$piece_hi, $piece_lo]);
+    }
+  }
+  return;
 }
 
 #################################################################

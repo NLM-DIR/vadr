@@ -27,7 +27,7 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:p48) mat_peptide may not be tra
 			note	similar to VP1
 
 Additional note(s) to submitter:
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:VP1) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:9(1),M:5383; frame:<1(23)>; length:<8:(6:577)>; shifted_avgpp:0.969; exp_avgpp:0.919; intermediate:insert,S:15(1),M:5388; annotated_frame:3;]; seq-coords:9..621:+; mdl-coords:5384..5994:+; mdl:NC_001959;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:VP1) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:9(1),M:5383; frame:<1(23)>; length:<8:(6:577)>; shifted_avgpp:0.969; exp_avgpp:0.919; intermediate:insert,S:15(1),M:5388; annotated_frame:3;]; seq-coords:9..427:+,458..621:+; mdl-coords:5384..5800:+,5831..5994:+; mdl:NC_001959;
 ERROR: INDEFINITE_ANNOTATION_START: (CDS:VP1) protein-based alignment does not extend close enough to nucleotide-based alignment 5' endpoint [17>5]; seq-coords:1..17:+; mdl-coords:5358..5358:+; mdl:NC_001959;
 >Feature NC_001959.2-manually-added-frameshifts-1/7000-7500
 <1	>501	gene

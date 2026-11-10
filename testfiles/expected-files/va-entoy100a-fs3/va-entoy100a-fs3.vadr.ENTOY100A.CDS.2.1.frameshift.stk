@@ -4,7 +4,7 @@
 #=GF CC GR CS annotation indicates the codon_start value each nongap RF position implies.
 #=GF CC Changes from the expected codon_start value indicate possibly frameshifted regions.
 
-#=GS ENTOY100A-3-fs13 FS.1 seq_coords:9..43:+; mdl_coords: 40..73:+; cause:insert,S:9(1),M:39; frame:1(2); length:8:(35); shifted_avgpp:0.965; exp_avgpp:0.966; annotated_frame:1;
+#=GS ENTOY100A-3-fs13 FS.1 seq_coords:9..34:+,36..43:+; mdl_coords: 40..64:+,66..73:+; cause:insert,S:9(1),M:39; frame:1(2); length:8:(35); shifted_avgpp:0.965; exp_avgpp:0.966; annotated_frame:1;
 
 ENTOY100A-3-fs13         ATGAGCATGTCTACGTG
 #=GR ENTOY100A-3-fs13 PP *******979*******
@@ -21,7 +21,7 @@ ENTOY100A-3-fs13         ATGAGCATGTCTACGTG
 #=GF CC GR CS annotation indicates the codon_start value each nongap RF position implies.
 #=GF CC Changes from the expected codon_start value indicate possibly frameshifted regions.
 
-#=GS ENTOY100A-3-fs14 FS.1 seq_coords:8..42:+; mdl_coords: 40..73:+; cause:insert,S:8(1),M:39; frame:<3(1); length:<7:(35); shifted_avgpp:0.965; exp_avgpp:0.964; annotated_frame:1;
+#=GS ENTOY100A-3-fs14 FS.1 seq_coords:8..33:+,35..42:+; mdl_coords: 40..64:+,66..73:+; cause:insert,S:8(1),M:39; frame:<3(1); length:<7:(35); shifted_avgpp:0.965; exp_avgpp:0.964; annotated_frame:1;
 
 ENTOY100A-3-fs14         TGAGCATGTCTACGTG
 #=GR ENTOY100A-3-fs14 PP ******979*******
@@ -38,7 +38,7 @@ ENTOY100A-3-fs14         TGAGCATGTCTACGTG
 #=GF CC GR CS annotation indicates the codon_start value each nongap RF position implies.
 #=GF CC Changes from the expected codon_start value indicate possibly frameshifted regions.
 
-#=GS ENTOY100A-3-fs15 FS.1 seq_coords:7..41:+; mdl_coords: 40..73:+; cause:insert,S:7(1),M:39; frame:<2(3); length:<6:(35); shifted_avgpp:0.965; exp_avgpp:0.963; annotated_frame:3;
+#=GS ENTOY100A-3-fs15 FS.1 seq_coords:7..32:+,34..41:+; mdl_coords: 40..64:+,66..73:+; cause:insert,S:7(1),M:39; frame:<2(3); length:<6:(35); shifted_avgpp:0.965; exp_avgpp:0.963; annotated_frame:3;
 
 ENTOY100A-3-fs15         GAGCATGTCTACGTG
 #=GR ENTOY100A-3-fs15 PP *****979*******
@@ -106,7 +106,7 @@ ENTOY100A-3-fs18         GAGCATGTCTACGTG
 #=GF CC GR CS annotation indicates the codon_start value each nongap RF position implies.
 #=GF CC Changes from the expected codon_start value indicate possibly frameshifted regions.
 
-#=GS ENTOY100A-3-fs25 FS.1 seq_coords:9..40:+; mdl_coords: 40..70:+; cause:insert,S:9(1),M:39; frame:1(2)>; length:8:(32)>; shifted_avgpp:0.964; exp_avgpp:0.966; annotated_frame:1;
+#=GS ENTOY100A-3-fs25 FS.1 seq_coords:9..34:+,36..40:+; mdl_coords: 40..64:+,66..70:+; cause:insert,S:9(1),M:39; frame:1(2)>; length:8:(32)>; shifted_avgpp:0.964; exp_avgpp:0.966; annotated_frame:1;
 
 ENTOY100A-3-fs25         ATGAGCATGTCTACGTG
 #=GR ENTOY100A-3-fs25 PP *******979*******
@@ -123,7 +123,7 @@ ENTOY100A-3-fs25         ATGAGCATGTCTACGTG
 #=GF CC GR CS annotation indicates the codon_start value each nongap RF position implies.
 #=GF CC Changes from the expected codon_start value indicate possibly frameshifted regions.
 
-#=GS ENTOY100A-3-fs26 FS.1 seq_coords:8..38:+; mdl_coords: 40..69:+; cause:insert,S:8(1),M:39; frame:<3(1)>; length:<7:(31)>; shifted_avgpp:0.964; exp_avgpp:0.964; annotated_frame:1;
+#=GS ENTOY100A-3-fs26 FS.1 seq_coords:8..33:+,35..38:+; mdl_coords: 40..64:+,66..69:+; cause:insert,S:8(1),M:39; frame:<3(1)>; length:<7:(31)>; shifted_avgpp:0.963; exp_avgpp:0.964; annotated_frame:1;
 
 ENTOY100A-3-fs26         TGAGCATGTCTACGTG
 #=GR ENTOY100A-3-fs26 PP ******979*******
@@ -140,7 +140,7 @@ ENTOY100A-3-fs26         TGAGCATGTCTACGTG
 #=GF CC GR CS annotation indicates the codon_start value each nongap RF position implies.
 #=GF CC Changes from the expected codon_start value indicate possibly frameshifted regions.
 
-#=GS ENTOY100A-3-fs27 FS.1 seq_coords:7..36:+; mdl_coords: 40..68:+; cause:insert,S:7(1),M:39; frame:<2(3)>; length:<6:(30)>; shifted_avgpp:0.963; exp_avgpp:0.963; annotated_frame:3;
+#=GS ENTOY100A-3-fs27 FS.1 seq_coords:7..32:+,34..36:+; mdl_coords: 40..64:+,66..68:+; cause:insert,S:7(1),M:39; frame:<2(3)>; length:<6:(30)>; shifted_avgpp:0.963; exp_avgpp:0.963; annotated_frame:3;
 
 ENTOY100A-3-fs27         GAGCATGTCTACGTG
 #=GR ENTOY100A-3-fs27 PP *****979*******

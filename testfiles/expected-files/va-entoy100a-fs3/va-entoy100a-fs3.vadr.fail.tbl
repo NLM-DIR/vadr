@@ -165,7 +165,7 @@ ERROR: INDEFINITE_ANNOTATION_END: (stem_loop:stem_loop.1) alignment to homology 
 
 Additional note(s) to submitter:
 ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted S:7,M:7]; seq-coords:34..36:+; mdl-coords:64..66:+; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:9(1),M:39; frame:1(2); length:8:(35); shifted_avgpp:0.965; exp_avgpp:0.966; annotated_frame:1;]; seq-coords:9..43:+; mdl-coords:40..73:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:9(1),M:39; frame:1(2); length:8:(35); shifted_avgpp:0.965; exp_avgpp:0.966; annotated_frame:1;]; seq-coords:9..34:+,36..43:+; mdl-coords:40..64:+,66..73:+; mdl:ENTOY100A;
 ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [43]; seq-coords:1..17:+,17..34:+,36..43:+; mdl-coords:32..47:+,47..64:+,66..73:+; mdl:ENTOY100A;
 >Feature ENTOY100A-3-fs14
 <1	16	misc_feature
@@ -189,7 +189,7 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or ma
 
 Additional note(s) to submitter:
 ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of stop position predicted by homology to reference [TGA, shifted S:39,M:38]; seq-coords:1..3:+; mdl-coords:33..35:+; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:8(1),M:39; frame:<3(1); length:<7:(35); shifted_avgpp:0.965; exp_avgpp:0.964; annotated_frame:1;]; seq-coords:8..42:+; mdl-coords:40..73:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:8(1),M:39; frame:<3(1); length:<7:(35); shifted_avgpp:0.965; exp_avgpp:0.964; annotated_frame:1;]; seq-coords:8..33:+,35..42:+; mdl-coords:40..64:+,66..73:+; mdl:ENTOY100A;
 >Feature ENTOY100A-3-fs15
 <1	15	misc_feature
 15	32
@@ -212,7 +212,7 @@ ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible
 
 Additional note(s) to submitter:
 ERROR: LOW_COVERAGE: (*sequence*) low sequence fraction with significant similarity to homology model [0.897<0.900]; seq-coords:1..7:+; mdl-coords:-; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:7(1),M:39; frame:<2(3); length:<6:(35); shifted_avgpp:0.965; exp_avgpp:0.963; annotated_frame:3;]; seq-coords:7..41:+; mdl-coords:40..73:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:7(1),M:39; frame:<2(3); length:<6:(35); shifted_avgpp:0.965; exp_avgpp:0.963; annotated_frame:3;]; seq-coords:7..32:+,34..41:+; mdl-coords:40..64:+,66..73:+; mdl:ENTOY100A;
 >Feature ENTOY100A-3-fs16
 1	17	misc_feature
 17	33
@@ -294,7 +294,7 @@ ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible
 
 Additional note(s) to submitter:
 ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted M:7]; seq-coords:34..36:+; mdl-coords:64..66:+; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:9(1),M:39; frame:1(2)>; length:8:(32)>; shifted_avgpp:0.964; exp_avgpp:0.966; annotated_frame:1;]; seq-coords:9..40:+; mdl-coords:40..70:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:9(1),M:39; frame:1(2)>; length:8:(32)>; shifted_avgpp:0.964; exp_avgpp:0.966; annotated_frame:1;]; seq-coords:9..34:+,36..40:+; mdl-coords:40..64:+,66..70:+; mdl:ENTOY100A;
 >Feature ENTOY100A-3-fs26
 <1	16	misc_feature
 16	33
@@ -309,7 +309,7 @@ ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible
 
 Additional note(s) to submitter:
 ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of stop position predicted by homology to reference [TGA, shifted M:38]; seq-coords:1..3:+; mdl-coords:33..35:+; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:8(1),M:39; frame:<3(1)>; length:<7:(31)>; shifted_avgpp:0.964; exp_avgpp:0.964; annotated_frame:1;]; seq-coords:8..38:+; mdl-coords:40..69:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:8(1),M:39; frame:<3(1)>; length:<7:(31)>; shifted_avgpp:0.963; exp_avgpp:0.964; annotated_frame:1;]; seq-coords:8..33:+,35..38:+; mdl-coords:40..64:+,66..69:+; mdl:ENTOY100A;
 >Feature ENTOY100A-3-fs27
 <1	15	misc_feature
 15	32
@@ -318,7 +318,7 @@ ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible
 
 Additional note(s) to submitter:
 ERROR: LOW_COVERAGE: (*sequence*) low sequence fraction with significant similarity to homology model [0.889<0.900]; seq-coords:1..4:+; mdl-coords:-; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:7(1),M:39; frame:<2(3)>; length:<6:(30)>; shifted_avgpp:0.963; exp_avgpp:0.963; annotated_frame:3;]; seq-coords:7..36:+; mdl-coords:40..68:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:insert,S:7(1),M:39; frame:<2(3)>; length:<6:(30)>; shifted_avgpp:0.963; exp_avgpp:0.963; annotated_frame:3;]; seq-coords:7..32:+,34..36:+; mdl-coords:40..64:+,66..68:+; mdl:ENTOY100A;
 >Feature ENTOY100A-3-fs28
 1	17	misc_feature
 17	33
