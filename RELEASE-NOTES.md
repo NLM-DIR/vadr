@@ -1,6 +1,19 @@
 # VADR 1.x release notes 
 
 ### Unreleased changes (draft)
+  * `v-annotate.pl`: changed default behavior for possible frameshifts
+    (`fst*` alerts) in a CDS with more than one segment (e.g. a spliced
+    CDS): a frameshifted region that begins at or crosses a segment
+    boundary now includes only positions in the CDS's segments.
+    Previously it included the sequence and model positions between
+    the segments (e.g. an intron), which counted toward its length
+    (`--fstminnti`, `--fstminntt`), its `shifted_avgpp` (and so high
+    vs low confidence) and its `fst_exc` exemption check, and were
+    reported in its coordinates. Such a region is now reported with one
+    coordinate segment per CDS segment it overlaps. Only these alerts
+    can change; regions in single-segment CDSs and in CDSs whose
+    segments overlap or are adjacent (e.g. ribosomal slippage) are
+    unchanged. See [`alerts.md`](documentation/alerts.md#example-frameshift).
   * `v-annotate.pl`: changed default behavior of nearest-neighbor
     (group/subgroup) classification: the classification region is now
     used only if it contains at least `--nn_regionlen` observed

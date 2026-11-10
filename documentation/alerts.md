@@ -216,6 +216,13 @@ TOY50-FS1         -AAATCACCGATGcccccGTGATCGC--TACCATAAATGAGCATTCTACGTGCAT
   13..25:+` in the `.alt` file) which is aligned to the reference model
   positions 14 to 23 (`mdl coords: 14..23:+`).
 
+  For a CDS with more than one segment (e.g. a spliced CDS), a
+  frameshifted region includes only positions in the CDS's segments.
+  If it crosses a segment boundary, it is reported with one coordinate
+  segment per CDS segment (for example `seq coords: 101..120:+,281..300:+`),
+  and the positions between the segments (e.g. an intron) are not
+  counted in its length or its `shifted_avgpp`.
+
   The `alert detail` field provides further information:
   the indels that "cause" the frameshifted region are an insertion of length 5 of nucleotides
   13 to 17 after model position 13 (`cause:insert,S:13..17(5),M:13;`).
