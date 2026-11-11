@@ -1,127 +1,366 @@
 # VADR 1.x release notes 
 
 ### Unreleased changes (draft)
-  * `v-annotate.pl`: changed default behavior of nearest-neighbor
-    (group/subgroup) classification: the classification region is now
-    used only if it contains at least `--nn_regionlen` observed
-    nucleotides (not gaps, not Ns, not `-r` replaced positions), in
-    every run. Previously, without `-r`, alignment columns were
-    counted, so a region that was all N or mostly gap was classified
-    on almost nothing; now the full sequence is used and an `nnalrgcl`
-    alert is reported. If half the classification region length
-    (rounded up) is less than `--nn_regionlen`, that is the minimum
-    (previously the region length). Only group/subgroup values and
-    the non-fatal `nn*cl` alerts can change, and only in models with
-    a nearest-neighbor classification alignment; pass/fail and feature
-    tables are unchanged.
-  * `v-annotate.pl`: changed default behavior of `-r`: positions in
-    which Ns were replaced no longer count toward nearest-neighbor
-    (group/subgroup) classification, because they come from a sequence
-    in the `-r` blastn DB and biased the classification toward it. If
-    fewer than `--nn_regionlen` nucleotides that are neither replaced
-    positions nor Ns remain in the classification region, the full
-    sequence is used and an `nnalrgcl` alert is reported. Only
-    group/subgroup values and the non-fatal `nn*cl` alerts can change,
-    and only for sequences with Ns in models with a nearest-neighbor
-    classification alignment; pass/fail and feature tables are
-    unchanged. See [`annotate.md`](documentation/annotate.md#options-replace).
-  * `v-annotate.pl`: new `--ncf <s>` option sets the policy for
-    non-coding feature (ncf) type features (`stem_loop`, `ncRNA`,
-    `regulatory`, `primer_bind`, `misc_feature`, `repeat_region` and
-    `misc_structure`) that have alerts that are normally fatal. The
-    default, `--ncf fail`, is unchanged from previous versions: results
-    are the same as with VADR 1.7.3.
-  * `--ncf drop`: an ncf type feature never affects whether a sequence
-    passes or fails, which then passes or fails exactly as it would if
-    its model had no ncf type features. GenBank uses `misc_feature` only
-    for CDS with errors and drops features of these types that have
-    errors, instead of converting them to `misc_feature`s or annotating
-    them with notes; GenBank runs `v-annotate.pl` with `--ncf drop`.
-    (`misc_structure` is not an INSDC feature type; it is written to the
-    feature tables unchanged.) With `--ncf drop`:
-    - alerts for ncf type features are non-fatal (reported in `.alt`
-      and `.ftr` but not in `.alt.list` or `.fail.tbl` notes);
-    - an alert that would be fatal for another feature type causes the
-      feature to be dropped from both `.pass.tbl` and `.fail.tbl`;
-    - a completely deleted ncf type feature gets the non-fatal
-      `deletina` alert instead of the fatal `deletins` alert;
-    - a low similarity region that overlaps an ncf type feature is
-      reported as `lowsim5s`/`lowsim3s`/`lowsimis` (using the
-      sequence-level thresholds) unless it also overlaps another
-      feature; the ncf type feature gets its (non-fatal) feature-level
-      low similarity alert and is dropped.
-    For model libraries with ncf type features (e.g. `sarscov2`,
-    `corona`, `flavi`, `zika`, `hav`, `hrv`, `ev`), some sequences that
-    fail only because of alerts in such features pass with `--ncf drop`,
-    and sequences with a low similarity region inside such a feature may
-    fail with a sequence-level `lowsim*s` alert if the region reaches the
-    sequence-level length threshold.
-  * new `.minfo` FEATURE key `ncf_always_fail:"1"` opts an ncf type
-    feature out of `--ncf drop`: its alerts cause failure as with
-    `--ncf fail`. It has no effect with `--ncf fail`. It is an error for
-    any other feature type, or together with `misc_not_failure:"1"` on
-    the same feature.
-  * with `--ncf drop`, `misc_not_failure:"1"` on an ncf type feature is
-    an error unless the new legacy option `--mnf_legacy` is also used
-    (or `--ignore_mnf`). With `--mnf_legacy`, such a feature is still
-    dropped if it has an alert that would otherwise be fatal, but it
-    absorbs an overlapping low similarity region shorter than
-    `--lowsim5lftr`, `--lowsim3lftr` or `--lowsimilftr` (default 30), so
-    that no sequence-level alert is reported for it, as with
-    `--ncf fail`. The `sarscov2` and `corona` models have
-    `misc_not_failure:"1"` on the `s2m` `stem_loop` and need
-    `--mnf_legacy` with `--ncf drop`. `misc_not_failure` on ncf type
-    features is not recommended for new models.
-  * `v-annotate.pl` now reports exact, alignment-derived model
-    coordinates for the `indfantp`, `indfstrp`, `cdsstopp`, `insertnp`
-    and `deletinp` protein-validation alerts, instead of an approximate,
-    protein-position-derived coordinate; the `mdl coords` field of an
-    alert of one of these types in the `.alt` output file can now always
-    be read directly as a model position.
-  * new `.minfo` exception keys `insertn_mdl_exc`, `deletin_mdl_exc` and
-    `indfstr_mdl_exc`: the recommended alternatives to the existing
-    `insertn_exc`, `deletin_exc` and `indfstr_exc` keys, for the
-    `insertnp`/`insertnn`, `deletinp`/`deletinn` and `indfstrp`/
-    `indfstrn` alerts respectively. The new keys' values are exact model
-    positions, matched on the exact position described above. The
-    existing keys are retained for models built before this release and,
-    for the protein-validation alerts `insertnp`/`deletinp`/`indfstrp`
-    only, still match on the pre-1.8 approximate position (the
-    nucleotide-based alerts `insertnn`/`deletinn`/`indfstrn` always
-    matched, and still match, on the exact position, under either key
-    name). A feature (or `MODEL` line, for `indfstr_exc`/
-    `indfstr_mdl_exc`) that defines both the existing and the new key for
-    the same alert is a `v-annotate.pl` error. See the
-    [exceptions section of `annotate.md`](documentation/annotate.md#exceptionsmdl)
-    for when to use which key.
-  * `.alc` output file format change: three columns are added after
-    `num seqs`, before the long description. `non-fatal` is `all` for
-    alerts that do not cause failure; for alerts that do, it is `-` if
-    every instance is fatal, or the reasons for the non-fatal instances
-    (`drop` for non-coding features dropped with `--ncf drop`, `mnf`
-    for `misc_not_failure` features), e.g. `drop:15,mnf:2`. `seqs fail`
-    is the number of sequences with at least one fatal instance of the
-    alert, and `seqs alone` the number of sequences for which it is the
-    only fatal alert code. The `causes failure` column is now always
-    `yes` or `no`: the `yes*` value, which meant that
-    `misc_not_failure` could make the alert non-fatal for at least one
-    feature in the model library, is no longer used. The `.alc` file
-    format is described [here](documentation/formats.md#alc).
-  * `v-annotate.pl`: new `--out_idl` option creates a per-indel tabular
-    output file (`.idl`) with one line for each insertion and deletion
-    in a CDS longer than the default maximum length, whether or not an
-    exception exempts it, with its approximate and exact model
-    positions and the maximum length that applied. The format is
-    described [here](documentation/formats.md#idl).
-  * new miniscript `miniscripts/vadr-propose-indel-exc.pl` proposes
-    `insertn_mdl_exc`/`deletin_mdl_exc` values from `v-annotate.pl`
-    output on trusted sequences: `convert` re-derives legacy
-    `insertn_exc`/`deletin_exc` values at exact model positions (from
-    `--out_idl` output), `extend` adds values for the `insertnp`/
-    `deletinp` alerts reported for trusted sequences, and `compare`
-    lists PASS/FAIL changes between two runs, for checking the held-out
-    folds written with `--cv`. See the
-    [exceptions section of `annotate.md`](documentation/annotate.md#exceptionspropose).
+  * **Compatibility: read before upgrading**
+    - `v-annotate.pl` now stops with an error at startup if a model
+      info (`.minfo`) file gives a `mat_peptide` a parent feature that
+      is not a `CDS`. Every model in the `.minfo` file is checked, not
+      only the ones a run uses. The HCV models in versions 1.7-1 and
+      1.7-2 of the `flavi` model library have this problem, so this
+      release refuses those two versions for all sequences, including
+      dengue and other non-HCV sequences. Use `flavi` version 1.7-3,
+      which corrects it. `flavi` version 1.2-1 is accepted (PR #141).
+    - model info files that use the new `insertn_mdl_exc`,
+      `deletin_mdl_exc` or `indfstr_mdl_exc` exception keys (see below)
+      require this release or later: earlier versions of `v-annotate.pl`
+      stop with an "invalid exception key" error. The existing
+      `insertn_exc`, `deletin_exc` and `indfstr_exc` keys are still
+      accepted and keep their meaning (PR #126).
+    - on negative strand CDSs, an `insertn_exc` or `deletin_exc` value
+      now applies at the same model position to both the nucleotide-
+      and protein-based alert (`insertnn`/`insertnp`,
+      `deletinn`/`deletinp`), the position shown in either alert's
+      `mdl coords` field. Previously the two alerts looked up different
+      positions for the same insertion or deletion. Positive strand
+      behavior is unchanged. A model with such exceptions on a negative
+      strand CDS may need its values checked (PR #109).
+    - several output files change format (see below); scripts that
+      parse them may need updating, in particular for the new `.alc`
+      columns, the new `annotated_frame:N;` field in frameshift alert
+      details, and the new `noannotn` alert details.
+
+  * **Changes in default output** (details in the entries below)
+    - `.alc`: three new columns, and the `yes*` value is no longer used
+      (PR #130)
+    - new `.fcd` output file, written by every run; `.ftr` `p_from`
+      and `p_to` are now always sequence coordinates (PR #122)
+    - `blastx` now reports all alignments by default (`-num_alignments`
+      is the number of proteins in the model's blastx database, not
+      20), and `blastx` hits are chosen per CDS in a new way; for
+      models with more than 20 proteins, protein-validation alerts and
+      PASS/FAIL can change (PRs #111, #119 and #120)
+    - protein-validation alerts (`indfantp`, `indfstrp`, `cdsstopp`,
+      `insertnp`, `deletinp`) report exact model coordinates (PR #125)
+    - corrected sequence coordinates for `blastx`-based alerts on
+      negative strand CDSs, and for `insertnp` on both strands (PR #109)
+    - `codon_start` for some 5'-truncated CDSs, an internal stop
+      codon check that now always runs, and a new `annotated_frame:N;`
+      field in every frameshift alert's details (PR #140)
+    - `cause:`/`restore:`/`intermediate:` text of some frameshift
+      alerts on multi-segment (spliced or ribosomal slippage) CDSs
+      (PRs #142 and #143)
+    - feature tables no longer contain the children (e.g.
+      `mat_peptide`s) of a CDS that is output as a `misc_feature`
+      (PR #114)
+    - the `noannotn` alert details say which of three causes applied
+      (PR #112)
+    - nearest-neighbor (group/subgroup) classification: a region with
+      too few observed nucleotides falls back to the full sequence;
+      with `-r`, replaced positions are not counted; `:FILE:` values
+      are no longer reported as a group/subgroup (PRs #115, #135 and #136)
+    - overlapping hits are counted once in `.sqc` coverage and, with
+      `-s` or `-r`, in `blastn` scores, which can add a `lowcovrg` alert
+      (PR #108)
+    - `.dcr` `did swap` field is `yes` only if the swap was performed
+      (PR #116)
+    - `v-scan.pl -m`: new combined output files, and sequences that
+      match no library by `blastn` are rescanned with HMM-based
+      classification (PRs #117 and #129)
+
+  * **`v-annotate.pl`: new options and output files**
+    - new `--ncf <s>` option sets the policy for non-coding feature
+      (ncf) type features (`stem_loop`, `ncRNA`, `regulatory`,
+      `primer_bind`, `misc_feature`, `repeat_region` and
+      `misc_structure`) that have alerts that are normally fatal. The
+      default, `--ncf fail`, is unchanged from previous versions. With
+      `--ncf drop`, an ncf type feature never affects whether a
+      sequence passes or fails; the sequence passes or fails exactly as
+      it would if its model had no ncf type features. GenBank uses
+      `misc_feature` only for CDS with errors and drops features of
+      these types that have errors, instead of converting them to
+      `misc_feature`s or annotating them with notes; GenBank runs
+      `v-annotate.pl` with `--ncf drop`. (`misc_structure` is not an
+      INSDC feature type; it is written to the feature tables
+      unchanged.) With `--ncf drop`:
+      - alerts for ncf type features are non-fatal (reported in `.alt`
+        and `.ftr` but not in `.alt.list` or `.fail.tbl` notes);
+      - an alert that would be fatal for another feature type causes
+        the feature to be dropped from both `.pass.tbl` and
+        `.fail.tbl`;
+      - a completely deleted ncf type feature gets the non-fatal
+        `deletina` alert instead of the fatal `deletins` alert;
+      - a low similarity region that overlaps an ncf type feature is
+        reported as `lowsim5s`/`lowsim3s`/`lowsimis` (using the
+        sequence-level thresholds) unless it also overlaps another
+        feature; the ncf type feature gets its (non-fatal)
+        feature-level low similarity alert and is dropped.
+
+      For model libraries with ncf type features (e.g. `sarscov2`,
+      `corona`, `flavi`, `zika`, `hav`, `hrv`, `ev`), some sequences
+      that fail only because of alerts in such features pass with
+      `--ncf drop`, and sequences with a low similarity region inside
+      such a feature may fail with a sequence-level `lowsim*s` alert if
+      the region reaches the sequence-level length threshold. See
+      [`annotate.md`](documentation/annotate.md#ncf) (PR #124).
+    - new `.minfo` FEATURE key `ncf_always_fail:"1"` opts an ncf type
+      feature out of `--ncf drop`: its alerts cause failure as with
+      `--ncf fail`. It has no effect with `--ncf fail`. It is an error
+      for any other feature type, or together with
+      `misc_not_failure:"1"` on the same feature (PR #124).
+    - with `--ncf drop`, `misc_not_failure:"1"` on an ncf type feature
+      is an error unless the new legacy option `--mnf_legacy` is also
+      used (or `--ignore_mnf`). With `--mnf_legacy`, such a feature is
+      still dropped if it has an alert that would otherwise be fatal,
+      but it absorbs an overlapping low similarity region shorter than
+      `--lowsim5lftr`, `--lowsim3lftr` or `--lowsimilftr` (default 30),
+      so that no sequence-level alert is reported for it, as with
+      `--ncf fail`. The `sarscov2` and `corona` models have
+      `misc_not_failure:"1"` on the `s2m` `stem_loop` and need
+      `--mnf_legacy` with `--ncf drop`. `misc_not_failure` on ncf type
+      features is not recommended for new models. See
+      [`annotate.md`](documentation/annotate.md#ncf-mnf-legacy) (PR #124).
+    - new `.minfo` exception keys `insertn_mdl_exc`, `deletin_mdl_exc`
+      and `indfstr_mdl_exc`: the recommended alternatives to the
+      existing `insertn_exc`, `deletin_exc` and `indfstr_exc` keys, for
+      the `insertnp`/`insertnn`, `deletinp`/`deletinn` and
+      `indfstrp`/`indfstrn` alerts respectively. The new keys' values
+      are exact model positions, as shown in an alert's `mdl coords`
+      field (see the exact protein-validation alert coordinates
+      below). The existing keys are retained for existing models and,
+      for the protein-validation alerts `insertnp`/`deletinp`/
+      `indfstrp` only, still match on the approximate,
+      protein-position-derived position used by VADR 1.7.3 and
+      earlier (the nucleotide-based alerts `insertnn`/`deletinn`/
+      `indfstrn` always matched, and still match, on the exact
+      position, under either key name). A feature (or `MODEL` line,
+      for `indfstr_exc`/`indfstr_mdl_exc`) that defines both the
+      existing and the new key for the same alert is a `v-annotate.pl`
+      error. See the
+      [exceptions section of `annotate.md`](documentation/annotate.md#exceptionsmdl)
+      for when to use which key. Using these keys requires this release
+      (see Compatibility above; PR #126).
+    - new `--out_idl` option creates a per-indel tabular output file
+      (`.idl`) with one line for each insertion and deletion in a CDS
+      longer than the default maximum length, whether or not an
+      exception exempts it, with its approximate and exact model
+      positions and the maximum length that applied. The format is
+      described [here](documentation/formats.md#idl) (PR #134).
+    - new `.fcd` output file, written by every run, with one line per
+      annotated CDS recording the protein-validation hit that was
+      selected for it: the query type (full sequence or predicted CDS),
+      the library protein, its raw score, the number of tied proteins,
+      and the hit's sequence and model coordinates. With `--pv_hmmer`
+      it is written from the HMMER hits; with `--pv_skip` it has only a
+      header. The format is described [here](documentation/formats.md#fcd).
+      Also, the `.ftr` `p_from` and `p_to` fields were sequence
+      coordinates when the selected `blastx` hit was to the full
+      sequence but positions in the predicted CDS when it was to the
+      CDS; they are now always sequence coordinates (PR #122).
+    - new `--mm2_z <n>` option sets minimap2's z-drop for `--minimap2`
+      seeding, default 10000 (minimap2's `-x asm20` default is 200).
+      With the default of 200, minimap2 split alignments at large
+      indels into records that VADR discarded. Only `--minimap2` runs
+      are affected (`mpxv` in the standard `v-scan.pl` configuration);
+      they are faster, with few alert differences (PR #107).
+
+  * **`v-annotate.pl`: other behavior changes**
+    - `.alc` output file format change: three columns are added after
+      `num seqs`, before the long description. `non-fatal` is `all`
+      for alerts that do not cause failure; for alerts that do, it is
+      `-` if every instance is fatal, or the reasons for the non-fatal
+      instances (`drop` for non-coding features dropped with
+      `--ncf drop`, `mnf` for `misc_not_failure` features), e.g.
+      `drop:15,mnf:2`. `seqs fail` is the number of sequences with at
+      least one fatal instance of the alert, and `seqs alone` the
+      number of sequences for which it is the only fatal alert code.
+      The `causes failure` column is now always `yes` or `no`: the
+      `yes*` value, which meant that `misc_not_failure` could make the
+      alert non-fatal for at least one feature in the model library,
+      is no longer used. The `.alc` file format is described
+      [here](documentation/formats.md#alc) (PR #130).
+    - `blastx` `-num_alignments` now defaults to the number of
+      proteins in the model's blastx database, so every protein with a
+      hit is reported (previously the `--xnumali` default was 20).
+      `--xnumali <n>` still sets it. For models with more than 20
+      proteins in their blastx database, the protein that belongs to a
+      CDS could be left out, giving a spurious fatal `indfantn` alert.
+      With all alignments reported, alignments of the full sequence
+      that the limit used to hide could cause other false alerts, so
+      `blastx` hits are now chosen per CDS: up to four candidates (the
+      highest-scoring and longest alignment of either query, and of the
+      predicted CDS alone) compete in the existing fewest-fatal-alerts
+      choice, and an alignment of the full sequence is used for a CDS
+      only if it is on the CDS's strand and in the expected location.
+      For models with 20 or fewer proteins (most current model
+      libraries), output is unchanged by the new default. For models
+      with many proteins, protein-validation alerts and PASS/FAIL can
+      change, mostly from FAIL to PASS, and `blastx` takes longer
+      (e.g. 2-3x overall for `cox1` and `cytb`). For a model with an
+      average of at least two proteins per CDS, each predicted CDS is
+      now searched only against its own feature's proteins, which gives
+      the same output and is much faster on large protein libraries
+      (about 16x for protein validation with an HIV-1 model of about
+      3,000 proteins) (PRs #111, #119 and #120).
+    - the `indfantp`, `indfstrp`, `cdsstopp`, `insertnp` and
+      `deletinp` protein-validation alerts now report exact,
+      alignment-derived model coordinates, instead of approximate,
+      protein-position-derived coordinates; the `mdl coords` field of
+      an alert of one of these types in the `.alt` output file can now
+      always be read directly as a model position. Model coordinates
+      are now also reported where they used to be `-`, for
+      `indfantp`/`indfstrp` with `--pv_hmmer` and for hits to library
+      proteins longer than the reference CDS (PR #125).
+    - `codon_start` for a 5'-truncated CDS whose first nucleotides are
+      aligned in a different frame from most of the CDS is now the
+      frame of most of the CDS (the dominant frame), unless a
+      `mat_peptide` start or stop lies in that first region. The
+      `cdsstopn`/`mutendex`/`mutendns` internal stop check now always
+      runs, in the `codon_start` frame; it used to be skipped for such
+      CDSs, so a CDS could pass with internal stops in its
+      `codon_start` frame. Every frameshift alert's details now end
+      with `annotated_frame:N;`, the frame reported as `codon_start`.
+      On recent GenBank samples, about 0.6% of sequences changed,
+      almost all of which already failed. (github issue #139; PR #140)
+    - fixes which indels frameshift alerts (`fsthicft`, `fsthicfi`,
+      `fstlocft`, `fstlocfi`, `fstukcft`, `fstukcfi`) report as
+      `cause:`, `restore:` and `intermediate:` on multi-segment CDSs:
+      indels at the start of a segment other than the first are now
+      reported, a deletion at a segment boundary is reported only if it
+      changes the frame, and a deletion spanning a segment boundary
+      (e.g. a ribosomal slippage position) is reported as one deletion.
+      Previously `cause:` could be blank (with a Perl "uninitialized
+      value" warning) or name the wrong indel. Alert codes,
+      coordinates and PASS/FAIL are unchanged (PRs #142 and #143).
+    - a feature whose parent CDS is output as a `misc_feature` is now
+      left out of the feature table, instead of being output with a
+      `protein_id` that matches no CDS (a side effect of the 1.7.1
+      change that lets only CDS features become `misc_feature`s).
+      `protein_id` values are numbered as before 1.7.1. Submitter notes
+      are unchanged. None of GenBank's current model and option
+      configurations produce such features (PR #114).
+    - the `noannotn` (NO_ANNOTATION) alert's details, previously always
+      `[-]`, now say which of its three causes applied: no match in the
+      classification stage, a match in the `-r` N-replacement
+      pre-screen but not in classification, or a match in
+      classification but not in coverage determination (PR #112).
+    - nearest-neighbor (group/subgroup) classification now uses the
+      classification region only if it contains at least
+      `--nn_regionlen` observed nucleotides (not gaps, not Ns, not `-r`
+      replaced positions), in every run. Previously, without `-r`,
+      alignment columns were counted, so a region that was all N or
+      mostly gap was classified on almost nothing; now the full
+      sequence is used and an `nnalrgcl` alert is reported, and that
+      alert's long description says the sequence has too few
+      nucleotides in the specified region. If half the classification
+      region length (rounded up) is less than `--nn_regionlen`, that is
+      the minimum (previously the region length). Only group/subgroup
+      values and the non-fatal `nn*cl` alerts can change, and only in
+      models with a nearest-neighbor classification alignment;
+      PASS/FAIL and feature tables are unchanged (PR #136).
+    - with `-r`, positions in which Ns were replaced no longer count
+      toward nearest-neighbor (group/subgroup) classification, because
+      they come from a sequence in the `-r` blastn DB and biased the
+      classification toward it. Only group/subgroup values and the
+      non-fatal `nn*cl` alerts can change, and only for sequences with
+      Ns in models with a nearest-neighbor classification alignment;
+      PASS/FAIL and feature tables are unchanged. See
+      [`annotate.md`](documentation/annotate.md#options-replace)
+      (PR #135).
+    - for a model that uses nearest-neighbor classification
+      (`:FILE:` group and subgroup values in the `.minfo` file),
+      sequences that are not classified by nearest neighbor (e.g.
+      reverse complemented sequences, or all sequences with
+      `--ignore_nnclass`) are now reported with group and subgroup `-`
+      instead of the `:FILE:` value, and are counted in a `-` row of
+      the `.mdl` file (PR #115).
+    - overlapping hits are now counted once in sequence and model
+      coverage (`.sqc`), which could exceed 1.0 and hide a `lowcovrg`
+      alert; and, with `-s` or `-r`, in `blastn` classification scores,
+      using the best-scoring hit at each position, so that a more
+      divergent model with more fragmented hits no longer outscores a
+      closer one. Overlapping hits are most common with `-s`. `.sqc`
+      scores and coverage can drop, and a sequence whose true coverage
+      is below the `lowcovrg` threshold now gets a `lowcovrg` alert
+      (PR #108).
+    - the `.dcr` file's `did swap` field is now `yes` only if the
+      swap was performed; it used to be `yes` whenever the swap was
+      proposed, including swaps that an earlier doctoring of the same
+      sequence prevented (PR #116).
+    - with `--split`, `--wait` is now real elapsed time (the default
+      of 500 minutes previously lasted about 200 hours; PR #110).
+
+  * **`v-annotate.pl`: bug fixes**
+    - fixes a fatal error (`vdr_CoordsSegmentCreate, stop is invalid`)
+      during protein validation of a negative strand CDS with a
+      `blastx` insertion near its 5' end, and wrong sequence
+      coordinates of `insertnp`, `deletinp`, `indf5pst`, `indf3pst`
+      and `indfstrp` alerts, mostly on negative strand CDSs; `insertnn`
+      on a negative strand CDS now reports the model position after
+      which the insertion occurs in the CDS direction, as `insertnp`
+      does. Tied `blastx` hits (e.g. in `discontn` alert details) are
+      now listed in a fixed order (PR #109).
+    - fixes an alignment doctoring crash (`failed to account for all
+      nucleotides`) when the residue closest to a gapped start or stop
+      codon position is in an insert column; doctoring is now declined
+      in that case, as with `--nodcr` (github issue #106; PR #116)
+    - fixes a crash (`unable to parse frame_stok`) on a CDS segment
+      whose nucleotides all align as inserts, seen with long runs of
+      Ns in coding regions (github issue #137; PR #138)
+    - fixes a `--glsearch` crash (`does not begin with The best
+      scores`) on queries at least 1.33 times as long as the model
+      (github issue #127; PR #128)
+    - fixes `--split --origfa`, which deleted the input file when the
+      input ended up in a single chunk (github issue #132; PR #131)
+    - with `--split`, a run in which a chunk fails now exits with an
+      error within about two minutes, naming the failed chunk and quoting
+      its error, and stops the other workers; previously the run could
+      wait for many hours. `--split --wait <n>` without `-p`, which
+      failed on every input, now works (PR #110).
+
+  * **`v-scan.pl`**
+    - with `-m`, new output files combine all libraries and list every
+      input sequence in input order: `.vadr.slb` (a per-sequence table
+      of library, model, group, subgroup and `PASS`/`FAIL`/`NO-MATCH`),
+      `.vadr.alt.list`, `.vadr.pass.tbl`, `.vadr.fail.tbl`,
+      `.vadr.pass.list`, `.vadr.fail.list`, `.vadr.pass.fa` and
+      `.vadr.fail.fa`. A sequence that matched no library, which
+      previously could be missing from every output file, is
+      `NO-MATCH` in `.slb` and fails with a `NO_ANNOTATION` alert in
+      the other combined files. When exactly one library matched, such
+      a sequence is no longer annotated with that library. See
+      [`scan.md`](documentation/scan.md#combined) (PR #117).
+    - with `-m`, sequences that match no library in the `blastn`-based
+      classification stage are rescanned with HMM-based classification
+      against each library that has a CM file, so short fragments of
+      variable regions can be assigned to a library. Sequences that
+      already matched are not rescanned. New options `--noclsfb` turns
+      the rescan off and `--clsfb_minbit <x>` (default 20) sets its
+      minimum bit score. A library with a CM file but without its
+      `cmpress` index files is now an error. See
+      [`scan.md`](documentation/scan.md#clsfb) (PR #129).
+    - `v-scan.pl -m --cpu <n>` on a small input no longer fails on the
+      second library (github issue #132; PR #131)
+
+  * **other scripts and documentation**
+    - `v-build.pl`: fixes `--cmnoh3pri`, which failed with "Unknown
+      option" (PR #118)
+    - `miniscripts/annotate-tbl2gff.pl`: removes an undocumented `-f`
+      option binding that caused an internal error
+    - new miniscript `miniscripts/vadr-propose-indel-exc.pl` proposes
+      `insertn_mdl_exc`/`deletin_mdl_exc` values from `v-annotate.pl`
+      output on trusted sequences: `convert` re-derives legacy
+      `insertn_exc`/`deletin_exc` values at exact model positions (from
+      `--out_idl` output), `extend` adds values for the `insertnp`/
+      `deletinp` alerts reported for trusted sequences, and `compare`
+      lists PASS/FAIL changes between two runs, for checking the
+      held-out folds written with `--cv`. See the
+      [exceptions section of `annotate.md`](documentation/annotate.md#exceptionspropose)
+      (PR #134).
+    - `README.md` has a new top section with a logo, links and example
+      output (PRs #121 and #123); GitHub links in the documentation now
+      point to `NLM-DIR/vadr`; documentation fixes, including the
+      `misc_not_failure` option description and the nearest-neighbor
+      classification alignment requirements
 
 ---
 ### VADR 1.7.3 release (September 2026)
