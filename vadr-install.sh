@@ -58,7 +58,7 @@ MM2VERSIONGITNOV="2.30"
 VVERSION="vadr-$VERSION"
 # vadr models
 CALICIVERSION="1.7-2"
-FLAVIVERSION="1.7-2"
+FLAVIVERSION="1.7-3"
 ZIKAVERSION="1.7.1-2"
 CORONAVERSION="1.3-3"
 SARSCOV2VERSION="1.6.3-1"
@@ -127,7 +127,7 @@ model_urldir () {
 model_size () {
     case "$1" in
         calici)   echo 71394880 ;;
-        flavi)    echo 219804683 ;;
+        flavi)    echo 219797108 ;;
         zika)     echo 1435731 ;;
         corona)   echo 199367695 ;;
         sarscov2) echo 4282450 ;;
