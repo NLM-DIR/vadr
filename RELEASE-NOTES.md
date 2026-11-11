@@ -49,6 +49,11 @@
     - `cause:`/`restore:`/`intermediate:` text of some frameshift
       alerts on multi-segment (spliced or ribosomal slippage) CDSs
       (PRs #142 and #143)
+    - coordinates, and in rare cases confidence (high vs low) or
+      presence, of frameshift alerts whose region begins at or crosses
+      a segment boundary of a CDS with an intron or other gap between
+      segments; such coordinates can now have more than one segment
+      (PR #146)
     - feature tables no longer contain the children (e.g.
       `mat_peptide`s) of a CDS that is output as a `misc_feature`
       (PR #114)
@@ -231,6 +236,21 @@
       Previously `cause:` could be blank (with a Perl "uninitialized
       value" warning) or name the wrong indel. Alert codes,
       coordinates and PASS/FAIL are unchanged (PRs #142 and #143).
+    - a frameshift alert's region in a CDS with more than one segment
+      (e.g. a spliced CDS) now includes only positions in the CDS's
+      segments. Previously, a region that began at or crossed a segment
+      boundary included the sequence and model positions between the
+      segments (e.g. an intron), which counted toward its length
+      (`--fstminnti`, `--fstminntt`), its `shifted_avgpp` (and so high
+      vs low confidence) and its `fst_exc` exemption check, and were
+      reported in its coordinates: for HIV-1 tat/rev, spans of 2-3 kb
+      for shifts of tens of nucleotides. Such a region is now reported
+      with one coordinate segment per CDS segment it overlaps. CDSs
+      whose segments overlap or are adjacent (e.g. ribosomal slippage)
+      are unchanged. In 21,599 HIV-1 genomes, 200 of 5,743 frameshift
+      alerts changed coordinates, one changed from high to low
+      confidence, and no sequence changed PASS/FAIL. See
+      [`alerts.md`](documentation/alerts.md#example-frameshift) (PR #146).
     - a feature whose parent CDS is output as a `misc_feature` is now
       left out of the feature table, instead of being output with a
       `protein_id` that matches no CDS (a side effect of the 1.7.1

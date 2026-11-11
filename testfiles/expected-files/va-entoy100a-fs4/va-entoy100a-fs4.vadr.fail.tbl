@@ -28,7 +28,7 @@
 			note	similar to protein four
 
 Additional note(s) to submitter:
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein three) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:84,M:85(1); frame:1(3); length:13:(10); shifted_avgpp:0.933; exp_avgpp:0.975; annotated_frame:1;]; seq-coords:80..94:+; mdl-coords:80..95:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein three) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:84,M:85(1); frame:1(3); length:13:(10); shifted_avgpp:0.967; exp_avgpp:0.975; annotated_frame:1;]; seq-coords:85..94:+; mdl-coords:85..95:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_START: (CDS:protein three) alignment to homology model is a gap at 5' boundary [segment 2 of 2]; seq-coords:85..85:+; mdl-coords:85..85:+; mdl:ENTOY100A;
 ERROR: MUTATION_AT_END: (CDS:protein three) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
 ERROR: UNEXPECTED_LENGTH: (CDS:protein three) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [23]; seq-coords:67..79:+,85..94:+; mdl-coords:67..79:+,86..95:+; mdl:ENTOY100A;
@@ -69,7 +69,7 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein four) length of complete coding (CDS or m
 			note	similar to protein four
 
 Additional note(s) to submitter:
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein three) high confidence possible frameshift in CDS (frame restored before end) [cause:delete,S:84,M:85(1); restore:delete,S:89,M:91..92(2); frame:1(3)1; length:13:(5):3; shifted_avgpp:0.863; exp_avgpp:0.975; annotated_frame:1;]; seq-coords:80..89:+; mdl-coords:80..92:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein three) high confidence possible frameshift in CDS (frame restored before end) [cause:delete,S:84,M:85(1); restore:delete,S:89,M:91..92(2); frame:1(3)1; length:13:(5):3; shifted_avgpp:0.840; exp_avgpp:0.975; annotated_frame:1;]; seq-coords:85..89:+; mdl-coords:85..92:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_START: (CDS:protein three) alignment to homology model is a gap at 5' boundary [segment 2 of 2]; seq-coords:85..85:+; mdl-coords:85..85:+; mdl:ENTOY100A;
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein three mp1) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_END: (mat_peptide:protein three mp2) alignment to homology model is a gap at 3' boundary [segment 2 of 2]; seq-coords:89..89:+; mdl-coords:92..92:+; mdl:ENTOY100A;
@@ -111,7 +111,7 @@ ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of st
 ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:64,M:71(1); frame:1(3); length:33:(2); shifted_avgpp:0.938; exp_avgpp:0.760; annotated_frame:1;]; seq-coords:65..66:+; mdl-coords:71..73:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_END: (CDS:protein two) alignment to homology model is a gap at 3' boundary [segment 2 of 3]; seq-coords:58..58:+; mdl-coords:64..64:+; mdl:ENTOY100A;
 ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [35]; seq-coords:32..47:+,47..58:+,60..66:+; mdl-coords:32..47:+,47..58:+,66..73:+; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein three) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:64,M:71(1); frame:1(3); length:4:(19); shifted_avgpp:0.972; exp_avgpp:0.750; annotated_frame:1;]; seq-coords:65..88:+; mdl-coords:71..95:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein three) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:64,M:71(1); frame:1(3); length:4:(19); shifted_avgpp:0.971; exp_avgpp:0.750; annotated_frame:1;]; seq-coords:65..72:+,78..88:+; mdl-coords:71..79:+,85..95:+; mdl:ENTOY100A;
 ERROR: MUTATION_AT_END: (CDS:protein three) expected stop codon could not be identified, no in-frame stop codon exists 3' of predicted start codon [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
 ERROR: UNEXPECTED_LENGTH: (CDS:protein three) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [23]; seq-coords:61..72:+,78..88:+; mdl-coords:67..79:+,85..95:+; mdl:ENTOY100A;
 ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein three mp1) mat_peptide may not be translated because its parent CDS has a problem [-]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
@@ -155,7 +155,7 @@ ERROR: PEPTIDE_TRANSLATION_PROBLEM: (mat_peptide:protein three mp2) mat_peptide 
 			protein_id	ENTOY100A-4-fs4_3
 
 Additional note(s) to submitter:
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:44,M:45..47(3); frame:1(3); length:13:(25); shifted_avgpp:0.972; exp_avgpp:0.969; annotated_frame:1;]; seq-coords:45..70:+; mdl-coords:45..73:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:44,M:45..47(3); frame:1(3); length:13:(25); shifted_avgpp:0.972; exp_avgpp:0.969; annotated_frame:1;]; seq-coords:45..61:+,63..70:+; mdl-coords:45..64:+,66..73:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_END: (CDS:protein two) alignment to homology model is a gap at 3' boundary [segment 1 of 3]; seq-coords:44..44:+; mdl-coords:47..47:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_START: (CDS:protein two) alignment to homology model is a gap at 5' boundary [segment 2 of 3]; seq-coords:45..45:+; mdl-coords:47..47:+; mdl:ENTOY100A;
 ERROR: MUTATION_AT_END: (CDS:protein two) expected stop codon could not be identified, first in-frame stop codon exists 3' of predicted stop position [TAG]; seq-coords:90..92:+; mdl-coords:93..95:+; mdl:ENTOY100A;
@@ -199,7 +199,7 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or ma
 
 Additional note(s) to submitter:
 ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted S:7,M:7]; seq-coords:60..62:+; mdl-coords:64..66:+; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:44,M:45..48(4); frame:1(2); length:13:(24); shifted_avgpp:0.965; exp_avgpp:0.919; annotated_frame:1;]; seq-coords:45..69:+; mdl-coords:45..73:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:44,M:45..48(4); frame:1(2); length:13:(24); shifted_avgpp:0.965; exp_avgpp:0.919; annotated_frame:1;]; seq-coords:45..60:+,62..69:+; mdl-coords:45..64:+,66..73:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_END: (CDS:protein two) alignment to homology model is a gap at 3' boundary [segment 1 of 3]; seq-coords:44..44:+; mdl-coords:47..47:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_START: (CDS:protein two) alignment to homology model is a gap at 5' boundary [segment 2 of 3]; seq-coords:45..45:+; mdl-coords:47..47:+; mdl:ENTOY100A;
 ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [37]; seq-coords:32..44:+,45..60:+,62..69:+; mdl-coords:32..44:+,49..64:+,66..73:+; mdl:ENTOY100A;
@@ -242,7 +242,7 @@ ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or ma
 
 Additional note(s) to submitter:
 ERROR: CDS_HAS_STOP_CODON: (CDS:protein two) in-frame stop codon exists 5' of stop position predicted by homology to reference [TAA, shifted S:7,M:7]; seq-coords:60..62:+; mdl-coords:64..66:+; mdl:ENTOY100A;
-ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:44,M:45..47(3); frame:1(32); length:13:(7:17); shifted_avgpp:0.939; exp_avgpp:0.969; intermediate:delete,S:51,M:55(1); annotated_frame:1;]; seq-coords:45..69:+; mdl-coords:45..73:+; mdl:ENTOY100A;
+ERROR: POSSIBLE_FRAMESHIFT_HIGH_CONF: (CDS:protein two) high confidence possible frameshift in CDS (frame not restored before end) [cause:delete,S:44,M:45..47(3); frame:1(32); length:13:(7:17); shifted_avgpp:0.938; exp_avgpp:0.969; intermediate:delete,S:51,M:55(1); annotated_frame:1;]; seq-coords:45..60:+,62..69:+; mdl-coords:45..64:+,66..73:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_END: (CDS:protein two) alignment to homology model is a gap at 3' boundary [segment 1 of 3]; seq-coords:44..44:+; mdl-coords:47..47:+; mdl:ENTOY100A;
 ERROR: INDEFINITE_ANNOTATION_START: (CDS:protein two) alignment to homology model is a gap at 5' boundary [segment 2 of 3]; seq-coords:45..45:+; mdl-coords:47..47:+; mdl:ENTOY100A;
 ERROR: UNEXPECTED_LENGTH: (CDS:protein two) length of complete coding (CDS or mat_peptide) feature is not a multiple of 3 [37]; seq-coords:32..44:+,45..60:+,62..69:+; mdl-coords:32..44:+,48..64:+,66..73:+; mdl:ENTOY100A;
