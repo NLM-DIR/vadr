@@ -9,7 +9,9 @@
       1.7-2 of the `flavi` model library have this problem, so this
       release refuses those two versions for all sequences, including
       dengue and other non-HCV sequences. Use `flavi` version 1.7-3,
-      which corrects it. `flavi` version 1.2-1 is accepted (PR #141).
+      which corrects it and which `vadr-install.sh` now installs (see
+      below); existing installs with 1.7-1 or 1.7-2 must update to
+      1.7-3. `flavi` version 1.2-1 is accepted (PR #141).
     - model info files that use the new `insertn_mdl_exc`,
       `deletin_mdl_exc` or `indfstr_mdl_exc` exception keys (see below)
       require this release or later: earlier versions of `v-annotate.pl`
@@ -342,6 +344,10 @@
       second library (github issue #132; PR #131)
 
   * **other scripts and documentation**
+    - `vadr-install.sh` now installs `flavi` model library version
+      1.7-3 instead of 1.7-2. 1.7-3 fixes the parent of every HCV
+      `mat_peptide` and has no other changes; this release of
+      `v-annotate.pl` refuses 1.7-1 and 1.7-2 (PR #144)
     - `v-build.pl`: fixes `--cmnoh3pri`, which failed with "Unknown
       option" (PR #118)
     - `miniscripts/annotate-tbl2gff.pl`: removes an undocumented `-f`
