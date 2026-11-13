@@ -144,6 +144,7 @@ require "sqp_utils.pm";
 # vdr_NcfPolicyIsValid()
 # vdr_FeatureAlertNcfAction()
 # vdr_FeatureNcfMnfLegacy()
+# vdr_FeatureNcfMiscModelMnf()
 # vdr_FeatureAbsorbsLowSimilarity()
 # 
 # Subroutines related to alert exceptions:
@@ -891,8 +892,8 @@ sub vdr_FeatureInfoValidateIsDeletable {
 #               value of 1 for the same feature;
 #             - with --ncf drop, a "misc_not_failure" value of 1 is
 #               only used for an ncf type feature if --mnf_legacy
-#               was also used (with --ncf misc it is allowed but 
-#               has no effect, see vdr_FeatureAlertIsMiscNotFailure()).
+#               was also used (with --ncf misc it is allowed, see
+#               vdr_FeatureNcfMiscModelMnf()).
 #             Should be called after vdr_FeatureInfoInitializeNcfPolicy()
 #             and vdr_FeatureInfoInitializeMiscNotFailure().
 #
@@ -4264,8 +4265,10 @@ sub vdr_AlertNonFatalReasonsStringParse {
 #                     they make the feature a misc_feature instead
 #                     (see vdr_FeatureTypeCanBecomeMiscFeature()). As
 #                     with 'drop', the feature does not absorb 
-#                     overlapping low similarity regions, and its
-#                     complete deletion is not fatal.
+#                     overlapping low similarity regions (unless it has
+#                     misc_not_failure:"1" in the model info file, see
+#                     vdr_FeatureNcfMiscModelMnf()), and its complete
+#                     deletion is not fatal.
 #             To add a policy, add it here and add its action to
 #             vdr_FeatureAlertNcfAction().
 #
@@ -4403,6 +4406,45 @@ sub vdr_FeatureNcfMnfLegacy {
 }
 
 #################################################################
+# Subroutine: vdr_FeatureNcfMiscModelMnf()
+# Incept:     EPN, Fri Nov 13 2026 (w/Claude)
+#
+# Purpose:    Is feature $ftr_idx a non-coding feature (ncf) type
+#             feature whose ncf policy action is 'misc' (--ncf misc,
+#             see vdr_FeatureAlertNcfAction()) and that has 
+#             misc_not_failure:"1" in the model info file (which is
+#             set to 0 for all features with --ignore_mnf)? Such a 
+#             feature is treated as with --ncf fail in the two ways
+#             --ncf misc otherwise differs from misc_not_failure: it
+#             absorbs overlapping low similarity regions (see 
+#             vdr_FeatureAbsorbsLowSimilarity()), and when it becomes
+#             a misc_feature it does not count towards the nmiscftr
+#             threshold, so that --ncf misc never fails a sequence
+#             because of a feature the model makes non-essential.
+#
+# Arguments: 
+#  $ftr_info_AHR:  ref to the feature info array of hashes 
+#  $ftr_idx:       feature index
+#
+# Returns:    1 or 0
+#
+# Dies:       never; does not validate anything.
+#
+################################################################# 
+sub vdr_FeatureNcfMiscModelMnf { 
+  my $sub_name = "vdr_FeatureNcfMiscModelMnf";
+  my $nargs_exp = 2;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_info_AHR, $ftr_idx) = @_;
+
+  my $ftr_HR = $ftr_info_AHR->[$ftr_idx]; # for convenience
+  return ((vdr_FeatureAlertNcfAction($ftr_info_AHR, undef, $ftr_idx, undef) eq "misc") && 
+          ((defined $ftr_HR->{"misc_not_failure"}) && ($ftr_HR->{"misc_not_failure"} eq "1")))
+      ? 1 : 0;
+}
+
+#################################################################
 # Subroutine: vdr_FeatureAbsorbsLowSimilarity()
 # Incept:     EPN, Fri Oct 23 2026 (w/Claude)
 #
@@ -4414,8 +4456,11 @@ sub vdr_FeatureNcfMnfLegacy {
 #             (lowsim5s, lowsim3s, lowsimis).
 #             True if the non-coding feature (ncf) policy action for
 #             the feature and alert is 'fail' (see 
-#             vdr_FeatureAlertNcfAction()). Otherwise (e.g. with
-#             --ncf drop or --ncf misc) false, unless the legacy misc_not_failure
+#             vdr_FeatureAlertNcfAction()), or if the action is 'misc'
+#             and the feature has misc_not_failure:"1" in the model
+#             info file (see vdr_FeatureNcfMiscModelMnf()). Otherwise
+#             (e.g. with --ncf drop or --ncf misc) false, unless the
+#             legacy misc_not_failure
 #             behavior applies (see vdr_FeatureNcfMnfLegacy()) and 
 #             $length is less than $long_min_length, the minimum 
 #             length for a long low similarity alert (--lowsim5lftr, 
@@ -4442,6 +4487,9 @@ sub vdr_FeatureAbsorbsLowSimilarity {
   my ($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code, $length, $long_min_length) = @_;
 
   if(vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) eq "fail") { 
+    return 1;
+  }
+  if(vdr_FeatureNcfMiscModelMnf($ftr_info_AHR, $ftr_idx)) { 
     return 1;
   }
   if((vdr_FeatureNcfMnfLegacy($ftr_info_AHR, $ftr_idx)) && ($length < $long_min_length)) { 

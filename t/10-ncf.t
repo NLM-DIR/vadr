@@ -1,6 +1,6 @@
 use strict;
 use warnings FATAL => 'all';
-use Test::More tests => 73;
+use Test::More tests => 77;
 
 BEGIN {
     use_ok( 'vadr' ) || print "Bail out!\n";
@@ -79,12 +79,20 @@ $ftr_info_AH[$nr_idx]{"outname"} = "enRNA";
 is(vdr_FeatureMiscFeatureSimilarToName(\@ftr_info_AH, $nr_idx), "enRNA", "--ncf misc: similar to name is product for ncRNA with product");
 delete $ftr_info_AH[$nr_idx]{"product"};
 delete $ftr_info_AH[$nr_idx]{"outname"};
+is(vdr_FeatureNcfMiscModelMnf(\@ftr_info_AH, $sl_idx), 0, "--ncf misc: stem_loop without misc_not_failure:1 is not model misc_not_failure");
+$ftr_info_AH[$sl_idx]{"misc_not_failure"} = "1";
+is(vdr_FeatureNcfMiscModelMnf(\@ftr_info_AH, $sl_idx), 1, "--ncf misc: stem_loop with misc_not_failure:1 is model misc_not_failure");
+is(vdr_FeatureAbsorbsLowSimilarity(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "lowsim3n", 10, 30), 1, "--ncf misc: stem_loop with misc_not_failure:1 absorbs low similarity region");
+$ftr_info_AH[$sl_idx]{"misc_not_failure"} = "0";
 $ftr_info_AH[$sl_idx]{"ncf_always_fail"} = "1";
 is(vdr_FeatureAlertCausesFailure(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "indf5gap"), 1, "--ncf misc: indf5gap causes failure for ncf_always_fail stem_loop");
 is(vdr_FeatureTypeCanBecomeMiscFeature(\@ftr_info_AH, $sl_idx), 0, "--ncf misc: ncf_always_fail stem_loop cannot become misc_feature");
 $ftr_info_AH[$sl_idx]{"ncf_always_fail"} = "0";
 vdr_FeatureInfoInitializeNcfPolicy(\@ftr_info_AH, "drop", 0, undef);
 is(vdr_FeatureTypeCanBecomeMiscFeature(\@ftr_info_AH, $sl_idx), 0, "--ncf drop: stem_loop cannot become misc_feature");
+$ftr_info_AH[$sl_idx]{"misc_not_failure"} = "1";
+is(vdr_FeatureNcfMiscModelMnf(\@ftr_info_AH, $sl_idx), 0, "--ncf drop: stem_loop with misc_not_failure:1 is not model misc_not_failure for --ncf misc");
+$ftr_info_AH[$sl_idx]{"misc_not_failure"} = "0";
 
 # low similarity absorption and --mnf_legacy
 is(vdr_FeatureAbsorbsLowSimilarity(\@ftr_info_AH, \%alt_info_HH, $cds_idx, "lowsim3c", 10, 30), 1, "--ncf drop: CDS absorbs low similarity region");

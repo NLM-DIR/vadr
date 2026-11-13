@@ -14379,7 +14379,9 @@ sub output_feature_table {
                 if(vdr_FeatureTypeCanBecomeMiscFeature($ftr_info_AHR, $ftr_idx)) { 
                   $is_misc_feature = 1;
                   $feature_type = "misc_feature";
-                  if((! $have_fatal_alt) && ($have_misc_alt)) { 
+                  # ncf type features with misc_not_failure:"1" in the model info file do not 
+                  # count with --ncf misc, as with --ncf fail (see vadr.pm::vdr_FeatureNcfMiscModelMnf())
+                  if((! $have_fatal_alt) && ($have_misc_alt) && (! vdr_FeatureNcfMiscModelMnf($ftr_info_AHR, $ftr_idx))) { 
                     $cur_nmiscftr++; 
                   }
                 }

@@ -245,3 +245,30 @@ out: va-entoy100a-ncfmisc5/va-entoy100a-ncfmisc5.vadr.fail.tbl
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmisc5/va-entoy100a-ncfmisc5.vadr.alt
 exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmisc5/va-entoy100a-ncfmisc5.vadr.fail.tbl
 rmdir: va-entoy100a-ncfmisc5
+#
+# 17. --ncf misc with misc_not_failure:"1" on the stem_loop in the model
+#     info file: the stem_loop absorbs the region as with --ncf fail, so
+#     no lowsim3s sequence alert even though the region meets
+#     --lowsim3seq, stem_loop becomes a misc_feature, sequence passes
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf misc -f --lowsim3seq 3 --lowsim3ftr 3 --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-ncf3p.fa va-entoy100a-ncfmisc6 > va-entoy100a-ncfmisc6.out
+desc: annotate-entoy100a-ncfmisc6
+out: va-entoy100a-ncfmisc6/va-entoy100a-ncfmisc6.vadr.alt
+out: va-entoy100a-ncfmisc6/va-entoy100a-ncfmisc6.vadr.pass.tbl
+out: va-entoy100a-ncfmisc6/va-entoy100a-ncfmisc6.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmisc6/va-entoy100a-ncfmisc6.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmisc6/va-entoy100a-ncfmisc6.vadr.pass.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmisc6/va-entoy100a-ncfmisc6.vadr.fail.tbl
+rmdir: va-entoy100a-ncfmisc6
+#
+# 18. same as 17 but with --ignore_mnf: the stem_loop does not absorb the
+#     region, which is reported as a fatal lowsim3s sequence alert,
+#     sequence fails
+command: perl $VADRSCRIPTSDIR/v-annotate.pl --ncf misc --ignore_mnf -f --lowsim3seq 3 --lowsim3ftr 3 --alt_pass lowcovrg --pv_skip -m $VADRSCRIPTSDIR/testfiles/models/entoy100a.cm -i $VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $VADRSCRIPTSDIR/testfiles/entoy100a-ncf3p.fa va-entoy100a-ncfmisc7 > va-entoy100a-ncfmisc7.out
+desc: annotate-entoy100a-ncfmisc7
+out: va-entoy100a-ncfmisc7/va-entoy100a-ncfmisc7.vadr.alt
+out: va-entoy100a-ncfmisc7/va-entoy100a-ncfmisc7.vadr.alt.list
+out: va-entoy100a-ncfmisc7/va-entoy100a-ncfmisc7.vadr.fail.tbl
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmisc7/va-entoy100a-ncfmisc7.vadr.alt
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmisc7/va-entoy100a-ncfmisc7.vadr.alt.list
+exp: @VADRSCRIPTSDIR@/testfiles/expected-files/va-entoy100a-ncfmisc7/va-entoy100a-ncfmisc7.vadr.fail.tbl
+rmdir: va-entoy100a-ncfmisc7

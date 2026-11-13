@@ -136,9 +136,13 @@
       `--ncf drop`, a low similarity region that overlaps an ncf type
       feature is also judged at the sequence level as if the feature
       were not annotated, and a completely deleted ncf type feature
-      gets the non-fatal `deletina` alert. `ncf_always_fail:"1"` opts a
-      feature out, as with `--ncf drop`; `--mnf_legacy` cannot be used
-      with `--ncf misc`. See
+      gets the non-fatal `deletina` alert. A feature with
+      `misc_not_failure:"1"` in the model info file still absorbs
+      overlapping low similarity regions and does not count towards
+      the `nmiscftr` threshold, as with `--ncf fail`, so `--ncf misc`
+      never fails a sequence that `--ncf fail` passes because of it.
+      `ncf_always_fail:"1"` opts a feature out, as with `--ncf drop`;
+      `--mnf_legacy` cannot be used with `--ncf misc`. See
       [`annotate.md`](documentation/annotate.md#ncf) (PR #XXX).
     - new `.minfo` exception keys `insertn_mdl_exc`, `deletin_mdl_exc`
       and `indfstr_mdl_exc`: the recommended alternatives to the

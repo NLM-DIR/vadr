@@ -1500,7 +1500,9 @@ With `--ncf misc`:
   fatal alerts for the feature, such as `deletinf`, `lowsim5l`,
   `lowsim3l` and `lowsimil`, still cause the sequence to fail.
   `misc_feature`s created this way count towards the
-  [*nmiscftr*](#nmiscftr1) alert threshold (`--nmiscftrthr`).
+  [*nmiscftr*](#nmiscftr1) alert threshold (`--nmiscftrthr`), except
+  for features with `misc_not_failure:"1"` in the model info file (see
+  below).
 
 * Unlike with `misc_not_failure` for other feature types, a low
   similarity region that overlaps an ncf type feature is handled as with
@@ -1523,10 +1525,18 @@ With `--ncf misc`:
   fatal [*deletins*](#deletins1) alert, as with `--ncf drop`.
 
 A feature with `ncf_always_fail:"1"` is treated as with `--ncf fail`.
-`misc_not_failure:"1"` on an ncf type feature is allowed and has no
-additional effect. `--ignore_mnf` sets the `misc_not_failure` values
-from the model info file to 0 but does not turn off `--ncf misc`.
-`--mnf_legacy` cannot be used with `--ncf misc`.
+An ncf type feature with `misc_not_failure:"1"` in the model info file
+(for example the `s2m` `stem_loop` in the `sarscov2` and `corona`
+models) is treated as with `--ncf fail` in two respects: it absorbs
+overlapping low similarity regions, so no sequence-level alert is
+reported for them, and it does not count towards the
+[*nmiscftr*](#nmiscftr1) threshold. It is still output as a
+`misc_feature`. So `--ncf misc` never causes a sequence to fail that
+the model's own `misc_not_failure` values let pass. `--ignore_mnf`
+sets the `misc_not_failure` values from the model info file to 0, so
+that every ncf type feature is handled as described above, but does
+not turn off `--ncf misc`. `--mnf_legacy` cannot be used with
+`--ncf misc`.
 
 ### <a name="ncf-mnf-legacy"></a>`misc_not_failure` on ncf type features and `--mnf_legacy`
 
