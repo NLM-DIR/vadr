@@ -1,0 +1,11 @@
+>Feature ENTOY100A-del10-19
+5	12	misc_feature
+			note	similar to enRNA
+22	37	CDS
+37	54
+56	63
+			product	protein two
+			protein_id	ENTOY100A-del10-19_1
+
+Additional note(s) to submitter:
+ERROR: UNREPORTED_FEATURE_PROBLEM: (*sequence*) only fatal alerts are for feature(s) not output to feature table [see .ftr and .alt output files for details]; seq-coords:-; mdl-coords:-; mdl:ENTOY100A;
