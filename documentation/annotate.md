@@ -652,8 +652,8 @@ integer.
 | `--alt_fail <s>`     | specify that alert codes in comma-separated string `<s>` are fatal (cause a sequence to fail), all alert codes listed must be non-fatal by default |
 | `--alt_mnf_yes <s>`  | specify that alert codes in comma-separated string `<s>` for 'misc_not_failure' features cause misc_feature-ization, not failure as explained more [here](#mnf) |
 | `--alt_mnf_no <s>`   | specify that alert codes in comma-separated string `<s>` for 'misc_not_failure' features cause failure, not misc-feature-ization as explained more [here](#mnf) |
-| `--ncf <s>`          | set the policy for [non-coding feature (ncf) type](#ncf) features with fatal alerts to `<s>`: `fail` (default, alerts cause the sequence to fail, as for other feature types) or `drop` (alerts do not cause failure, the feature is dropped from the feature table instead), as explained more [here](#ncf) |
-| `--mnf_legacy`       | legacy option, only for existing models: with `--ncf drop`, allow 'misc_not_failure' on ncf type features, as explained more [here](#ncf-mnf-legacy) |
+| `--ncf <s>`          | set the policy for [non-coding feature (ncf) type](#ncf) features with fatal alerts to `<s>`: `fail` (default, alerts cause the sequence to fail, as for other feature types), `drop` (alerts do not cause failure, the feature is dropped from the feature table instead) or `misc` (as if every ncf type feature had `misc_not_failure:"1"`: the feature is output as a `misc_feature` instead of failing the sequence, for alerts that `misc_not_failure` applies to), as explained more [here](#ncf) |
+| `--mnf_legacy`       | legacy option, only for existing models: with `--ncf drop`, allow 'misc_not_failure' on ncf type features, as explained more [here](#ncf-mnf-legacy); cannot be used with `--ncf misc` |
 
 ### `v-annotate.pl` options for ignoring specific keys in the input model info (.minfo) file <a name="options-ignore"></a>
 
@@ -1393,7 +1393,9 @@ misc_feature-ization:
    own type even when they have alerts that are normally fatal.
    With `--ncf drop`, `misc_not_failure:"1"` is not allowed for
    [non-coding feature (ncf) type](#ncf) features unless `--mnf_legacy`
-   is also used.
+   is also used. With `--ncf misc`, ncf type features (other than
+   `misc_feature`s) are also converted to `misc_feature`s
+   (see [below](#ncf-misc)).
 
 2. `misc_feature`-ization occurs in `.pass.tbl` output files
    for non-essential features as explained above even when the
@@ -1402,7 +1404,7 @@ misc_feature-ization:
 
 ---
 
-## <a name="ncf"></a>Non-coding feature (ncf) policy: failing or dropping non-coding features with fatal alerts
+## <a name="ncf"></a>Non-coding feature (ncf) policy: failing, dropping or converting non-coding features with fatal alerts
 
 Features of the following types are *non-coding feature (ncf) type*
 features: `stem_loop`, `ncRNA`, `regulatory`, `primer_bind`,
@@ -1413,7 +1415,7 @@ including `CDS`, `gene`, `mat_peptide`, `5'UTR`, `3'UTR` and `operon`,
 are not ncf types.
 
 How `v-annotate.pl` treats ncf type features that have alerts that are
-normally fatal is controlled by the `--ncf <s>` option. There are two
+normally fatal is controlled by the `--ncf <s>` option. There are three
 policies:
 
 * `--ncf fail` (the default): ncf type features are treated like any
@@ -1430,6 +1432,12 @@ policies:
   (see [above](#mnf)), and drops features of ncf types that have errors
   rather than converting them to `misc_feature`s or annotating them with
   notes; GenBank runs `v-annotate.pl` with `--ncf drop`.
+
+* `--ncf misc`: every ncf type feature is treated as if it had
+  `misc_not_failure:"1"` (see [above](#mnf)), and with that, is
+  converted to a `misc_feature`, which `misc_not_failure` does not do
+  for non-CDS features. This policy is intended for runs whose output
+  is not submitted to GenBank. See [below](#ncf-misc).
 
 With `--ncf drop`:
 
@@ -1464,16 +1472,71 @@ With `--ncf drop`:
   from the feature table. With `--ncf fail`, the overlapping feature's
   alert is reported instead of the sequence alert.
 
-An ncf type feature can be opted out of the `--ncf drop` policy with
-the key/value pair `ncf_always_fail:"1"` in its `FEATURE` line in the
-model info file. Its alerts then cause failure exactly as with `--ncf
-fail`. `ncf_always_fail:"1"` has no effect with `--ncf fail`. It is an
+An ncf type feature can be opted out of the `--ncf drop` and `--ncf
+misc` policies with the key/value pair `ncf_always_fail:"1"` in its
+`FEATURE` line in the model info file. Its alerts then cause failure
+exactly as with `--ncf fail`. `ncf_always_fail:"1"` has no effect with
+`--ncf fail`. It is an
 error to use `ncf_always_fail:"1"` for a feature whose type is not an
 ncf type, or together with `misc_not_failure:"1"` for the same feature.
 
 ```
 FEATURE NC_045512 type:"stem_loop" coords:"29728..29768:+" parent_idx_str:"GBNULL" note:"Coronavirus 3' stem-loop II-like motif (s2m)" ncf_always_fail:"1"
 ```
+
+### <a name="ncf-misc"></a>`--ncf misc`
+
+With `--ncf misc`:
+
+* An alert for an ncf type feature that is in the `misc_not_failure`
+  set (see [above](#mnf); by default `indf5gap`, `indf5lcn`,
+  `indf3gap`, `indf3lcn`, `lowsim5n`, `lowsim3n` and `lowsimin` for
+  these features, and the set can be changed with `--alt_mnf_yes` and
+  `--alt_mnf_no`) does not cause the sequence to fail. Instead the
+  feature is output in the feature table as a `misc_feature` with a
+  `similar to X` note, where X is the feature's `product`, else its
+  `gene`, else its type (for example `similar to stem_loop`). Features
+  whose type is already `misc_feature` are output unchanged. Other
+  fatal alerts for the feature, such as `deletinf`, `lowsim5l`,
+  `lowsim3l` and `lowsimil`, still cause the sequence to fail.
+  `misc_feature`s created this way count towards the
+  [*nmiscftr*](#nmiscftr1) alert threshold (`--nmiscftrthr`), except
+  for features with `misc_not_failure:"1"` in the model info file (see
+  below).
+
+* Unlike with `misc_not_failure` for other feature types, a low
+  similarity region that overlaps an ncf type feature is handled as with
+  `--ncf drop`: the feature gets its `lowsim5n`, `lowsim3n` or
+  `lowsimin` alert (using the feature-level length thresholds), which
+  makes it a `misc_feature`, *and* the region is reported as if the
+  feature did not exist: as a fatal [*lowsim5s*](#lowsim5s1),
+  [*lowsim3s*](#lowsim3s1) or [*lowsimis*](#lowsimis1) sequence alert
+  (using the sequence-level length thresholds) if it overlaps no other
+  feature. So a low similarity region long enough to fail the sequence
+  if the feature were not annotated still fails it; annotating an ncf
+  type feature never makes these checks less strict. With the default
+  thresholds, this means that an internal low similarity region that
+  overlaps only an ncf type feature always causes failure, and a region
+  at the 5' or 3' end does not if it is shorter than `--lowsim5seq` or
+  `--lowsim3seq` (15 by default).
+
+* If an ncf type feature is completely deleted from a sequence, the
+  non-fatal [*deletina*](#deletina1) alert is reported instead of the
+  fatal [*deletins*](#deletins1) alert, as with `--ncf drop`.
+
+A feature with `ncf_always_fail:"1"` is treated as with `--ncf fail`.
+An ncf type feature with `misc_not_failure:"1"` in the model info file
+(for example the `s2m` `stem_loop` in the `sarscov2` and `corona`
+models) is treated as with `--ncf fail` in two respects: it absorbs
+overlapping low similarity regions, so no sequence-level alert is
+reported for them, and it does not count towards the
+[*nmiscftr*](#nmiscftr1) threshold. It is still output as a
+`misc_feature`. So `--ncf misc` never causes a sequence to fail that
+the model's own `misc_not_failure` values let pass. `--ignore_mnf`
+sets the `misc_not_failure` values from the model info file to 0, so
+that every ncf type feature is handled as described above, but does
+not turn off `--ncf misc`. `--mnf_legacy` cannot be used with
+`--ncf misc`.
 
 ### <a name="ncf-mnf-legacy"></a>`misc_not_failure` on ncf type features and `--mnf_legacy`
 

@@ -1,6 +1,6 @@
 use strict;
 use warnings FATAL => 'all';
-use Test::More tests => 52;
+use Test::More tests => 77;
 
 BEGIN {
     use_ok( 'vadr' ) || print "Bail out!\n";
@@ -22,7 +22,8 @@ for(my $i = 0; $i < scalar(@types_A); $i++) {
 }
 is(vdr_NcfPolicyIsValid("fail"), 1, "fail is a valid ncf policy");
 is(vdr_NcfPolicyIsValid("drop"), 1, "drop is a valid ncf policy");
-is(vdr_NcfPolicyIsValid("misc"), 0, "misc is not a valid ncf policy");
+is(vdr_NcfPolicyIsValid("misc"), 1, "misc is a valid ncf policy");
+is(vdr_NcfPolicyIsValid("foo"),  0, "foo is not a valid ncf policy");
 
 # alert info for vdr_FeatureAlertCausesFailure() and vdr_FeatureAlertCausesDrop() checks
 my %alt_info_HH = ();
@@ -56,6 +57,43 @@ is(vdr_FeatureAlertCausesFailure(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "indf5ga
 is(vdr_FeatureAlertCausesDrop(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "indf5gap"), 0, "--ncf drop: indf5gap does not cause drop for ncf_always_fail stem_loop");
 $ftr_info_AH[$sl_idx]{"ncf_always_fail"} = "0";
 
+# --ncf misc: as if ncf type features had misc_not_failure:"1", but low similarity is not absorbed
+my $nr_idx = 7;  # ncRNA
+my $mf_idx = 10; # misc_feature
+my $gn_idx = 1;  # gene
+vdr_FeatureInfoInitializeNcfPolicy(\@ftr_info_AH, "misc", 0, undef);
+is(vdr_FeatureAlertNcfAction(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "indf5gap"), "misc", "--ncf misc: ncf action is misc for stem_loop");
+is(vdr_FeatureAlertNcfAction(\@ftr_info_AH, \%alt_info_HH, $cds_idx, "indf5gap"), "fail", "--ncf misc: ncf action is fail for CDS");
+is(vdr_FeatureAlertIsMiscNotFailure(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "indf5gap"), 1, "--ncf misc: indf5gap is misc_not_failure for stem_loop without misc_not_failure:1");
+is(vdr_FeatureAlertCausesFailure(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "indf5gap"), 0, "--ncf misc: indf5gap does not cause failure for stem_loop");
+is(vdr_FeatureAlertCausesDrop(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "indf5gap"), 0, "--ncf misc: indf5gap does not cause drop for stem_loop");
+is(vdr_FeatureAlertCausesFailure(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "lowsim3l"), 1, "--ncf misc: lowsim3l (not misc_not_failure) causes failure for stem_loop");
+is(vdr_FeatureAlertCausesFailure(\@ftr_info_AH, \%alt_info_HH, $cds_idx, "indf5gap"), 1, "--ncf misc: indf5gap causes failure for CDS");
+is(vdr_FeatureAbsorbsLowSimilarity(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "lowsim3n", 10, 30), 0, "--ncf misc: stem_loop does not absorb low similarity region");
+is(vdr_FeatureTypeCanBecomeMiscFeature(\@ftr_info_AH, $sl_idx), 1, "--ncf misc: stem_loop can become misc_feature");
+is(vdr_FeatureTypeCanBecomeMiscFeature(\@ftr_info_AH, $mf_idx), 0, "--ncf misc: misc_feature does not become misc_feature");
+is(vdr_FeatureTypeCanBecomeMiscFeature(\@ftr_info_AH, $gn_idx), 0, "--ncf misc: gene cannot become misc_feature");
+is(vdr_FeatureMiscFeatureSimilarToName(\@ftr_info_AH, $sl_idx), "stem_loop", "--ncf misc: similar to name is type for stem_loop without product or gene");
+$ftr_info_AH[$nr_idx]{"product"} = "enRNA";
+$ftr_info_AH[$nr_idx]{"outname"} = "enRNA";
+is(vdr_FeatureMiscFeatureSimilarToName(\@ftr_info_AH, $nr_idx), "enRNA", "--ncf misc: similar to name is product for ncRNA with product");
+delete $ftr_info_AH[$nr_idx]{"product"};
+delete $ftr_info_AH[$nr_idx]{"outname"};
+is(vdr_FeatureNcfMiscModelMnf(\@ftr_info_AH, $sl_idx), 0, "--ncf misc: stem_loop without misc_not_failure:1 is not model misc_not_failure");
+$ftr_info_AH[$sl_idx]{"misc_not_failure"} = "1";
+is(vdr_FeatureNcfMiscModelMnf(\@ftr_info_AH, $sl_idx), 1, "--ncf misc: stem_loop with misc_not_failure:1 is model misc_not_failure");
+is(vdr_FeatureAbsorbsLowSimilarity(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "lowsim3n", 10, 30), 1, "--ncf misc: stem_loop with misc_not_failure:1 absorbs low similarity region");
+$ftr_info_AH[$sl_idx]{"misc_not_failure"} = "0";
+$ftr_info_AH[$sl_idx]{"ncf_always_fail"} = "1";
+is(vdr_FeatureAlertCausesFailure(\@ftr_info_AH, \%alt_info_HH, $sl_idx, "indf5gap"), 1, "--ncf misc: indf5gap causes failure for ncf_always_fail stem_loop");
+is(vdr_FeatureTypeCanBecomeMiscFeature(\@ftr_info_AH, $sl_idx), 0, "--ncf misc: ncf_always_fail stem_loop cannot become misc_feature");
+$ftr_info_AH[$sl_idx]{"ncf_always_fail"} = "0";
+vdr_FeatureInfoInitializeNcfPolicy(\@ftr_info_AH, "drop", 0, undef);
+is(vdr_FeatureTypeCanBecomeMiscFeature(\@ftr_info_AH, $sl_idx), 0, "--ncf drop: stem_loop cannot become misc_feature");
+$ftr_info_AH[$sl_idx]{"misc_not_failure"} = "1";
+is(vdr_FeatureNcfMiscModelMnf(\@ftr_info_AH, $sl_idx), 0, "--ncf drop: stem_loop with misc_not_failure:1 is not model misc_not_failure for --ncf misc");
+$ftr_info_AH[$sl_idx]{"misc_not_failure"} = "0";
+
 # low similarity absorption and --mnf_legacy
 is(vdr_FeatureAbsorbsLowSimilarity(\@ftr_info_AH, \%alt_info_HH, $cds_idx, "lowsim3c", 10, 30), 1, "--ncf drop: CDS absorbs low similarity region");
 is(vdr_FeatureAbsorbsLowSimilarity(\@ftr_info_AH, \%alt_info_HH, $sl_idx,  "lowsim3n", 10, 30), 0, "--ncf drop: stem_loop does not absorb low similarity region");
@@ -81,7 +119,7 @@ my @fail_A  = ();
 my $base_cmd = "\$VADRSCRIPTSDIR/v-annotate.pl -f --pv_skip -m \$VADRSCRIPTSDIR/testfiles/models/entoy100a.cm";
 my $fa       = "\$VADRSCRIPTSDIR/testfiles/entoy100a-lowsim.fa va-test-ncf > /dev/null 2>&1";
 
-push(@cmd_A,  "$base_cmd --ncf misc -i \$VADRSCRIPTSDIR/testfiles/models/entoy100a.minfo $fa");
+push(@cmd_A,  "$base_cmd --ncf foo -i \$VADRSCRIPTSDIR/testfiles/models/entoy100a.minfo $fa");
 push(@desc_A, "v-annotate.pl --ncf with invalid value");
 push(@fail_A, "1");
 
@@ -119,6 +157,22 @@ push(@fail_A, "0");
 
 push(@cmd_A,  "$base_cmd --mnf_legacy -i \$VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $fa");
 push(@desc_A, "v-annotate.pl --mnf_legacy without --ncf drop, misc_not_failure on stem_loop");
+push(@fail_A, "0");
+
+push(@cmd_A,  "$base_cmd --ncf misc -i \$VADRSCRIPTSDIR/testfiles/models/entoy100a.minfo $fa");
+push(@desc_A, "v-annotate.pl --ncf misc");
+push(@fail_A, "0");
+
+push(@cmd_A,  "$base_cmd --ncf misc --mnf_legacy -i \$VADRSCRIPTSDIR/testfiles/models/entoy100a.minfo $fa");
+push(@desc_A, "v-annotate.pl --ncf misc --mnf_legacy");
+push(@fail_A, "1");
+
+push(@cmd_A,  "$base_cmd --ncf misc -i \$VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $fa");
+push(@desc_A, "v-annotate.pl --ncf misc, misc_not_failure on stem_loop");
+push(@fail_A, "0");
+
+push(@cmd_A,  "$base_cmd --ncf misc --ignore_mnf -i \$VADRSCRIPTSDIR/testfiles/models/entoy100a-ncfmnf.minfo $fa");
+push(@desc_A, "v-annotate.pl --ncf misc --ignore_mnf, misc_not_failure on stem_loop");
 push(@fail_A, "0");
 
 my $ncmd = scalar(@cmd_A);

@@ -100,6 +100,7 @@ require "sqp_utils.pm";
 # vdr_FeatureTypeIsCdsOrMatPeptideOrIdStartAndStop()
 # vdr_FeatureTypeIsCdsOrMatPeptideOrGene()
 # vdr_FeatureTypeCanBecomeMiscFeature()
+# vdr_FeatureMiscFeatureSimilarToName()
 # vdr_NcfFeatureTypes()
 # vdr_FeatureTypeIsNcf()
 # vdr_FeatureOutType()
@@ -143,6 +144,7 @@ require "sqp_utils.pm";
 # vdr_NcfPolicyIsValid()
 # vdr_FeatureAlertNcfAction()
 # vdr_FeatureNcfMnfLegacy()
+# vdr_FeatureNcfMiscModelMnf()
 # vdr_FeatureAbsorbsLowSimilarity()
 # 
 # Subroutines related to alert exceptions:
@@ -890,7 +892,8 @@ sub vdr_FeatureInfoValidateIsDeletable {
 #               value of 1 for the same feature;
 #             - with --ncf drop, a "misc_not_failure" value of 1 is
 #               only used for an ncf type feature if --mnf_legacy
-#               was also used.
+#               was also used (with --ncf misc it is allowed, see
+#               vdr_FeatureNcfMiscModelMnf()).
 #             Should be called after vdr_FeatureInfoInitializeNcfPolicy()
 #             and vdr_FeatureInfoInitializeMiscNotFailure().
 #
@@ -934,7 +937,7 @@ sub vdr_FeatureInfoValidateNcfPolicy {
     }
     if(($is_mnf) && 
        (vdr_FeatureTypeIsNcf($ftr_info_AHR, $ftr_idx)) && 
-       (vdr_FeatureAlertNcfAction($ftr_info_AHR, undef, $ftr_idx, undef) ne "fail") && 
+       (vdr_FeatureAlertNcfAction($ftr_info_AHR, undef, $ftr_idx, undef) eq "drop") && 
        (! $ftr_info_AHR->[$ftr_idx]{"ncf_mnf_legacy"})) { 
       $fail_str .= "$ftr_desc, misc_not_failure is 1 for an ncf type feature, which is not allowed with --ncf " . $ftr_info_AHR->[$ftr_idx]{"ncf_run_policy"} . " unless --mnf_legacy is also used (or use --ignore_mnf)\n";
     }
@@ -2303,7 +2306,10 @@ sub vdr_FeatureTypeIsCdsOrMatPeptideOrGene {
 # Purpose:    Can feature $ftr_idx become a misc_feature?
 #             Currently the definition of which feature types
 #             cannot become misc_features is hard-coded in this
-#             subroutine (currently ONLY CDS can become misc_features).
+#             subroutine (currently ONLY CDS can become misc_features,
+#             and, with --ncf misc, non-coding feature (ncf) type 
+#             features that are not already misc_features, see
+#             vdr_FeatureAlertNcfAction()).
 #
 # Arguments: 
 #  $ftr_info_AHR:   ref to the feature info array of hashes 
@@ -2323,8 +2329,52 @@ sub vdr_FeatureTypeCanBecomeMiscFeature {
 
   # prior to version 1.7.1, this subroutine returned '1' if feature type was
   # not any of: "gene", "5'UTR", "3'UTR", and "operon".
-  # now it only returns '1' if type is "CDS"
-  return ($ftr_info_AHR->[$ftr_idx]{"type"} eq "CDS") ? 1 : 0;
+  # now it only returns '1' if type is "CDS", or if the feature's
+  # ncf policy action is 'misc' (--ncf misc) and type is not "misc_feature"
+  if($ftr_info_AHR->[$ftr_idx]{"type"} eq "CDS") { return 1; }
+  if(($ftr_info_AHR->[$ftr_idx]{"type"} ne "misc_feature") && 
+     (vdr_FeatureAlertNcfAction($ftr_info_AHR, undef, $ftr_idx, undef) eq "misc")) { 
+    return 1;
+  }
+  return 0;
+}
+
+#################################################################
+# Subroutine: vdr_FeatureMiscFeatureSimilarToName()
+# Incept:     EPN, Fri Nov 13 2026 (w/Claude)
+#
+# Purpose:    Return the name X used in the 'similar to X' note
+#             of feature $ftr_idx when it becomes a misc_feature
+#             (see vdr_FeatureTypeCanBecomeMiscFeature()). This is
+#             the feature's "outname" (its product, else its gene,
+#             else its type and type index, e.g. 'stem_loop.1'),
+#             except for non-coding feature (ncf) type features
+#             (see vdr_NcfFeatureTypes()) without a product or gene, 
+#             for which it is the type alone (e.g. 'stem_loop').
+#
+# Arguments: 
+#  $ftr_info_AHR:   ref to the feature info array of hashes 
+#  $ftr_idx:        feature index
+#
+# Returns:    name
+#
+# Dies:       never; does not validate anything.
+#
+################################################################# 
+sub vdr_FeatureMiscFeatureSimilarToName { 
+  my $sub_name = "vdr_FeatureMiscFeatureSimilarToName";
+  my $nargs_exp = 2;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_info_AHR, $ftr_idx) = @_;
+
+  my $ftr_HR = $ftr_info_AHR->[$ftr_idx]; # for convenience
+  if((vdr_FeatureTypeIsNcf($ftr_info_AHR, $ftr_idx)) && 
+     (! defined $ftr_HR->{"product"}) && 
+     (! defined $ftr_HR->{"gene"})) { 
+    return $ftr_HR->{"type"};
+  }
+  return $ftr_HR->{"outname"};
 }
 
 #################################################################
@@ -3892,8 +3942,8 @@ sub vdr_AlertInfoDump {
 #             Considers both "causes_failure" and "misc_not_failure"
 #             fields.
 #             Never true if the non-coding feature (ncf) policy action
-#             for the feature and alert is not 'fail' (see 
-#             vdr_FeatureAlertNcfAction()), e.g. with --ncf drop the 
+#             for the feature and alert is 'drop' (see 
+#             vdr_FeatureAlertNcfAction()), in which case the 
 #             feature is dropped from the feature table instead
 #             (see vdr_FeatureAlertCausesDrop()).
 #
@@ -3915,7 +3965,7 @@ sub vdr_FeatureAlertCausesFailure {
 
   my ($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) = @_;
 
-  if(vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) ne "fail") { return 0; }
+  if(vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) eq "drop") { return 0; }
 
   return (($alt_info_HHR->{$alt_code}{"causes_failure"}) && 
           (! vdr_FeatureAlertIsMiscNotFailure($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code))) 
@@ -3929,8 +3979,11 @@ sub vdr_FeatureAlertCausesFailure {
 # Purpose:    Does $alt_code for feature $ftr_idx have the 
 #             "misc_not_failure" attribute?
 #             Never true if the non-coding feature (ncf) policy action
-#             for the feature and alert is not 'fail' (see 
-#             vdr_FeatureAlertNcfAction()).
+#             for the feature and alert is 'drop' (see 
+#             vdr_FeatureAlertNcfAction()). If the action is 'misc' 
+#             the feature is treated as if it has misc_not_failure:"1"
+#             (even if its misc_not_failure value is 0, e.g. with 
+#             --ignore_mnf).
 #
 # Arguments: 
 #  $ftr_info_AHR:  ref to the feature info array of hashes 
@@ -3950,7 +4003,9 @@ sub vdr_FeatureAlertIsMiscNotFailure {
 
   my ($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) = @_;
 
-  if(vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) ne "fail") { return 0; }
+  my $ncf_action = vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code);
+  if($ncf_action eq "drop") { return 0; }
+  if($ncf_action eq "misc") { return ($alt_info_HHR->{$alt_code}{"misc_not_failure"}) ? 1 : 0; }
 
   return (($ftr_info_AHR->[$ftr_idx]{"misc_not_failure"}) && 
           ($alt_info_HHR->{$alt_code}{"misc_not_failure"})) 
@@ -4204,6 +4259,16 @@ sub vdr_AlertNonFatalReasonsStringParse {
 #                     failure causes the feature to be dropped from 
 #                     the feature table instead, and the feature does
 #                     not absorb overlapping low similarity regions.
+#             'misc': an ncf type feature is treated as if it had
+#                     misc_not_failure:"1": alerts with the
+#                     misc_not_failure attribute do not cause failure,
+#                     they make the feature a misc_feature instead
+#                     (see vdr_FeatureTypeCanBecomeMiscFeature()). As
+#                     with 'drop', the feature does not absorb 
+#                     overlapping low similarity regions (unless it has
+#                     misc_not_failure:"1" in the model info file, see
+#                     vdr_FeatureNcfMiscModelMnf()), and its complete
+#                     deletion is not fatal.
 #             To add a policy, add it here and add its action to
 #             vdr_FeatureAlertNcfAction().
 #
@@ -4215,7 +4280,7 @@ sub vdr_AlertNonFatalReasonsStringParse {
 #
 ################################################################# 
 sub vdr_NcfPolicies { 
-  return ("fail", "drop");
+  return ("fail", "drop", "misc");
 }
 
 #################################################################
@@ -4266,6 +4331,10 @@ sub vdr_NcfPolicyIsValid {
 #             'drop': the alert does not cause failure, the feature 
 #                     is dropped from the feature table instead 
 #                     (see vdr_FeatureAlertCausesDrop()).
+#             'misc': the alert does not cause failure if it has the 
+#                     misc_not_failure attribute, as if the feature had
+#                     misc_not_failure:"1" (see 
+#                     vdr_FeatureAlertIsMiscNotFailure()).
 #             The run's policy is read from the "ncf_run_policy"
 #             value set by vdr_FeatureInfoInitializeNcfPolicy(); if
 #             it is not set, the policy is 'fail'. The action does not
@@ -4278,7 +4347,7 @@ sub vdr_NcfPolicyIsValid {
 #  $ftr_idx:       feature index
 #  $alt_code:      alert code, can be undef
 #
-# Returns:    'fail' or 'drop'
+# Returns:    'fail', 'drop' or 'misc'
 #
 # Dies:       never; does not validate anything.
 #
@@ -4297,7 +4366,7 @@ sub vdr_FeatureAlertNcfAction {
      ((defined $ftr_HR->{"ncf_always_fail"}) && ($ftr_HR->{"ncf_always_fail"} eq "1"))) { 
     return "fail";
   }
-  return $ftr_HR->{"ncf_run_policy"}; # "drop"
+  return $ftr_HR->{"ncf_run_policy"}; # "drop" or "misc"
 }
 
 #################################################################
@@ -4307,7 +4376,7 @@ sub vdr_FeatureAlertNcfAction {
 # Purpose:    Does the legacy misc_not_failure behavior for 
 #             non-coding feature (ncf) type features (--mnf_legacy)
 #             apply to feature $ftr_idx? True if the feature's ncf 
-#             policy action is not 'fail' (see 
+#             policy action is 'drop' (see 
 #             vdr_FeatureAlertNcfAction()), --mnf_legacy was used,
 #             and the feature has misc_not_failure:"1" (which is 
 #             set to 0 for all features with --ignore_mnf).
@@ -4330,8 +4399,47 @@ sub vdr_FeatureNcfMnfLegacy {
   my ($ftr_info_AHR, $ftr_idx) = @_;
 
   my $ftr_HR = $ftr_info_AHR->[$ftr_idx]; # for convenience
-  return ((vdr_FeatureAlertNcfAction($ftr_info_AHR, undef, $ftr_idx, undef) ne "fail") && 
+  return ((vdr_FeatureAlertNcfAction($ftr_info_AHR, undef, $ftr_idx, undef) eq "drop") && 
           ($ftr_HR->{"ncf_mnf_legacy"}) && 
+          ((defined $ftr_HR->{"misc_not_failure"}) && ($ftr_HR->{"misc_not_failure"} eq "1")))
+      ? 1 : 0;
+}
+
+#################################################################
+# Subroutine: vdr_FeatureNcfMiscModelMnf()
+# Incept:     EPN, Fri Nov 13 2026 (w/Claude)
+#
+# Purpose:    Is feature $ftr_idx a non-coding feature (ncf) type
+#             feature whose ncf policy action is 'misc' (--ncf misc,
+#             see vdr_FeatureAlertNcfAction()) and that has 
+#             misc_not_failure:"1" in the model info file (which is
+#             set to 0 for all features with --ignore_mnf)? Such a 
+#             feature is treated as with --ncf fail in the two ways
+#             --ncf misc otherwise differs from misc_not_failure: it
+#             absorbs overlapping low similarity regions (see 
+#             vdr_FeatureAbsorbsLowSimilarity()), and when it becomes
+#             a misc_feature it does not count towards the nmiscftr
+#             threshold, so that --ncf misc never fails a sequence
+#             because of a feature the model makes non-essential.
+#
+# Arguments: 
+#  $ftr_info_AHR:  ref to the feature info array of hashes 
+#  $ftr_idx:       feature index
+#
+# Returns:    1 or 0
+#
+# Dies:       never; does not validate anything.
+#
+################################################################# 
+sub vdr_FeatureNcfMiscModelMnf { 
+  my $sub_name = "vdr_FeatureNcfMiscModelMnf";
+  my $nargs_exp = 2;
+  if(scalar(@_) != $nargs_exp) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($ftr_info_AHR, $ftr_idx) = @_;
+
+  my $ftr_HR = $ftr_info_AHR->[$ftr_idx]; # for convenience
+  return ((vdr_FeatureAlertNcfAction($ftr_info_AHR, undef, $ftr_idx, undef) eq "misc") && 
           ((defined $ftr_HR->{"misc_not_failure"}) && ($ftr_HR->{"misc_not_failure"} eq "1")))
       ? 1 : 0;
 }
@@ -4348,8 +4456,11 @@ sub vdr_FeatureNcfMnfLegacy {
 #             (lowsim5s, lowsim3s, lowsimis).
 #             True if the non-coding feature (ncf) policy action for
 #             the feature and alert is 'fail' (see 
-#             vdr_FeatureAlertNcfAction()). Otherwise (e.g. with
-#             --ncf drop) false, unless the legacy misc_not_failure
+#             vdr_FeatureAlertNcfAction()), or if the action is 'misc'
+#             and the feature has misc_not_failure:"1" in the model
+#             info file (see vdr_FeatureNcfMiscModelMnf()). Otherwise
+#             (e.g. with --ncf drop or --ncf misc) false, unless the
+#             legacy misc_not_failure
 #             behavior applies (see vdr_FeatureNcfMnfLegacy()) and 
 #             $length is less than $long_min_length, the minimum 
 #             length for a long low similarity alert (--lowsim5lftr, 
@@ -4376,6 +4487,9 @@ sub vdr_FeatureAbsorbsLowSimilarity {
   my ($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code, $length, $long_min_length) = @_;
 
   if(vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, $alt_code) eq "fail") { 
+    return 1;
+  }
+  if(vdr_FeatureNcfMiscModelMnf($ftr_info_AHR, $ftr_idx)) { 
     return 1;
   }
   if((vdr_FeatureNcfMnfLegacy($ftr_info_AHR, $ftr_idx)) && ($length < $long_min_length)) { 

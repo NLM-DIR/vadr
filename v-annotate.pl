@@ -241,7 +241,7 @@ opt_Add("--alt_pass",      "string",  undef,     $g,     undef, undef,         "
 opt_Add("--alt_fail",      "string",  undef,     $g,     undef, undef,         "specify that alert codes in <s> cause FAILure",                                              "specify that alert codes in comma-separated <s> do cause FAILure",     \%opt_HH, \@opt_order_A);
 opt_Add("--alt_mnf_yes",   "string",  undef,     $g,     undef,"--ignore_mnf", "alert codes in <s> for 'misc_not_failure' features cause misc_feature-ization, not failure", "alert codes in <s> for 'misc_not_failure' features cause misc_feature-ization, not failure", \%opt_HH, \@opt_order_A);
 opt_Add("--alt_mnf_no",    "string",  undef,     $g,     undef,"--ignore_mnf", "alert codes in <s> for 'misc_not_failure' features cause failure, not misc_feature-ization", "alert codes in <s> for 'misc_not_failure' features cause failure, not misc-feature-ization", \%opt_HH, \@opt_order_A);
-opt_Add("--ncf",           "string",  "fail",    $g,     undef, undef,         "set policy for ncf type (non-coding) features with fatal alerts to <s>",            "set policy for ncf type (non-coding) features with fatal alerts to <s>: 'fail' (seq fails) or 'drop' (ftr dropped)", \%opt_HH, \@opt_order_A);
+opt_Add("--ncf",           "string",  "fail",    $g,     undef, undef,         "set policy for ncf type (non-coding) features with fatal alerts to <s>",            "set policy for ncf type (non-coding) features with fatal alerts to <s>: 'fail' (seq fails), 'drop' (ftr dropped) or 'misc' (misc_feature)", \%opt_HH, \@opt_order_A);
 opt_Add("--mnf_legacy",   "boolean",  0,         $g,     undef, undef,         "legacy: allow 'misc_not_failure' on ncf type features with --ncf drop",                     "legacy, for existing models only: allow 'misc_not_failure' on ncf type features with --ncf drop", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for ignoring/forcing specific keys in the input model info (.minfo) file";
@@ -846,6 +846,10 @@ if((opt_IsUsed("--nmiscftrthr", \%opt_HH)) && (opt_Get("--nmiscftrthr", \%opt_HH
 # --ncf <s> value must be one of the ncf policies (see vadr.pm::vdr_NcfPolicies())
 if(! vdr_NcfPolicyIsValid(opt_Get("--ncf", \%opt_HH))) { 
   die "ERROR, --ncf <s> value must be one of: " . join(", ", vdr_NcfPolicies()) . "; read " . opt_Get("--ncf", \%opt_HH);
+}
+# --mnf_legacy only makes sense with --ncf drop; with --ncf misc it would ask for conflicting things
+if((opt_Get("--ncf", \%opt_HH) eq "misc") && (opt_Get("--mnf_legacy", \%opt_HH))) { 
+  die "ERROR, --mnf_legacy cannot be used with --ncf misc";
 }
 
 # if --lowsim5ftr <n1> or --lowsim5lftr <n2> used, <n1> must be <= <n2>
@@ -6102,9 +6106,10 @@ sub parse_stk_and_add_alignment_cds_and_mp_alerts {
             my $alt_scoords = "seq:VADRNULL;"; # feature is deleted, no sequence info available
             my $alt_mcoords = "mdl:" . $ftr_info_AHR->[$ftr_idx]{"coords"} . ";";
             # determine which code to use depending on is_deletable value from ftr_info,
-            # features whose non-coding feature (ncf) policy action is 'drop' (see 
+            # features whose non-coding feature (ncf) policy action is 'drop' or 'misc' (see 
             # vadr.pm::vdr_FeatureAlertNcfAction()) are treated as if is_deletable is 1
-            my $alt_code    = ($ftr_info_AHR->[$ftr_idx]{"is_deletable"} || (vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, "deletins") eq "drop")) ? "deletina" : "deletins";
+            my $ncf_action  = vdr_FeatureAlertNcfAction($ftr_info_AHR, $alt_info_HHR, $ftr_idx, "deletins");
+            my $alt_code    = ($ftr_info_AHR->[$ftr_idx]{"is_deletable"} || ($ncf_action eq "drop") || ($ncf_action eq "misc")) ? "deletina" : "deletins";
             alert_sequence_instance_add($alt_seq_instances_HHR, $alt_info_HHR, $alt_code, $seq_name, 
                                         sprintf("%s%s%s feature number %s: %s",
                                                 $alt_scoords, $alt_mcoords,
@@ -14374,7 +14379,9 @@ sub output_feature_table {
                 if(vdr_FeatureTypeCanBecomeMiscFeature($ftr_info_AHR, $ftr_idx)) { 
                   $is_misc_feature = 1;
                   $feature_type = "misc_feature";
-                  if((! $have_fatal_alt) && ($have_misc_alt)) { 
+                  # ncf type features with misc_not_failure:"1" in the model info file do not 
+                  # count with --ncf misc, as with --ncf fail (see vadr.pm::vdr_FeatureNcfMiscModelMnf())
+                  if((! $have_fatal_alt) && ($have_misc_alt) && (! vdr_FeatureNcfMiscModelMnf($ftr_info_AHR, $ftr_idx))) { 
                     $cur_nmiscftr++; 
                   }
                 }
@@ -14465,7 +14472,7 @@ sub output_feature_table {
               }
             }
             else { # we are a misc_feature, add the 'similar to X' note
-              $ftr_out_str .= sprintf("\t\t\t%s\t%s\n", "note", "similar to " . $ftr_info_AHR->[$ftr_idx]{"outname"});
+              $ftr_out_str .= sprintf("\t\t\t%s\t%s\n", "note", "similar to " . vdr_FeatureMiscFeatureSimilarToName($ftr_info_AHR, $ftr_idx));
             }
             
             # push to the output hash
