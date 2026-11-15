@@ -143,7 +143,7 @@
       never fails a sequence that `--ncf fail` passes because of it.
       `ncf_always_fail:"1"` opts a feature out, as with `--ncf drop`;
       `--mnf_legacy` cannot be used with `--ncf misc`. See
-      [`annotate.md`](documentation/annotate.md#ncf) (PR #XXX).
+      [`annotate.md`](documentation/annotate.md#ncf) (PR #148).
     - new `.minfo` exception keys `insertn_mdl_exc`, `deletin_mdl_exc`
       and `indfstr_mdl_exc`: the recommended alternatives to the
       existing `insertn_exc`, `deletin_exc` and `indfstr_exc` keys, for
